@@ -1,0 +1,6 @@
+@KoiGuardian.Api_HostAddress = http://localhost:5081
+
+GET {{KoiGuardian.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

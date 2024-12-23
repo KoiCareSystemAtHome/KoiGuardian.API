@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore;
+using KoiGuardian.DataAccess;
 using System.Linq.Expressions;
 
 namespace KoiGuardian.Core.Repository;
 
 
-public class Repository<TEntity>(DbContext dbContext) : IRepository<TEntity>
+public class BaseRepository<TEntity>(DbContext dbContext) : IBaseRepository<TEntity>
   where TEntity : class
 {
     public async Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate,
@@ -195,3 +196,9 @@ public class Repository<TEntity>(DbContext dbContext) : IRepository<TEntity>
 
     private DbSet<TEntity> DbSet => dbContext.Set<TEntity>();
 }
+
+
+public interface IRepository<TEntity> : IBaseRepository<TEntity> where TEntity : class;
+
+public class Repository<TEntity>(KoiGuardianDbContext dbContext)
+    : BaseRepository<TEntity>(dbContext), IRepository<TEntity> where TEntity : class;

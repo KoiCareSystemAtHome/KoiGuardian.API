@@ -4,6 +4,8 @@ using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.Models.Commons;
 using Microsoft.EntityFrameworkCore;
+using KoiGuardian.DataAccess.Db;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,8 @@ builder.Services.AddDbContext<KoiGuardianDbContext>(
                     option.UseSqlServer(builder.Configuration.GetConnectionString("MyDB"));
                 });
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Apisettings:JwtOptions"));
+builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiGuardianDbContext>()
+    .AddDefaultTokenProviders();
 
 // Add services to the container.
 

@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace KoiGuardian.Core.Repository;
 
-public interface IRepository<TEntity> where TEntity : class
+public interface IBaseRepository<TEntity> where TEntity : class
 {
     #region GetAsync
 

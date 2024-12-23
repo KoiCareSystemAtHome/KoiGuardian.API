@@ -6,7 +6,7 @@ namespace KoiGuardian.DataAccess;
 
 public class KoiGuardianDbContext(DbContextOptions<KoiGuardianDbContext> options) : IdentityDbContext<User>(options)
 {
-    public DbSet<User> User { get; set; }
+    public virtual DbSet<User> User { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

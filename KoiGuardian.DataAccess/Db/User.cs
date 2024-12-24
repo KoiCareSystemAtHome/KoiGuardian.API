@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using static KoiGuardian.Models.Enums.CommonEnums;
 
 namespace KoiGuardian.DataAccess.Db;
 
@@ -6,8 +7,10 @@ public class User : IdentityUser
 {
     public string PackageId { get; set; } = string.Empty;
 
-    public bool IsActivate { get; set; }
+    public UserStatus Status { get; set; }
 
     public string Avatar { get; set; } = string.Empty;
 
+    public int Code { get; set; } = 0;
 }
+

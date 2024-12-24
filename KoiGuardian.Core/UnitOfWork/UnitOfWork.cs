@@ -89,7 +89,7 @@ public sealed class UnitOfWork<TContext>(TContext context, IServiceProvider serv
         Dispose(true);
     }
 
-    private void Dispose(bool disposing)
+    public void Dispose(bool disposing)
     {
         if (!_disposed)
         {

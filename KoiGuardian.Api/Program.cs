@@ -23,6 +23,7 @@ builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiG
 
 builder.Services.AddScoped<IAuthServices, AuthService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped <IPackageServices, PackageServices>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

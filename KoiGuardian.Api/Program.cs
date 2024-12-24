@@ -6,6 +6,9 @@ using KoiGuardian.Models.Commons;
 using Microsoft.EntityFrameworkCore;
 using KoiGuardian.DataAccess.Db;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi.Models;
+using KoiGuardian.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<KoiGuardianDbContext>(
                 option =>
                 {
-                    option.UseSqlServer(builder.Configuration.GetConnectionString("MyDB"));
+                    option.UseSqlServer(builder.Configuration.GetConnectionString("MyDB"),
+                        b => b.MigrationsAssembly("KoiGuardian.DataAccess"));
                 });
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Apisettings:JwtOptions"));
 builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiGuardianDbContext>()
@@ -31,7 +35,33 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(option =>
+{
+    option.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter string as follow : Bearer Generated-JWT-Token",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    option.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = JwtBearerDefaults.AuthenticationScheme
+                        }
+                    }, new string[]{}
+                    }
+                });
+}
+            );
+
+builder.AppAuthentication();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 

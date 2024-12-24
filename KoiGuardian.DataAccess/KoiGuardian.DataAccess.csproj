@@ -27,4 +27,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\KoiGuardian.Models\KoiGuardian.Models.csproj" />
+  </ItemGroup>
+
 </Project>

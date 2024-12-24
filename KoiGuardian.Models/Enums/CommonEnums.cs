@@ -8,4 +8,12 @@ public class CommonEnums
         Admin,
         Shop
     }
+
+    public enum UserStatus
+    {
+        Active,
+        InActived,
+        Banned,
+        NotVerified
+    }
 }

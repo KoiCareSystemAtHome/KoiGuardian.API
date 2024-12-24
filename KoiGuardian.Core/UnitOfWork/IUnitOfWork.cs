@@ -18,4 +18,6 @@ public interface IUnitOfWork<out TContext> where TContext : DbContext, IDisposab
     Task<int> ExecuteSqlCommandAsync(string sql, params object[] parameters);
     
     IQueryable<T> ExecuteSqlQueryAsync<T>(string sql, params object[] parameters) where T : class;
+
+    void Dispose(bool disposing);
 }

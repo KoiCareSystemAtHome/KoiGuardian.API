@@ -4,9 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.DataAccess;
 
-public class KoiGuardianDbContext(DbContextOptions<KoiGuardianDbContext> options) : IdentityDbContext<User>(options)
+public class KoiGuardianDbContext : IdentityDbContext<User>
 {
-    public virtual DbSet<User> User { get; set; } = null!;
+    public KoiGuardianDbContext(DbContextOptions<KoiGuardianDbContext> options) : base(options)
+    {
+
+    }
+    public DbSet<User> ApplicationUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

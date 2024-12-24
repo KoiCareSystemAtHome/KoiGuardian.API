@@ -9,6 +9,7 @@
   <ItemGroup>
     <Folder Include="Attributes\" />
     <Folder Include="Configuration\" />
+    <Folder Include="Migrations\" />
     <Folder Include="Repository\" />
   </ItemGroup>
 

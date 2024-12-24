@@ -17,11 +17,10 @@ namespace KoiGuardian.Api.Services
         public async Task<PackageResponse> CreatePackage(CreatePackageRequest packageRequest, CancellationToken cancellation)
         {
             var packakeResponse = new PackageResponse();
-            Package package = null;
-            //var package = await packageRepository.GetAsync(x => x.PackageId.Equals(packageRequest.PackageId), cancellation);
+            var package = await packageRepository.GetAsync(x => x.PackageId.Equals(packageRequest.PackageId), cancellation);
             if (package is null) 
             {
-                Package newPackage = new()
+                package = new()
                 {
                     PackageId = packageRequest.PackageId,
                     PackageTitle = packageRequest.PackageTitle,
@@ -31,7 +30,7 @@ namespace KoiGuardian.Api.Services
                     StartDate = packageRequest.StartDate,
                     EndDate = packageRequest.EndDate,
                 };
-                //packageRepository.Insert(newPackage);
+                packageRepository.Insert(package);
                 packakeResponse.status = "201";
                 packakeResponse.message = "Create Package Success";
             }

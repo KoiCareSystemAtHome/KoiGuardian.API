@@ -12,4 +12,6 @@ public class User : IdentityUser
     public string Avatar { get; set; } = string.Empty;
 
     public int Code { get; set; } = 0;
+
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 }

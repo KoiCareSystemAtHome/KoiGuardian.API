@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using static KoiGuardian.Models.Enums.CommonEnums;
+using KoiGuardian.Api.Constants;
 
 namespace KoiGuardian.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController
+    public class AccountController
         (IAuthServices service)
         : ControllerBase
     {
@@ -22,10 +23,23 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("register")]
-        [Authorize(Roles =  "Member")]
         public async Task<string> Register([FromBody] RegistrationRequestDto model)
         {
             return await service.Register(model, CancellationToken.None);
+        }
+
+        [HttpGet("dashboard")]
+        [Authorize (Roles = ConstantValue.AdminRole)]
+        public async Task<AccountDashboardResponse> AdminAccountDashboard(DateTime? startDate, DateTime? endDate)
+        {
+            return await service.AccountDashboard(startDate, endDate);
+        }
+
+        [HttpPut]
+       // [Authorize(Roles = ConstantValue.AdminRole)]
+        public async Task<List<UserDto>> GetAccount([FromBody]AccountFilterRequest request)
+        {
+            return await service.Filter(request);
         }
     }
 }

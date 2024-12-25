@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using KoiGuardian.Api.Extensions;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,9 @@ builder.Services.AddDbContext<KoiGuardianDbContext>(
                     option.UseSqlServer(builder.Configuration.GetConnectionString("MyDB"),
                         b => b.MigrationsAssembly("KoiGuardian.DataAccess"));
                 });
+IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
+builder.Services.AddSingleton(mapper);
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Apisettings:JwtOptions"));
 builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiGuardianDbContext>()
     .AddDefaultTokenProviders();

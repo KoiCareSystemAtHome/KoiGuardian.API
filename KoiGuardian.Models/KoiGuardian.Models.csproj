@@ -10,7 +10,6 @@
     <Folder Include="Dtos\" />
     <Folder Include="Errors\" />
     <Folder Include="ValidateAttributes\" />
-    <Folder Include="Settings\" />
   </ItemGroup>
 
   <ItemGroup>

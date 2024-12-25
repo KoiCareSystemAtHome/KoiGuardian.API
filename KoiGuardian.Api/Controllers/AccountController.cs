@@ -36,10 +36,40 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPut]
-       // [Authorize(Roles = ConstantValue.AdminRole)]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<List<UserDto>> GetAccount([FromBody]AccountFilterRequest request)
         {
             return await service.Filter(request);
+        }
+
+        [HttpPut("activate")]
+        public async Task<string> ActivateAccount(string email, int code)
+        {
+            return await service.ActivateAccount(email,code);
+        }
+
+        [HttpPut("resend-code")]
+        public async Task<bool> ResendCode(string email)
+        {
+            return await service.ResendCode(email);
+        }
+
+        [HttpPost("ForgotPassword")]
+        public async Task<string> ForgotPassword(string email)
+        {
+            return await service.ForgotPassword(email);
+        }
+
+        [HttpPost("ConfirmResetPassCode")]
+        public async Task<string> ConfirmResetPassCode(string email, int code, string newPass)
+        {
+            return await service.ConfirmResetPassCode(email, code, newPass);
+        }
+
+        [HttpPost("ChangePassword")]
+        public async Task<string> ChangePassword(string email, string oldPass, string newPass)
+        {
+            return await service.ChangePassword(email, oldPass, newPass);
         }
     }
 }

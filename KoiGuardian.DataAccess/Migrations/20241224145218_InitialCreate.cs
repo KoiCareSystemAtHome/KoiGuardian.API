@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace KoiGuardian.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreates : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -69,6 +69,23 @@ namespace KoiGuardian.DataAccess.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Package", x => x.PackageId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Shops",
+                columns: table => new
+                {
+                    ShopId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ShopName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ShopRate = table.Column<decimal>(type: "decimal(18,2)", maxLength: 20, nullable: false),
+                    ShopDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ShopAddress = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    IsActivate = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    BizLicences = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Shops", x => x.ShopId);
                 });
 
             migrationBuilder.CreateTable(
@@ -215,6 +232,11 @@ namespace KoiGuardian.DataAccess.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Shops_ShopName",
+                table: "Shops",
+                column: "ShopName");
         }
 
         /// <inheritdoc />
@@ -237,6 +259,9 @@ namespace KoiGuardian.DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "Package");
+
+            migrationBuilder.DropTable(
+                name: "Shops");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

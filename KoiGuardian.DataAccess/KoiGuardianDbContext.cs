@@ -32,5 +32,24 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(p => p.StartDate).HasColumnType("datetime");
             entity.Property(p => p.EndDate).HasColumnType("datetime");
         });
+
+        modelBuilder.Entity<Shop>(entity =>
+        {
+            entity.ToTable("Shops");
+            entity.HasKey(s => s.ShopId);
+
+            entity.Property(s => s.ShopId).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.ShopName).IsRequired().HasMaxLength(100);
+            entity.Property(s => s.ShopRate).HasMaxLength(20);
+            entity.Property(s => s.ShopDescription).HasMaxLength(500);
+            entity.Property(s => s.ShopAddress).HasMaxLength(200);
+            entity.Property(s => s.IsActivate).IsRequired().HasDefaultValue(false);
+            entity.Property(s => s.BizLicences).HasMaxLength(100);
+
+           
+
+            entity.HasIndex(s => s.ShopName);
+
+        });
     }
 }

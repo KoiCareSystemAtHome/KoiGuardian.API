@@ -57,6 +57,48 @@ namespace KoiGuardian.DataAccess.Migrations
                     b.ToTable("Package");
                 });
 
+            modelBuilder.Entity("KoiGuardian.DataAccess.Db.Shop", b =>
+                {
+                    b.Property<string>("ShopId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BizLicences")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActivate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ShopAddress")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShopDescription")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ShopName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("ShopRate")
+                        .HasMaxLength(20)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("ShopId");
+
+                    b.HasIndex("ShopName");
+
+                    b.ToTable("Shops", (string)null);
+                });
+
             modelBuilder.Entity("KoiGuardian.DataAccess.Db.User", b =>
                 {
                     b.Property<string>("Id")

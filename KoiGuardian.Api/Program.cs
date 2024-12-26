@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using KoiGuardian.Api.Extensions;
 using AutoMapper;
+using static KoiGuardian.Api.Services.IAuthServices;
 
 var builder = WebApplication.CreateBuilder(args);
 

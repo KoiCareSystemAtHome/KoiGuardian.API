@@ -13,7 +13,7 @@ public class User : IdentityUser
 
     public int Code { get; set; } = 0;
 
-    public DateTime CreatedDate { get; set; } = DateTime.Now;
+    public DateTime? CreatedDate { get; set; } 
 
-    public DateTime ValidUntil { get; set; } = DateTime.Now;
+    public DateTime? ValidUntil { get; set; } 
 }

@@ -29,7 +29,7 @@ builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiG
 
 // Add services to the container.
 
-builder.Services.AddScoped<IAuthServices, AuthService>();
+builder.Services.AddScoped<IAccountServices, AccountService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped <IPackageServices, PackageServices>();
 

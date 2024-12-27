@@ -13,7 +13,7 @@ namespace KoiGuardian.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class AccountController
-        (IAuthServices service)
+        (IAccountServices service)
         : ControllerBase
     {
         [HttpPost("login")]

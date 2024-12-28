@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Core.Repository;
+using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
@@ -11,7 +12,7 @@ namespace KoiGuardian.Api.Services
          Task<PackageResponse> CreatePackage(CreatePackageRequest packageRequest, CancellationToken cancellation);
     }
 
-    public class PackageServices(IRepository<Package> packageRepository) : IPackageServices
+    public class PackageServices(IRepository<Package> packageRepository,  KoiGuardianDbContext _dbContext) : IPackageServices
     {
 
         public async Task<PackageResponse> CreatePackage(CreatePackageRequest packageRequest, CancellationToken cancellation)
@@ -31,6 +32,8 @@ namespace KoiGuardian.Api.Services
                     EndDate = packageRequest.EndDate,
                 };
                 packageRepository.Insert(package);
+                await _dbContext.SaveChangesAsync(cancellation);
+
                 packakeResponse.status = "201";
                 packakeResponse.message = "Create Package Success";
             }

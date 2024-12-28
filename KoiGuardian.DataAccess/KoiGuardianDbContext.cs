@@ -40,7 +40,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
             entity.Property(s => s.ShopId).IsRequired().HasMaxLength(50);
             entity.Property(s => s.ShopName).IsRequired().HasMaxLength(100);
-            entity.Property(s => s.ShopRate).HasMaxLength(20);
+            entity.Property(s => s.ShopRate).HasColumnType("decimal(18,2)").HasMaxLength(20);
             entity.Property(s => s.ShopDescription).HasMaxLength(500);
             entity.Property(s => s.ShopAddress).HasMaxLength(200);
             entity.Property(s => s.IsActivate).IsRequired().HasDefaultValue(false);

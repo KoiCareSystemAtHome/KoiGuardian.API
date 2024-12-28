@@ -14,7 +14,8 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<User> User { get; set; } = null!;
     public virtual DbSet<Package> Package { get; set; } = null!;
     public virtual DbSet<Shop> Shop { get; set; } = null!;
-    public virtual DbSet<Fish> Fish { get; set; } = null!; 
+    public virtual DbSet<Fish> Fish { get; set; } = null!;
+    public virtual DbSet<Pond> Pond { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,5 +72,16 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
           
         });
+
+        modelBuilder.Entity<Pond>(entity =>
+        {
+            entity.HasKey(p => p.PondID);
+            entity.Property(p => p.PondID).IsRequired();
+
+            entity.Property(p => p.OwnerId).IsRequired().HasMaxLength(200);
+            entity.Property(p => p.Name).IsRequired().HasMaxLength(50);
+            entity.Property(p => p.CreateDate).HasColumnType("datetime");
+        });
+
     }
 }

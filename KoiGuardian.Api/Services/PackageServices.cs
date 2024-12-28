@@ -21,7 +21,7 @@ namespace KoiGuardian.Api.Services
             var package = await packageRepository.GetAsync(x => x.PackageId.Equals(packageRequest.PackageId), cancellation);
             if (package is null) 
             {
-                package = new()
+                package = new Package()
                 {
                     PackageId = packageRequest.PackageId,
                     PackageTitle = packageRequest.PackageTitle,

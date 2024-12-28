@@ -34,6 +34,8 @@ builder.Services.AddScoped<IAccountServices, AccountService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped <IPackageServices, PackageServices>();
 
+builder.Services.AddHttpClient<GhnService>();
+
 builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddSingleton<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IFishService, FishService>();

@@ -36,6 +36,7 @@ builder.Services.AddScoped <IPackageServices, PackageServices>();
 
 builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddSingleton<IVnpayService, VnpayService>();
+builder.Services.AddScoped<IFishService, FishService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

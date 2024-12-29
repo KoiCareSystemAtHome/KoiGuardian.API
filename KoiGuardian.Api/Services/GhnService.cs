@@ -11,13 +11,16 @@ namespace KoiGuardian.Api.Services
     public class GhnService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _shopId = "195734";  // Your ShopId
-        private readonly string _token = "1e102570-c518-11ef-a349-824cd7dd2091";  // Your Token
-        private readonly string _baseUrl = "https://dev-online-gateway.ghn.vn/shiip/public-api/v2";  // GHN Base URL
+        private readonly string _shopId;  // Your ShopId
+        private readonly string _token;  // Your Token
+        private readonly string _baseUrl;  // GHN Base URL
 
-        public GhnService(HttpClient httpClient)
+        public GhnService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _shopId = configuration["GHN:ShopId"];
+            _token = configuration["GHN:Token"];
+            _baseUrl = configuration["GHN:BaseUrl"];
         }
 
         public async Task<string> CreateShippingOrder(GHNRequest ghnRequest)
@@ -45,6 +48,82 @@ namespace KoiGuardian.Api.Services
                 throw new Exception("Failed to create shipping order");
             }
         }
+
+        public async Task<string> TrackingShippingOrder(TrackingGHNRequest order_code)
+        {
+            var requestUrl = $"{_baseUrl}/shipping-order/detail";  // Update with your specific endpoint
+
+            // Add headers for authentication
+            _httpClient.DefaultRequestHeaders.Clear();
+            //_httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            // Serialize the request body as JSON
+            var content = new StringContent(JsonConvert.SerializeObject(order_code), Encoding.UTF8, "application/json");
+
+            // Send POST request to the GHN API
+            var response = await _httpClient.PostAsync(requestUrl, content);
+            // Handle the response
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception("Failed to create shipping order");
+            }
+        }
+        //lấy tỉnh thành phố
+        /*public async Task<string> getProvince ()
+        {
+            var requestUrl = $"{_baseUrl}/master-data/province";  // Update with your specific endpoint
+
+            // Add headers for authentication
+            _httpClient.DefaultRequestHeaders.Clear();
+            //_httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            // Serialize the request body as JSON
+            //var content = new StringContent(JsonConvert.SerializeObject(), Encoding.UTF8, "application/json");
+
+            // Send POST request to the GHN API
+            var response = await _httpClient.GetAsync(requestUrl);
+            // Handle the response
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception("Failed to create shipping order");
+            }
+        }*/
+
+        /*public async Task<string> getDistrict(dynamic province_id)
+        {
+            var requestUrl = $"{_baseUrl}/master-data/district";  // Update with your specific endpoint
+
+            // Add headers for authentication
+            _httpClient.DefaultRequestHeaders.Clear();
+            //_httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            // Serialize the request body as JSON
+            var content = new StringContent(JsonConvert.SerializeObject(province_id), Encoding.UTF8, "application/json");
+
+            // Send POST request to the GHN API
+            var response = await _httpClient.PostAsync(requestUrl, content);
+            // Handle the response
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception("Failed to create shipping order");
+            }
+        }*/
+
     }
 
 }

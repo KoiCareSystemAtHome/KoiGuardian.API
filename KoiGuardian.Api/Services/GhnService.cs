@@ -73,7 +73,8 @@ namespace KoiGuardian.Api.Services
                 throw new Exception("Failed to create shipping order");
             }
         }
-        public async Task<string> getProvince ()
+        //lấy tỉnh thành phố
+        /*public async Task<string> getProvince ()
         {
             var requestUrl = $"{_baseUrl}/master-data/province";  // Update with your specific endpoint
 
@@ -83,7 +84,7 @@ namespace KoiGuardian.Api.Services
             _httpClient.DefaultRequestHeaders.Add("Token", _token);
 
             // Serialize the request body as JSON
-            //ar content = new StringContent(JsonConvert.SerializeObject(), Encoding.UTF8, "application/json");
+            //var content = new StringContent(JsonConvert.SerializeObject(), Encoding.UTF8, "application/json");
 
             // Send POST request to the GHN API
             var response = await _httpClient.GetAsync(requestUrl);
@@ -96,7 +97,32 @@ namespace KoiGuardian.Api.Services
             {
                 throw new Exception("Failed to create shipping order");
             }
-        }
+        }*/
+
+        /*public async Task<string> getDistrict(dynamic province_id)
+        {
+            var requestUrl = $"{_baseUrl}/master-data/district";  // Update with your specific endpoint
+
+            // Add headers for authentication
+            _httpClient.DefaultRequestHeaders.Clear();
+            //_httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            // Serialize the request body as JSON
+            var content = new StringContent(JsonConvert.SerializeObject(province_id), Encoding.UTF8, "application/json");
+
+            // Send POST request to the GHN API
+            var response = await _httpClient.PostAsync(requestUrl, content);
+            // Handle the response
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception("Failed to create shipping order");
+            }
+        }*/
 
     }
 

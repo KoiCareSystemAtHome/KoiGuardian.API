@@ -23,22 +23,18 @@ namespace KoiGuardian.Api.Services
             _baseUrl = configuration["GHN:BaseUrl"];
         }
 
-        public async Task<string> CreateShippingOrder(GHNRequest ghnRequest)
+        public async Task<string> CreateShippingOrder(GHNRequest ghnRequest, string shopId)
         {
-            var requestUrl = $"{_baseUrl}/v2/shipping-order/create";  // Update with your specific endpoint
+            var requestUrl = $"{_baseUrl}/v2/shipping-order/create";
 
-            // Add headers for authentication
             _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("ShopId", shopId);
             _httpClient.DefaultRequestHeaders.Add("Token", _token);
 
-            // Serialize the request body as JSON
             var content = new StringContent(JsonConvert.SerializeObject(ghnRequest), Encoding.UTF8, "application/json");
 
-            // Send POST request to the GHN API
             var response = await _httpClient.PostAsync(requestUrl, content);
 
-            // Handle the response
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadAsStringAsync();
@@ -150,6 +146,65 @@ namespace KoiGuardian.Api.Services
             }
         }
 
+
+
+        public async Task<string> CalculateShippingFee(GHNShippingFeeReuqest feeRequest, string shopId)
+        {
+            var requestUrl = $"{_baseUrl}/v2/shipping-order/fee";
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+            _httpClient.DefaultRequestHeaders.Add("ShopId", shopId);
+
+            var content = new StringContent(
+                JsonConvert.SerializeObject(feeRequest),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await _httpClient.PostAsync(requestUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to calculate shipping fee. Status: {response.StatusCode}. Error: {errorContent}");
+            }
+        }
+
+
+        public async Task<string> CancelOrder(CancelOrderRequest cancelOrderRequest, string shopId)
+        {
+            var requestUrl = $"{_baseUrl}/v2/switch-status/cancel";
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("ShopId", shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            var content = new StringContent(
+                JsonConvert.SerializeObject(cancelOrderRequest),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await _httpClient.PostAsync(requestUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to cancel order. Status: {response.StatusCode}. Error: {errorContent}");
+            }
+        }
+
     }
+
+
 
 }

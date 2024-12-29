@@ -66,5 +66,78 @@ namespace KoiGuardian.Api.Controllers
                 return BadRequest(ex.Message);  // Return error message if the request fails
             }
         }
+        [HttpPost("get-province")]
+        public async Task<IActionResult> GetProvince()
+        {
+            try
+            {
+                // Call the service to create the shipping order
+                var result = await _ghnService.getProvince();
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                // Chuyển đổi lại chuỗi JSON với format đẹp
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true // Kích hoạt định dạng đẹp
+                });
+
+                // Trả về JSON định dạng đẹp
+                return Content(prettyJson, "application/json");// Return the response from GHN API
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);  // Return error message if the request fails
+            }
+        }
+        [HttpPost("get-district")]
+        public async Task<IActionResult> GetDistrict(getDistrict province_id)
+        {
+            try
+            {
+                // Call the service to create the shipping order
+                var result = await _ghnService.getDistrict(province_id);
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                // Chuyển đổi lại chuỗi JSON với format đẹp
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true // Kích hoạt định dạng đẹp
+                });
+
+                // Trả về JSON định dạng đẹp
+                return Content(prettyJson, "application/json");// Return the response from GHN API
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);  // Return error message if the request fails
+            }
+        }
+
+        [HttpPost("get-ward")]
+        public async Task<IActionResult> GetWard(getWard district_id)
+        {
+            try
+            {
+                // Call the service to create the shipping order
+                var result = await _ghnService.getWard(district_id);
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                // Chuyển đổi lại chuỗi JSON với format đẹp
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true // Kích hoạt định dạng đẹp
+                });
+
+                // Trả về JSON định dạng đẹp
+                return Content(prettyJson, "application/json");// Return the response from GHN API
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);  // Return error message if the request fails
+            }
+        }
     }
 }

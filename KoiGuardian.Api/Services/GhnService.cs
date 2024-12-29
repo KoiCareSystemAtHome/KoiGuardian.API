@@ -25,7 +25,7 @@ namespace KoiGuardian.Api.Services
 
         public async Task<string> CreateShippingOrder(GHNRequest ghnRequest)
         {
-            var requestUrl = $"{_baseUrl}/shipping-order/create";  // Update with your specific endpoint
+            var requestUrl = $"{_baseUrl}/v2/shipping-order/create";  // Update with your specific endpoint
 
             // Add headers for authentication
             _httpClient.DefaultRequestHeaders.Clear();
@@ -51,7 +51,7 @@ namespace KoiGuardian.Api.Services
 
         public async Task<string> TrackingShippingOrder(TrackingGHNRequest order_code)
         {
-            var requestUrl = $"{_baseUrl}/shipping-order/detail";  // Update with your specific endpoint
+            var requestUrl = $"{_baseUrl}/v2/shipping-order/detail";  // Update with your specific endpoint
 
             // Add headers for authentication
             _httpClient.DefaultRequestHeaders.Clear();
@@ -70,11 +70,11 @@ namespace KoiGuardian.Api.Services
             }
             else
             {
-                throw new Exception("Failed to create shipping order");
+                throw new Exception("Failed to tracking order status");
             }
         }
         //lấy tỉnh thành phố
-        /*public async Task<string> getProvince ()
+        public async Task<string> getProvince()
         {
             var requestUrl = $"{_baseUrl}/master-data/province";  // Update with your specific endpoint
 
@@ -95,11 +95,11 @@ namespace KoiGuardian.Api.Services
             }
             else
             {
-                throw new Exception("Failed to create shipping order");
+                throw new Exception("Failed to load province");
             }
-        }*/
-
-        /*public async Task<string> getDistrict(dynamic province_id)
+        }
+        //Lấy quận huyện
+        public async Task<string> getDistrict(getDistrict province_id)
         {
             var requestUrl = $"{_baseUrl}/master-data/district";  // Update with your specific endpoint
 
@@ -120,9 +120,35 @@ namespace KoiGuardian.Api.Services
             }
             else
             {
-                throw new Exception("Failed to create shipping order");
+                throw new Exception("Failed to load district by province");
             }
-        }*/
+        }
+
+        //Lấy phường xã
+        public async Task<string> getWard(getWard district_id)
+        {
+            var requestUrl = $"{_baseUrl}/master-data/ward?{district_id}";  // Update with your specific endpoint
+
+            // Add headers for authentication
+            _httpClient.DefaultRequestHeaders.Clear();
+            //_httpClient.DefaultRequestHeaders.Add("ShopId", _shopId);
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            // Serialize the request body as JSON
+            var content = new StringContent(JsonConvert.SerializeObject(district_id), Encoding.UTF8, "application/json");
+
+            // Send POST request to the GHN API
+            var response = await _httpClient.PostAsync(requestUrl, content);
+            // Handle the response
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception("Failed to load ward by district");
+            }
+        }
 
     }
 

@@ -17,28 +17,25 @@ namespace KoiGuardian.Api.Controllers
             _ghnService = ghnService;
         }
 
-        [HttpPost("create-order")]
-        public async Task<IActionResult> CreateOrder([FromBody] GHNRequest ghnRequest)
+        [HttpPost("create-order/{shopId}")]
+        public async Task<IActionResult> CreateOrder([FromBody] GHNRequest ghnRequest, string shopId)
         {
             try
             {
-                // Call the service to create the shipping order
-                var result = await _ghnService.CreateShippingOrder(ghnRequest);
+                var result = await _ghnService.CreateShippingOrder(ghnRequest, shopId);
 
                 var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
 
-                // Chuyển đổi lại chuỗi JSON với format đẹp
                 string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
                 {
-                    WriteIndented = true // Kích hoạt định dạng đẹp
+                    WriteIndented = true
                 });
 
-                // Trả về JSON định dạng đẹp
-                return Content(prettyJson, "application/json");// Return the response from GHN API
+                return Content(prettyJson, "application/json");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);  // Return error message if the request fails
+                return BadRequest(ex.Message);
             }
         }
 
@@ -47,71 +44,64 @@ namespace KoiGuardian.Api.Controllers
         {
             try
             {
-                // Call the service to create the shipping order
                 var result = await _ghnService.TrackingShippingOrder(order_code);
 
                 var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
 
-                // Chuyển đổi lại chuỗi JSON với format đẹp
                 string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
                 {
-                    WriteIndented = true // Kích hoạt định dạng đẹp
+                    WriteIndented = true
                 });
 
-                // Trả về JSON định dạng đẹp
-                return Content(prettyJson, "application/json");// Return the response from GHN API
+                return Content(prettyJson, "application/json");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);  // Return error message if the request fails
+                return BadRequest(ex.Message);
             }
         }
+
         [HttpPost("get-province")]
         public async Task<IActionResult> GetProvince()
         {
             try
             {
-                // Call the service to create the shipping order
                 var result = await _ghnService.getProvince();
 
                 var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
 
-                // Chuyển đổi lại chuỗi JSON với format đẹp
                 string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
                 {
-                    WriteIndented = true // Kích hoạt định dạng đẹp
+                    WriteIndented = true
                 });
 
-                // Trả về JSON định dạng đẹp
-                return Content(prettyJson, "application/json");// Return the response from GHN API
+                return Content(prettyJson, "application/json");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);  // Return error message if the request fails
+                return BadRequest(ex.Message);
             }
         }
+
         [HttpPost("get-district")]
         public async Task<IActionResult> GetDistrict(getDistrict province_id)
         {
             try
             {
-                // Call the service to create the shipping order
                 var result = await _ghnService.getDistrict(province_id);
 
                 var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
 
-                // Chuyển đổi lại chuỗi JSON với format đẹp
                 string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
                 {
-                    WriteIndented = true // Kích hoạt định dạng đẹp
+                    WriteIndented = true
                 });
 
-                // Trả về JSON định dạng đẹp
-                return Content(prettyJson, "application/json");// Return the response from GHN API
+                return Content(prettyJson, "application/json");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);  // Return error message if the request fails
+                return BadRequest(ex.Message);
             }
         }
 
@@ -120,24 +110,66 @@ namespace KoiGuardian.Api.Controllers
         {
             try
             {
-                // Call the service to create the shipping order
                 var result = await _ghnService.getWard(district_id);
 
                 var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
 
-                // Chuyển đổi lại chuỗi JSON với format đẹp
                 string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
                 {
-                    WriteIndented = true // Kích hoạt định dạng đẹp
+                    WriteIndented = true
                 });
 
-                // Trả về JSON định dạng đẹp
-                return Content(prettyJson, "application/json");// Return the response from GHN API
+                return Content(prettyJson, "application/json");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);  // Return error message if the request fails
+                return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost("calculate-fee/{shopId}")]
+        public async Task<IActionResult> CalculateShippingFee([FromBody] GHNShippingFeeReuqest feeRequest, string shopId)
+        {
+            try
+            {
+                var result = await _ghnService.CalculateShippingFee(feeRequest, shopId);
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                return Content(prettyJson, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("cancel-order/{shopId}")]
+        public async Task<IActionResult> CancelOrder([FromBody] CancelOrderRequest cancelOrderRequest, string shopId)
+        {
+            try
+            {
+                var result = await _ghnService.CancelOrder(cancelOrderRequest, shopId);
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                return Content(prettyJson, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
     }
 }

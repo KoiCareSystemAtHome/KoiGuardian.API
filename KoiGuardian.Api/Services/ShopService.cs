@@ -1,4 +1,6 @@
 ﻿using KoiGuardian.Core.Repository;
+using KoiGuardian.Core.UnitOfWork;
+using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
@@ -8,7 +10,6 @@ namespace KoiGuardian.Api.Services
     public interface IShopService
     {
         Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation);
-        
         Task<ShopResponse> GetShop(string shopId, CancellationToken cancellation);
         Task<ShopResponse> DeleteShop(string shopId, CancellationToken cancellation);
     }
@@ -16,10 +17,14 @@ namespace KoiGuardian.Api.Services
     public class ShopService : IShopService
     {
         private readonly IRepository<Shop> _shopRepository;
+        private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
-        public ShopService(IRepository<Shop> shopRepository)
+        public ShopService(
+            IRepository<Shop> shopRepository,
+            IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _shopRepository = shopRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation)
@@ -40,18 +45,27 @@ namespace KoiGuardian.Api.Services
                     BizLicences = shopRequest.BizLicences
                 };
                 _shopRepository.Insert(shop);
-                shopResponse.Status = "201";
-                shopResponse.Message = "Create Shop Success";
+
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellation);
+                    shopResponse.Status = "201";
+                    shopResponse.Message = "Create Shop Success";
+                }
+                catch (Exception ex)
+                {
+                    shopResponse.Status = "500";
+                    shopResponse.Message = "Error creating shop: " + ex.Message;
+                }
             }
             else
             {
                 shopResponse.Status = "409";
                 shopResponse.Message = "Shop Already Exists";
             }
+
             return shopResponse;
         }
-
-
 
         public async Task<ShopResponse> GetShop(string shopId, CancellationToken cancellation)
         {
@@ -77,6 +91,7 @@ namespace KoiGuardian.Api.Services
                 shopResponse.Status = "404";
                 shopResponse.Message = "Shop Not Found";
             }
+
             return shopResponse;
         }
 
@@ -89,14 +104,25 @@ namespace KoiGuardian.Api.Services
             {
                 shop.IsActivate = false;
                 _shopRepository.Delete(shop);
-                shopResponse.Status = "200";
-                shopResponse.Message = "Delete Shop Success";
+
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellation);
+                    shopResponse.Status = "200";
+                    shopResponse.Message = "Delete Shop Success";
+                }
+                catch (Exception ex)
+                {
+                    shopResponse.Status = "500";
+                    shopResponse.Message = "Error deleting shop: " + ex.Message;
+                }
             }
             else
             {
                 shopResponse.Status = "404";
                 shopResponse.Message = "Shop Not Found";
             }
+
             return shopResponse;
         }
     }

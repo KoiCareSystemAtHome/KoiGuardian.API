@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -43,6 +44,12 @@ namespace KoiGuardian.Models.Request
         public string name { get; set; }
         public int quantity { get; set; }
         public int weight { get; set; }
+    }
+
+    public class CancelOrderRequest
+    {
+        [JsonProperty("order_codes")]
+        public List<string> OrderCodes { get; set; }
     }
 
 }

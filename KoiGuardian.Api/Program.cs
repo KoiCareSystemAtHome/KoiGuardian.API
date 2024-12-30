@@ -40,6 +40,7 @@ builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddSingleton<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IFishService, FishService>();
 builder.Services.AddScoped<IPondServices, PondServices>();
+builder.Services.AddScoped<IParameterService, ParameterService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

@@ -15,5 +15,7 @@ public class User : IdentityUser
 
     public DateTime? CreatedDate { get; set; } 
 
-    public DateTime? ValidUntil { get; set; } 
+    public DateTime? ValidUntil { get; set; }
+
+   
 }

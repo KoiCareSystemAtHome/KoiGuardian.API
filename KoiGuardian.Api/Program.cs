@@ -37,6 +37,8 @@ builder.Services.AddScoped <IPackageServices, PackageServices>();
 builder.Services.AddHttpClient<GhnService>();
 
 builder.Services.AddScoped<IShopService, ShopService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddSingleton<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IFishService, FishService>();
 builder.Services.AddScoped<IPondServices, PondServices>();

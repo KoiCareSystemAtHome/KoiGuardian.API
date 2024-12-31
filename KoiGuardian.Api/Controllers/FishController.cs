@@ -1,70 +1,45 @@
 ﻿using KoiGuardian.Api.Services;
-using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/[controller]")]
-[ApiController]
-public class FishController : ControllerBase
+namespace KoiGuardian.Api.Controllers
 {
-    private readonly IFishService _fishService;
-
-    public FishController(IFishService fishService)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FishController(IFishService fishService) : ControllerBase
     {
-        _fishService = fishService;
-    }
-
-    // POST: api/Fish/Create
-    [HttpPost("Create")]
-    public async Task<IActionResult> CreateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
-    {
-        if (fishRequest == null)
+        [HttpPost("create-fish")]
+        public async Task<FishResponse> CreateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
         {
-            return BadRequest("Fish data is required.");
+            return await fishService.CreateFishAsync(fishRequest, cancellationToken);
         }
 
-        FishResponse response = await _fishService.CreateFishAsync(fishRequest, cancellationToken);
-
-        if (response.Status == "201")
+        [HttpPut("update-fish")]
+        public async Task<FishResponse> UpdateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
         {
-            
-            return Created($"/api/Fish/{fishRequest.KoiID}", response);
-
-           
+            return await fishService.UpdateFishAsync(fishRequest, cancellationToken);
         }
 
-        return Conflict(response);
-    }
-
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Fish>> GetFishByIdAsync(int id, CancellationToken cancellationToken)
-    {
-        var fish = await _fishService.GetFishByIdAsync(id, cancellationToken);
-        if (fish == null)
+        [HttpGet("{koiId}")]
+        public async Task<FishResponse> GetFishByIdAsync(int koiId, CancellationToken cancellationToken)
         {
-            return NotFound($"Fish with ID {id} was not found.");
+            var fish = await fishService.GetFishByIdAsync(koiId, cancellationToken);
+            if (fish == null)
+            {
+                return new FishResponse
+                {
+                    Status = "404",
+                    Message = $"Fish with ID {koiId} was not found."
+                };
+            }
+
+            return new FishResponse
+            {
+                Status = "200",
+                Message = "Fish retrieved successfully.",
+               
+            };
         }
-        return Ok(fish);
-    }
-
-
-    [HttpPut("Update")]
-    public async Task<IActionResult> UpdateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
-    {
-        if (fishRequest == null)
-        {
-            return BadRequest("Fish data is required.");
-        }
-
-        FishResponse response = await _fishService.UpdateFishAsync(fishRequest, cancellationToken);
-
-        if (response.Status == "200")
-        {
-            return Ok(response);
-        }
-
-        return NotFound(response);
     }
 }

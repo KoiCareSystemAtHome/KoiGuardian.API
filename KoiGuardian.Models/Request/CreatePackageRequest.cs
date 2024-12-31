@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 namespace KoiGuardian.Models.Request
 {
     public class CreatePackageRequest
-    {   public string PackageId { get; set; } = string.Empty;
-
+    {   
         public string PackageTitle { get; set; } = string.Empty;
 
         public string PackageDescription { get; set; } = string.Empty;

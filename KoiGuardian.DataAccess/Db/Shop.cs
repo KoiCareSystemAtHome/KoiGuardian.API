@@ -15,6 +15,8 @@ namespace KoiGuardian.DataAccess.Db
         public string ShopAddress { get; set; }
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
+
+        public string AccountID { get; set; }   
       
     }
 }

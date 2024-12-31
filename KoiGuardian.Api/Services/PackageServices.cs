@@ -18,12 +18,12 @@ namespace KoiGuardian.Api.Services
         public async Task<PackageResponse> CreatePackage(CreatePackageRequest packageRequest, CancellationToken cancellation)
         {
             var packakeResponse = new PackageResponse();
-            var package = await packageRepository.GetAsync(x => x.PackageId.Equals(packageRequest.PackageId), cancellation);
+            var package = await packageRepository.GetAsync(x => x.PackageTitle.Equals(packageRequest.PackageTitle), cancellation);
             if (package is null) 
             {
                 package = new Package()
                 {
-                    PackageId = packageRequest.PackageId,
+                    PackageId = Guid.NewGuid().ToString(),
                     PackageTitle = packageRequest.PackageTitle,
                     PackageDescription = packageRequest.PackageDescription,
                     PackagePrice = packageRequest.PackagePrice,

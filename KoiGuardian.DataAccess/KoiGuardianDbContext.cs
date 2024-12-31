@@ -20,6 +20,12 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Fish> Fishes { get; set; } = null!;
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
+    public virtual DbSet<Parameter> Parameters { get; set; } = null!;
+    public virtual DbSet<ParameterUnit> PoParameterUnitsnd { get; set; } = null!;
+    public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
+    public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -45,7 +51,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
         {
             entity.ToTable("Shops");
             entity.HasKey(s => s.ShopId);
-            entity.Property(s => s.ShopId).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.ShopId).IsRequired().HasMaxLength(50).ValueGeneratedOnAdd();
             entity.Property(s => s.ShopName).IsRequired().HasMaxLength(100);
             entity.Property(s => s.ShopRate).HasColumnType("decimal(18,2)");
             entity.Property(s => s.ShopDescription).HasMaxLength(500);
@@ -142,17 +148,13 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
         modelBuilder.Entity<Fish>(entity =>
         {
             entity.ToTable("Fish");
+
             entity.HasKey(f => f.KoiID);
+
             entity.Property(f => f.KoiID).IsRequired().ValueGeneratedOnAdd();
             entity.Property(f => f.PondID).IsRequired();
             entity.Property(f => f.Name).HasMaxLength(100);
             entity.Property(f => f.Image).HasMaxLength(200);
-            entity.Property(f => f.Physique).HasMaxLength(50);
-            entity.Property(f => f.Length).HasColumnType("decimal(5,2)");
-            entity.Property(f => f.Sex).HasMaxLength(10);
-            entity.Property(f => f.Breeder).HasMaxLength(100);
-            entity.Property(f => f.Age).IsRequired();
-            entity.Property(f => f.Weight).HasColumnType("decimal(10,2)");
             entity.Property(f => f.Variety).HasMaxLength(50);
             entity.Property(f => f.InPondSince).HasColumnType("datetime");
             entity.Property(f => f.Price).HasColumnType("decimal(18,2)");
@@ -173,6 +175,34 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(p => p.Name).IsRequired().HasMaxLength(50);
             entity.Property(p => p.CreateDate).HasColumnType("datetime");
             entity.HasIndex(p => p.OwnerId);
+        });
+
+        modelBuilder.Entity<RelKoiParameter>(entity =>
+        {
+            entity.ToTable("RelKoiParameter");
+            entity.HasKey( u => u.RelKoiParameterID);
+        });
+        modelBuilder.Entity<RelPondParameter>(entity =>
+        {
+            entity.ToTable("RelPondParameter");
+            entity.HasKey( u => u.RelPondParameterId);
+            entity.HasOne(p => p.Pond)
+                      .WithMany(u => u.RelPondParameter)
+                      .HasForeignKey(u => u.PondId);
+        });
+        modelBuilder.Entity<Parameter>(entity =>
+        {
+            entity.ToTable("Parameter");
+            entity.HasMany(p => p.ParameterUnits)
+                      .WithOne(u => u.Parameter)
+                      .HasForeignKey(u => u.ParameterID);
+        });
+        modelBuilder.Entity<ParameterUnit>(entity =>
+        {
+            entity.ToTable("ParameterUnit");
+            entity.HasOne(p => p.Parameter)
+                      .WithMany(u => u.ParameterUnits)
+                      .HasForeignKey(u => u.ParameterID);
         });
     }
 }

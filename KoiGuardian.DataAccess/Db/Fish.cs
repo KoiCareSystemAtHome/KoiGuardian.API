@@ -8,12 +8,6 @@ namespace KoiGuardian.DataAccess.Db
         public int PondID { get; set; } 
         public string Name { get; set; }
         public string Image { get; set; }
-        public string Physique { get; set; }
-        public decimal Length { get; set; } 
-        public string Sex { get; set; }
-        public string Breeder { get; set; }
-        public int Age { get; set; } 
-        public decimal Weight { get; set; } 
         public string Variety { get; set; } 
         public DateTime InPondSince { get; set; } 
         public decimal Price { get; set; }

@@ -30,13 +30,13 @@ namespace KoiGuardian.Api.Services
         public async Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation)
         {
             var shopResponse = new ShopResponse();
-            var shop = await _shopRepository.GetAsync(x => x.AccountID.Equals(shopRequest.AccountID), cancellation);
+            var shop = await _shopRepository.GetAsync(x => x.ShopId.Equals(shopRequest.ShopId), cancellation);
 
             if (shop is null)
             {
                 shop = new()
                 {
-                    ShopId = Guid.NewGuid().ToString(),
+                    ShopId = shopRequest.ShopId,
                     ShopName = shopRequest.ShopName,
                     ShopRate = shopRequest.ShopRate,
                     ShopDescription = shopRequest.ShopDescription,

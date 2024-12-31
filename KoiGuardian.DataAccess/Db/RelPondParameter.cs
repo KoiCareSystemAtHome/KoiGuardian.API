@@ -8,6 +8,9 @@ namespace KoiGuardian.DataAccess.Db
 {
     public class RelPondParameter
     {
+        public Guid RelPondParameterId { get; set; }
+
+
         public int PondId { get; set; }
 
         public int ParameterUnitID { get; set; }
@@ -19,5 +22,6 @@ namespace KoiGuardian.DataAccess.Db
         public Pond? Pond { get; set; } 
 
         public ParameterUnit? ParameterUnit { get; set; }
+
     }
 }

@@ -1,7 +1,10 @@
-﻿namespace KoiGuardian.DataAccess.Db;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace KoiGuardian.DataAccess.Db;
 
 public class Parameter
 {
+    [Key]
     public int ParameterID {  get; set; }
 
     public string Name { get; set; }

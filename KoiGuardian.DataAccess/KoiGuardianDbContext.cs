@@ -90,5 +90,33 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             
             entity.HasIndex(p => p.OwnerId);
         });
+
+        modelBuilder.Entity<RelKoiParameter>(entity =>
+        {
+            entity.ToTable("RelKoiParameter");
+            entity.HasKey( u => u.RelKoiParameterID);
+        });
+        modelBuilder.Entity<RelPondParameter>(entity =>
+        {
+            entity.ToTable("RelPondParameter");
+            entity.HasKey( u => u.RelPondParameterId);
+            entity.HasOne(p => p.Pond)
+                      .WithMany(u => u.RelPondParameter)
+                      .HasForeignKey(u => u.PondId);
+        });
+        modelBuilder.Entity<Parameter>(entity =>
+        {
+            entity.ToTable("Parameter");
+            entity.HasMany(p => p.ParameterUnits)
+                      .WithOne(u => u.Parameter)
+                      .HasForeignKey(u => u.ParameterID);
+        });
+        modelBuilder.Entity<ParameterUnit>(entity =>
+        {
+            entity.ToTable("ParameterUnit");
+            entity.HasOne(p => p.Parameter)
+                      .WithMany(u => u.ParameterUnits)
+                      .HasForeignKey(u => u.ParameterID);
+        });
     }
 }

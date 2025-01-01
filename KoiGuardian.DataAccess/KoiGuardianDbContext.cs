@@ -13,6 +13,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
     // DbSet properties for collections
     public virtual DbSet<Package> Packages { get; set; } = null!;
+    public virtual DbSet<AccountPackage> AccountPackage { get; set; } = null!;
     public virtual DbSet<Shop> Shops { get; set; } = null!;
     public virtual DbSet<Product> Products { get; set; } = null!;
     public virtual DbSet<Blog> Blogs { get; set; } = null!;
@@ -21,9 +22,21 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
     public virtual DbSet<Parameter> Parameters { get; set; } = null!;
-    public virtual DbSet<ParameterUnit> PoParameterUnitsnd { get; set; } = null!;
+    public virtual DbSet<ParameterUnit> ParameterUnit { get; set; } = null!;
     public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
     public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
+    public virtual DbSet<Variety> Variety { get; set; } = null!;
+    public virtual DbSet<Category> Category { get; set; } = null!;
+    public virtual DbSet<Disease> Disease { get; set; } = null!;
+    public virtual DbSet<Feedback> Feedbacks { get; set; } = null!;
+    public virtual DbSet<KoiDiseaseProfile> KoiDiseaseProfile { get; set; } = null!;
+    public virtual DbSet<Medicine> Medicine { get; set; } = null!;
+    public virtual DbSet<Notification> Notifications { get; set; } = null!;
+    public virtual DbSet<Order> Orders { get; set; } = null!;
+    public virtual DbSet<OrderDetail> OrderDetails { get; set; } = null!;
+    public virtual DbSet<PondReminder> PondReminders { get; set; } = null!;
+    public virtual DbSet<RelSymptomDisease> RelSymptomDiseases { get; set; } = null!;
+    public virtual DbSet<Symptom> Symptoms { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -63,14 +76,12 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             // Relationship with Products (one-to-many)
             entity.HasMany(s => s.Categories)
                 .WithOne(p => p.Shop)
-                .HasForeignKey(p => p.ShopId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(p => p.ShopId);
 
             // Relationship with Blogs (one-to-many)
             entity.HasMany(s => s.Blogs)
                 .WithOne(b => b.Shop)
-                .HasForeignKey(b => b.ShopId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(b => b.ShopId);
         });
 
         // Blog Configuration
@@ -92,8 +103,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             // Relationship with Shop
             entity.HasOne(b => b.Shop)
                 .WithMany(s => s.Blogs)
-                .HasForeignKey(b => b.ShopId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(b => b.ShopId);
 
             
           
@@ -110,7 +120,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(p => p.Description).HasMaxLength(1000);
             entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
             entity.Property(p => p.StockQuantity).IsRequired();
-            entity.Property(p => p.Category).HasMaxLength(100);
+            entity.Property(p => p.CategoryId).HasMaxLength(100);
             entity.Property(p => p.Brand).HasMaxLength(100);
             entity.Property(p => p.ManufactureDate).HasColumnType("datetime");
             entity.Property(p => p.ExpiryDate).HasColumnType("datetime");
@@ -134,14 +144,12 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
             entity.HasOne(bp => bp.Blog)
                 .WithMany(b => b.BlogProducts)
-                .HasForeignKey(bp => bp.BlogId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(bp => bp.BlogId);
 
             
             entity.HasOne(bp => bp.Product)
                 .WithMany(p => p.BlogProducts)
-                .HasForeignKey(bp => bp.ProductId)
-                .OnDelete(DeleteBehavior.NoAction);  
+                .HasForeignKey(bp => bp.ProductId);  
         });
 
         // Fish Configuration (unchanged)
@@ -155,14 +163,19 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(f => f.PondID).IsRequired();
             entity.Property(f => f.Name).HasMaxLength(100);
             entity.Property(f => f.Image).HasMaxLength(200);
-            entity.Property(f => f.Variety).HasMaxLength(50);
+            entity.Property(f => f.VarietyId).HasMaxLength(50);
             entity.Property(f => f.InPondSince).HasColumnType("datetime");
             entity.Property(f => f.Price).HasColumnType("decimal(18,2)");
 
             entity.HasOne(f => f.Pond)
                 .WithMany(p => p.Fish)
-                .HasForeignKey(f => f.PondID)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(f => f.PondID);
+            entity.HasOne(f => f.Variety)
+                .WithMany(p => p.Fish)
+                .HasForeignKey(f => f.VarietyId);
+            entity.HasMany(f => f.RelKoiParameters)
+                .WithOne(p => p.Fish)
+                .HasForeignKey(f => f.KoiId);
         });
 
         // Pond Configuration (unchanged)

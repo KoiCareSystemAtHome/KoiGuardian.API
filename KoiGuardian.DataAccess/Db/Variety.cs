@@ -16,5 +16,6 @@ namespace KoiGuardian.DataAccess.Db
 
 
         public virtual User? Author { get; set; }    
+        public virtual IEnumerable<Fish>? Fish { get; set; }
     }
 }

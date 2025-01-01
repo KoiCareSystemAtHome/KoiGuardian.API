@@ -1,7 +1,10 @@
-﻿namespace KoiGuardian.DataAccess.Db
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace KoiGuardian.DataAccess.Db
 {
     public class OrderDetail
     {
+        [Key]
         public Guid OderDetailId { get; set; }
         public Guid OderId { get; set; }
         public Guid ProductId { get; set; }

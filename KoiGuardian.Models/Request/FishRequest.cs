@@ -4,8 +4,8 @@ namespace KoiGuardian.Models.Request
 {
     public class FishRequest
     {
-        public int KoiID { get; set; }
-        public int PondID { get; set; }
+        public Guid KoiID { get; set; }
+        public Guid PondID { get; set; }
         public string Name { get; set; }
         public string Image { get; set; }
         public string Physique { get; set; }

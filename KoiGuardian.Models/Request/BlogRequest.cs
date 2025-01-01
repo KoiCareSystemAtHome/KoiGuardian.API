@@ -5,8 +5,7 @@ namespace KoiGuardian.Models.Request
 {
     public class BlogRequest
     {
-        public string BlogId { get; set; }
-
+        public Guid BlogId { get; set; }
         public string Title { get; set; }
 
         public string Content { get; set; }
@@ -19,9 +18,9 @@ namespace KoiGuardian.Models.Request
 
         public string Type { get; set; }
 
-        public string ShopId { get; set; }
+        public Guid ShopId { get; set; }
 
-        public List<string> ProductIds { get; set; } = new List<string>();  // List of ProductIds
+        public List<Guid> ProductIds { get; set; } = new List<Guid>();  // List of ProductIds
 
         public DateTime? ReportedDate { get; set; }
     }

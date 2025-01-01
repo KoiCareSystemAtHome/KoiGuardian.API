@@ -61,7 +61,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.HasIndex(s => s.ShopName);
 
             // Relationship with Products (one-to-many)
-            entity.HasMany(s => s.Products)
+            entity.HasMany(s => s.Categories)
                 .WithOne(p => p.Shop)
                 .HasForeignKey(p => p.ShopId)
                 .OnDelete(DeleteBehavior.Cascade);

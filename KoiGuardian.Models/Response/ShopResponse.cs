@@ -17,7 +17,7 @@ namespace KoiGuardian.Models.Response
 
     public class ShopDTO
     {
-        public string ShopId { get; set; }
+        public Guid ShopId { get; set; }
         public string ShopName { get; set; }
         public decimal ShopRate { get; set; }
         public string ShopDescription { get; set; }

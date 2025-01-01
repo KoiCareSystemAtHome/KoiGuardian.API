@@ -14,7 +14,7 @@ namespace KoiGuardian.Models.Request
         public string Breeder { get; set; }
         public int Age { get; set; }
         public decimal Weight { get; set; } 
-        public string Variety { get; set; }
+        public Guid Variety { get; set; }
         public DateTime InPondSince { get; set; }
         public decimal Price { get; set; }
     }

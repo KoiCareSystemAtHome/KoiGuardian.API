@@ -8,12 +8,12 @@ namespace KoiGuardian.DataAccess.Db
 {
     public class BlogProduct
     {
-        public string BPId { get; set; }
+        public Guid BPId { get; set; }
 
-        public string BlogId { get; set; }
+        public Guid BlogId { get; set; }
         public virtual Blog Blog { get; set; }
 
-        public string ProductId { get; set; }
+        public Guid ProductId { get; set; }
         public virtual Product Product { get; set; }
     }
 }

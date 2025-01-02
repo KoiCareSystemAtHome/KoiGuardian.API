@@ -1,4 +1,4 @@
-﻿using KoiGuardian.DataAccess.Db;
+using KoiGuardian.DataAccess.Db;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +13,6 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
     // DbSet properties for collections
     public virtual DbSet<Package> Packages { get; set; } = null!;
-    public virtual DbSet<AccountPackage> AccountPackage { get; set; } = null!;
     public virtual DbSet<Shop> Shops { get; set; } = null!;
     public virtual DbSet<Product> Products { get; set; } = null!;
     public virtual DbSet<Blog> Blogs { get; set; } = null!;
@@ -22,21 +21,9 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
     public virtual DbSet<Parameter> Parameters { get; set; } = null!;
-    public virtual DbSet<ParameterUnit> ParameterUnit { get; set; } = null!;
+    public virtual DbSet<ParameterUnit> PoParameterUnitsnd { get; set; } = null!;
     public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
     public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
-    public virtual DbSet<Variety> Variety { get; set; } = null!;
-    public virtual DbSet<Category> Category { get; set; } = null!;
-    public virtual DbSet<Disease> Disease { get; set; } = null!;
-    public virtual DbSet<Feedback> Feedbacks { get; set; } = null!;
-    public virtual DbSet<KoiDiseaseProfile> KoiDiseaseProfile { get; set; } = null!;
-    public virtual DbSet<Medicine> Medicine { get; set; } = null!;
-    public virtual DbSet<Notification> Notifications { get; set; } = null!;
-    public virtual DbSet<Order> Orders { get; set; } = null!;
-    public virtual DbSet<OrderDetail> OrderDetails { get; set; } = null!;
-    public virtual DbSet<PondReminder> PondReminders { get; set; } = null!;
-    public virtual DbSet<RelSymptomDisease> RelSymptomDiseases { get; set; } = null!;
-    public virtual DbSet<Symptom> Symptoms { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -74,14 +61,16 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.HasIndex(s => s.ShopName);
 
             // Relationship with Products (one-to-many)
-            entity.HasMany(s => s.Categories)
+            entity.HasMany(s => s.Products)
                 .WithOne(p => p.Shop)
-                .HasForeignKey(p => p.ShopId);
+                .HasForeignKey(p => p.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Relationship with Blogs (one-to-many)
             entity.HasMany(s => s.Blogs)
                 .WithOne(b => b.Shop)
-                .HasForeignKey(b => b.ShopId);
+                .HasForeignKey(b => b.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Blog Configuration
@@ -103,7 +92,8 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             // Relationship with Shop
             entity.HasOne(b => b.Shop)
                 .WithMany(s => s.Blogs)
-                .HasForeignKey(b => b.ShopId);
+                .HasForeignKey(b => b.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             
           
@@ -111,19 +101,53 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
 
         // Product Configuration
+        
         modelBuilder.Entity<Product>(entity =>
         {
             entity.ToTable("Products");
             entity.HasKey(p => p.ProductId);
-            entity.Property(p => p.ProductId).IsRequired().HasMaxLength(50);
-            entity.Property(p => p.ProductName).IsRequired().HasMaxLength(200);
-            entity.Property(p => p.Description).HasMaxLength(1000);
-            entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
-            entity.Property(p => p.StockQuantity).IsRequired();
-            entity.Property(p => p.CategoryId).HasMaxLength(100);
-            entity.Property(p => p.Brand).HasMaxLength(100);
-            entity.Property(p => p.ManufactureDate).HasColumnType("datetime");
-            entity.Property(p => p.ExpiryDate).HasColumnType("datetime");
+
+            // Property configurations
+            entity.Property(p => p.ProductId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier")
+                .ValueGeneratedOnAdd();
+            entity.Property(p => p.ProductName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(p => p.Description)
+                .HasMaxLength(1000);
+            entity.Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
+            entity.Property(p => p.StockQuantity)
+                .IsRequired();
+            entity.Property(p => p.Brand)
+                .HasMaxLength(100);
+            entity.Property(p => p.ParameterImpactment)
+                .HasMaxLength(500);
+            entity.Property(p => p.ManufactureDate)
+                .HasColumnType("datetime");
+            entity.Property(p => p.ExpiryDate)
+                .HasColumnType("datetime");
+            entity.Property(p => p.ShopId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+            entity.Property(p => p.CategoryId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+
+            // Relationships
+            entity.HasOne(p => p.Shop)
+                .WithMany(s => s.Products)
+                .HasForeignKey(p => p.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.Category)
+                .WithMany(p => p.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            
         });
 
         modelBuilder.Entity<BlogProduct>(entity =>
@@ -144,12 +168,14 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
             entity.HasOne(bp => bp.Blog)
                 .WithMany(b => b.BlogProducts)
-                .HasForeignKey(bp => bp.BlogId);
+                .HasForeignKey(bp => bp.BlogId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             
             entity.HasOne(bp => bp.Product)
                 .WithMany(p => p.BlogProducts)
-                .HasForeignKey(bp => bp.ProductId);  
+                .HasForeignKey(bp => bp.ProductId)
+                .OnDelete(DeleteBehavior.NoAction);  
         });
 
         // Fish Configuration (unchanged)
@@ -163,19 +189,14 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(f => f.PondID).IsRequired();
             entity.Property(f => f.Name).HasMaxLength(100);
             entity.Property(f => f.Image).HasMaxLength(200);
-            entity.Property(f => f.VarietyId).HasMaxLength(50);
+            entity.Property(f => f.Variety).HasMaxLength(50);
             entity.Property(f => f.InPondSince).HasColumnType("datetime");
             entity.Property(f => f.Price).HasColumnType("decimal(18,2)");
 
             entity.HasOne(f => f.Pond)
                 .WithMany(p => p.Fish)
-                .HasForeignKey(f => f.PondID);
-            entity.HasOne(f => f.Variety)
-                .WithMany(p => p.Fish)
-                .HasForeignKey(f => f.VarietyId);
-            entity.HasMany(f => f.RelKoiParameters)
-                .WithOne(p => p.Fish)
-                .HasForeignKey(f => f.KoiId);
+                .HasForeignKey(f => f.PondID)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Pond Configuration (unchanged)
@@ -217,5 +238,43 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
                       .WithMany(u => u.ParameterUnits)
                       .HasForeignKey(u => u.ParameterID);
         });
+
+        // Category Configuration
+        // Category Configuration
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("Category");
+            entity.HasKey(c => c.CategoryId);
+
+            // Property configurations
+            entity.Property(c => c.CategoryId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(c => c.Description)
+                .HasMaxLength(500);
+
+            entity.Property(c => c.ShopId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+
+            // Relationship with Products
+            entity.HasMany(c => c.Products)
+                .WithOne(p => p.Category)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship with Shop
+            entity.HasOne(c => c.Shop)
+                .WithMany(s => s.Categories)
+                .HasForeignKey(c => c.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
     }
 }

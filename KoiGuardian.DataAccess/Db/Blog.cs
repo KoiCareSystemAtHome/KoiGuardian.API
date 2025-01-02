@@ -1,7 +1,10 @@
-﻿using KoiGuardian.DataAccess.Db;
+using KoiGuardian.DataAccess.Db;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 public class Blog
 {
+    
     public Guid BlogId { get; set; }
     public bool IsApproved { get; set; }
     public string Type { get; set; }
@@ -10,10 +13,15 @@ public class Blog
     public string Images { get; set; }
     public string Tag { get; set; }
     public int View { get; set; }
-    public Guid ShopId { get; set; }
-    public DateTime? ReportedDate { get; set; }
     public string ReportedBy { get; set; }
-
+    
+    public Guid ShopId { get; set; }
+    
     public virtual Shop Shop { get; set; }
+
+  
+    public DateTime? ReportedDate { get; set; }
+
+   
     public virtual ICollection<BlogProduct> BlogProducts { get; set; } = new List<BlogProduct>();
 }

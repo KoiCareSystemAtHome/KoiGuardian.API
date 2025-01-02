@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace KoiGuardian.Models.Request
@@ -6,6 +6,7 @@ namespace KoiGuardian.Models.Request
     public class BlogRequest
     {
         public Guid BlogId { get; set; }
+
         public string Title { get; set; }
 
         public string Content { get; set; }
@@ -18,9 +19,11 @@ namespace KoiGuardian.Models.Request
 
         public string Type { get; set; }
 
+        public string ReportedBy { get; set; }
+
         public Guid ShopId { get; set; }
 
-        public List<Guid> ProductIds { get; set; } = new List<Guid>();  // List of ProductIds
+        public List<Guid> ProductIds { get; set; } = new List<Guid>();  
 
         public DateTime? ReportedDate { get; set; }
     }

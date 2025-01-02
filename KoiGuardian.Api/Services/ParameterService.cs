@@ -86,6 +86,14 @@ namespace KoiGuardian.Api.Services
                     var dangerUpper = worksheet.Cells[row, 8].GetValue<float?>();
                     var dangerLower = worksheet.Cells[row, 9].GetValue<float?>();
 
+                    // Retrieve missing fields
+                    var isStandard = worksheet.Cells[row, 10].GetValue<bool>(); // Assuming it's in column 10
+                    var isActive = worksheet.Cells[row, 11].GetValue<bool>();  // Assuming it's in column 11
+                    var conversionRate = worksheet.Cells[row, 12].GetValue<float>(); // Assuming it's in column 12
+                    var measurementInstruction = worksheet.Cells[row, 13].GetValue<string>(); // Assuming it's in column 13
+                    var ageFrom = worksheet.Cells[row, 14].GetValue<int>();  // Assuming it's in column 14
+                    var ageTo = worksheet.Cells[row, 15].GetValue<int>();    // Assuming it's in column 15
+
                     // Upsert Parameter
                     var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
                     if (parameter == null)
@@ -94,7 +102,7 @@ namespace KoiGuardian.Api.Services
                         {
                             ParameterID = parameterId,
                             Name = parameterName,
-                            Type = parameterType,
+                            Type = parameterType.ToString(),
                             CreatedAt = DateTime.UtcNow
                         };
                         _parameterRepository.Insert(parameter);
@@ -102,7 +110,7 @@ namespace KoiGuardian.Api.Services
                     else
                     {
                         parameter.Name = parameterName;
-                        parameter.Type = parameterType;
+                        parameter.Type = parameterType.ToString();
                     }
 
                     // Upsert Parameter Unit
@@ -118,8 +126,12 @@ namespace KoiGuardian.Api.Services
                             WarningLowwer = warningLower,
                             DangerUpper = dangerUpper,
                             DangerLower = dangerLower,
-                            IsStandard = true,
-                            IsActive = true
+                            IsStandard = isStandard,
+                            IsActive = isActive,
+                            Convertionrate = conversionRate,
+                            MeasurementInstruction = measurementInstruction,
+                            AgeFrom = ageFrom,
+                            AgeTo = ageTo
                         };
                         _parameterUnitRepository.Insert(parameterUnit);
                     }
@@ -130,6 +142,12 @@ namespace KoiGuardian.Api.Services
                         parameterUnit.WarningLowwer = warningLower;
                         parameterUnit.DangerUpper = dangerUpper;
                         parameterUnit.DangerLower = dangerLower;
+                        parameterUnit.IsStandard = isStandard;
+                        parameterUnit.IsActive = isActive;
+                        parameterUnit.Convertionrate = conversionRate;
+                        parameterUnit.MeasurementInstruction = measurementInstruction;
+                        parameterUnit.AgeFrom = ageFrom;
+                        parameterUnit.AgeTo = ageTo;
                     }
                 }
 
@@ -145,7 +163,7 @@ namespace KoiGuardian.Api.Services
 
             return response;
         }
-   
+
         public async Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken)
         {
             return await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);

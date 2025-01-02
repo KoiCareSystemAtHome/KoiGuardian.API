@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using KoiGuardian.Api.Extensions;
 using AutoMapper;
+using KoiGuardian.DataAccess.MongoDB;
 //using static KoiGuardian.Api.Services.IAuthServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +34,7 @@ builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<KoiG
 builder.Services.AddScoped<IAccountServices, AccountService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped <IPackageServices, PackageServices>();
+builder.Services.AddScoped <IKoiMongoDb, KoiMongoDb>();
 
 builder.Services.AddHttpClient<GhnService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

@@ -9,7 +9,7 @@ public class UserDto
     public string ID { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string PackageID { get; set; } = string.Empty;
+    public Guid? PackageID { get; set; } 
     public string Status { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
 }

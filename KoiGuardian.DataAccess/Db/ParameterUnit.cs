@@ -11,12 +11,12 @@ namespace KoiGuardian.DataAccess.Db;
 public class ParameterUnit
 {
     [Key]
-    public int HistoryID {  get; set; }
+    public Guid HistoryID {  get; set; }
     
     public DateTime? ValidUnitl {  get; set; }
 
-    public int ParameterUnitID { get; set; }
-    public int ParameterID { get; set; }
+    public Guid ParameterUnitID { get; set; }
+    public Guid ParameterID { get; set; }
     public string UnitName { get; set; }
     public float WarningUpper { get; set; }
     public float WarningLowwer { get; set; }

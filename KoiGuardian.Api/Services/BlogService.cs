@@ -17,7 +17,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
         Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
-        Task<Blog> GetBlogByIdAsync(string blogId, CancellationToken cancellationToken);
+        Task<Blog> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken);
     }
 
     public class BlogService : IBlogService
@@ -56,7 +56,7 @@ namespace KoiGuardian.Api.Services
 
             var blog = new Blog
             {
-                BlogId = Guid.NewGuid().ToString(),
+                BlogId = Guid.NewGuid(),
                 Title = blogRequest.Title,
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
@@ -76,7 +76,7 @@ namespace KoiGuardian.Api.Services
                 {
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid().ToString(),
+                        BPId = Guid.NewGuid(),
                         BlogId = blog.BlogId,
                         ProductId = productId
                     };
@@ -103,7 +103,7 @@ namespace KoiGuardian.Api.Services
             return blogResponse;
         }
 
-        public async Task<Blog> GetBlogByIdAsync(string blogId, CancellationToken cancellationToken)
+        public async Task<Blog> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken)
         {
             return await _blogRepository.GetAsync(x => x.BlogId == blogId, cancellationToken);
         }
@@ -137,7 +137,7 @@ namespace KoiGuardian.Api.Services
                 {
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid().ToString(),
+                        BPId = Guid.NewGuid(),
                         BlogId = existingBlog.BlogId,
                         ProductId = productId
                     };

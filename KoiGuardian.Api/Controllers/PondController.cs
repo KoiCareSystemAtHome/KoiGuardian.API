@@ -11,13 +11,13 @@ namespace KoiGuardian.Api.Controllers
     public class PondController(IPondServices services) : ControllerBase
     {
         [HttpPost("create-pond")]
-        public async Task<PondResponse> CreatePond([FromBody] PondRequest createPond, CancellationToken cancellationToken)
+        public async Task<PondResponse> CreatePond([FromBody] CreatePondRequest createPond, CancellationToken cancellationToken)
         {
             return await services.CreatePond(createPond, cancellationToken);
         }
 
         [HttpPut("update-pond")]
-        public async Task<PondResponse> UpdatePond([FromBody] PondRequest updatePond, CancellationToken cancellationToken)
+        public async Task<PondResponse> UpdatePond([FromBody] UpdatePondRequest updatePond, CancellationToken cancellationToken)
         {
             return await services.UpdatePond(updatePond, cancellationToken);
         }

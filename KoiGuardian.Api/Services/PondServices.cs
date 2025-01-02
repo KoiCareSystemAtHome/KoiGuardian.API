@@ -3,13 +3,15 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.DataAccess;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Azure.Core;
+using Azure;
 
 namespace KoiGuardian.Api.Services
 {
     public interface IPondServices 
     {
-        Task<PondResponse> CreatePond(PondRequest Request, CancellationToken cancellation);
-        Task<PondResponse> UpdatePond(PondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> CreatePond(CreatePondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
     }
 
     public class PondServices(
@@ -17,68 +19,64 @@ namespace KoiGuardian.Api.Services
         KoiGuardianDbContext _dbContext, 
         IRepository<User> userRepository) : IPondServices
     {
-        public async Task<PondResponse> CreatePond(PondRequest Request, CancellationToken cancellation)
+        public async Task<PondResponse> CreatePond(CreatePondRequest request, CancellationToken cancellation)
         {
-            var Response = new PondResponse();
-            //kiểm tra hồ đã tồn tại chưa
-            var pond = await pondRepository.GetAsync(x => x.PondID.Equals(Request.PondID), cancellation);
-            //kiểm tra user đang đăng nhập
-            /*var user = await userRepository.GetAsync( x => x.Id.Equals(Request.OwnerId), cancellation);
-
-            if(user is null)
+            var response = new PondResponse();
+            var pond = new Pond
             {
-                Response.status = "404";
-                Response.message = "User does not exist";
-                return Response;
-            }*/
+                PondID = Guid.NewGuid(),
+                OwnerId = request.OwnerId,
+                CreateDate = request.CreateDate,
+                Name = request.Name
+            };
 
-            if(pond is null) 
+            try
             {
-                pond = new Pond()
-                {
-                    //PondID = Request.PondID,
-                    OwnerId = Request.OwnerId,
-                    CreateDate = Request.CreateDate,
-                    Name = Request.Name,
-                };
-
                 pondRepository.Insert(pond);
                 await _dbContext.SaveChangesAsync(cancellation);
 
-                Response.status = "201";
-                Response.message = "Create Ponnd Success";
+                response.status = "201";
+                response.message = "Pond created successfully";
             }
-            else
+            catch (Exception ex)
             {
-                Response.status = "409 ";
-                Response.message = "Pond Has Existed";
+                response.status = "500";
+                response.message = $"An error occurred: {ex.Message}";
             }
-            return Response;
+
+            return response;
         }
 
-        public async Task<PondResponse> UpdatePond(PondRequest Request, CancellationToken cancellation)
+        public async Task<PondResponse> UpdatePond(UpdatePondRequest request, CancellationToken cancellation)
         {
-            var Response = new PondResponse();
-            var pond = await pondRepository.GetAsync(x => x.PondID.Equals(Request.PondID), cancellation);
+            var response = new PondResponse();
+            var pond = await pondRepository.GetAsync(x => x.PondID.Equals(request.PondID), cancellation);
             if (pond != null)
             {
-                pond.OwnerId = Request.OwnerId;
-                pond.CreateDate = Request.CreateDate;
-                pond.Name = Request.Name;
-                
+                pond.OwnerId = request.OwnerId;
+                pond.CreateDate = request.CreateDate;
+                pond.Name = request.Name;
 
-                pondRepository.Update(pond);
-                await _dbContext.SaveChangesAsync(cancellation);
+                try
+                {
+                    pondRepository.Update(pond);
+                    await _dbContext.SaveChangesAsync(cancellation);
 
-                Response.status = "201";
-                Response.message = "Update Ponnd Success";
+                    response.status = "201";
+                    response.message = "Update Ponnd Success";
+                }
+                catch (Exception ex)
+                {
+                    response.status = "500";
+                    response.message = $"An error occurred: {ex.Message}";
+                }
             }
             else
             {
-                Response.status = "409 ";
-                Response.message = "Pond Haven't Existed";
+                response.status = "409 ";
+                response.message = "Pond Haven't Existed";
             }
-            return Response;
+            return response;
         }
     }
 }

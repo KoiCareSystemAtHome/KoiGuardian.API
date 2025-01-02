@@ -9,7 +9,7 @@ namespace KoiGuardian.Api.Services
 {
     public interface IParameterService
     {
-        Task<PondResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
+        Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken);
     }
 
@@ -29,9 +29,9 @@ namespace KoiGuardian.Api.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<PondResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken)
+        public async Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken)
         {
-            var response = new PondResponse();
+            var response = new ParameterResponse();
 
             try
             {
@@ -81,12 +81,10 @@ namespace KoiGuardian.Api.Services
                     var unitName = worksheet.Cells[row, 5].GetValue<string>();
 
                     // Ensure that Warning and Danger values are handled safely
-                    var warningUpper = worksheet.Cells[row, 6].GetValue<float?>();
-                    var warningLower = worksheet.Cells[row, 7].GetValue<float?>();
-                    var dangerUpper = worksheet.Cells[row, 8].GetValue<float?>();
-                    var dangerLower = worksheet.Cells[row, 9].GetValue<float?>();
-
-                    // Retrieve missing fields
+                    var warningUpper = worksheet.Cells[row, 6].GetValue<double?>();
+                    var warningLower = worksheet.Cells[row, 7].GetValue<double?>();
+                    var dangerUpper = worksheet.Cells[row, 8].GetValue<double?>();
+                    var dangerLower = worksheet.Cells[row, 9].GetValue<double?>();
                     var isStandard = worksheet.Cells[row, 10].GetValue<bool>(); // Assuming it's in column 10
                     var isActive = worksheet.Cells[row, 11].GetValue<bool>();  // Assuming it's in column 11
                     var conversionRate = worksheet.Cells[row, 12].GetValue<float>(); // Assuming it's in column 12
@@ -111,6 +109,7 @@ namespace KoiGuardian.Api.Services
                     {
                         parameter.Name = parameterName;
                         parameter.Type = parameterType.ToString();
+                        _parameterRepository.Update(parameter);
                     }
 
                     // Upsert Parameter Unit
@@ -148,6 +147,7 @@ namespace KoiGuardian.Api.Services
                         parameterUnit.MeasurementInstruction = measurementInstruction;
                         parameterUnit.AgeFrom = ageFrom;
                         parameterUnit.AgeTo = ageTo;
+                        _parameterUnitRepository.Update(parameterUnit);
                     }
                 }
 

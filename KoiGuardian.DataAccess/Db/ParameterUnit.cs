@@ -19,10 +19,10 @@ public class ParameterUnit
     public Guid ParameterID { get; set; }
     public Guid VarietyId { get; set; }
     public string UnitName { get; set; }
-    public float? WarningUpper { get; set; }
-    public float? WarningLowwer { get; set; }
-    public float? DangerLower { get; set; }
-    public float? DangerUpper { get; set; }
+    public double? WarningUpper { get; set; }
+    public double? WarningLowwer { get; set; }
+    public double? DangerLower { get; set; }
+    public double? DangerUpper { get; set; }
     public bool IsStandard { get; set; }
     public bool IsActive { get; set; }
     public float Convertionrate { get; set; }

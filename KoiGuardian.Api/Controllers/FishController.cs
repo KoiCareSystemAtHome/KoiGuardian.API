@@ -22,7 +22,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("{koiId}")]
-        public async Task<FishResponse> GetFishByIdAsync(int koiId, CancellationToken cancellationToken)
+        public async Task<FishResponse> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
         {
             var fish = await fishService.GetFishByIdAsync(koiId, cancellationToken);
             if (fish == null)

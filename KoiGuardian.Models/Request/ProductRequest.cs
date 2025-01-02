@@ -1,7 +1,9 @@
-﻿using System;
+﻿using KoiGuardian.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace KoiGuardian.Models.Request
@@ -26,7 +28,8 @@ namespace KoiGuardian.Models.Request
 
         public DateTime ExpiryDate { get; set; }
 
-        public string ParameterImpactment { get; set; }
+        [JsonConverter(typeof(ParameterImpactConverter))]
+        public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
 
         public Guid ShopId { get; set; }
         

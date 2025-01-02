@@ -1,4 +1,5 @@
-﻿using KoiGuardian.DataAccess.Db;
+﻿using KoiGuardian.DataAccess;
+using KoiGuardian.DataAccess.Db;
 
 public class Category
 {

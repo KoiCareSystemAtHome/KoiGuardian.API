@@ -66,9 +66,11 @@ namespace KoiGuardian.Api.Services
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
-                ParameterImpactment = productRequest.ParameterImpactment,
                 ShopId = productRequest.ShopId
             };
+
+            
+            product.SetParameterImpacts(productRequest.ParameterImpacts);
 
             _productRepository.Insert(product);
 

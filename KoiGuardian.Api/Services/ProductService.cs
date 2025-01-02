@@ -38,12 +38,11 @@ namespace KoiGuardian.Api.Services
             var productResponse = new ProductResponse();
 
             // Check if the product already exists
-            var existingProduct = await _productRepository
-                .GetAsync(x => x.ProductName == productRequest.ProductName, cancellationToken);
+            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == productRequest.ProductId, cancellationToken);
             if (existingProduct != null)
             {
                 productResponse.Status = "409";
-                productResponse.Message = "Product with the given name already exists.";
+                productResponse.Message = "Product with the given ID already exists.";
                 return productResponse;
             }
 
@@ -58,17 +57,20 @@ namespace KoiGuardian.Api.Services
 
             var product = new Product
             {
-                ProductId = Guid.NewGuid(),
+                ProductId = new Guid(),
                 ProductName = productRequest.ProductName,
                 Description = productRequest.Description,
                 Price = productRequest.Price,
                 StockQuantity = productRequest.StockQuantity,
-                CategoryId = productRequest.Category,
+                CategoryId = productRequest.CategoryId,
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
                 ShopId = productRequest.ShopId
             };
+
+
+            product.SetParameterImpacts(productRequest.ParameterImpacts);
 
             _productRepository.Insert(product);
 
@@ -115,7 +117,7 @@ namespace KoiGuardian.Api.Services
             existingProduct.Description = productRequest.Description;
             existingProduct.Price = productRequest.Price;
             existingProduct.StockQuantity = productRequest.StockQuantity;
-            existingProduct.CategoryId = productRequest.Category;
+            existingProduct.CategoryId = productRequest.CategoryId;
             existingProduct.Brand = productRequest.Brand;
             existingProduct.ManufactureDate = productRequest.ManufactureDate;
             existingProduct.ExpiryDate = productRequest.ExpiryDate;
@@ -140,8 +142,8 @@ namespace KoiGuardian.Api.Services
 
         public async Task<ProductResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
         {
+            
             var product = await _productRepository.GetAsync(x => x.ProductId == productId, cancellationToken);
-
             if (product == null)
             {
                 return new ProductResponse
@@ -150,13 +152,12 @@ namespace KoiGuardian.Api.Services
                     Message = "Product not found."
                 };
             }
-
             return new ProductResponse
             {
                 Status = "200",
-                Message = "Product retrieved successfully.",
-              
+                Message = "Product retrieved successfully."
             };
         }
     }
 }
+

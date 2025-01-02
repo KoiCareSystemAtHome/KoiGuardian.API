@@ -1,15 +1,17 @@
-﻿using System;
+﻿using KoiGuardian.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace KoiGuardian.Models.Request
 {
     public class ProductRequest
     {
-
         public Guid ProductId { get; set; }
+
         public string ProductName { get; set; }
 
         public string Description { get; set; }
@@ -18,7 +20,7 @@ namespace KoiGuardian.Models.Request
 
         public int StockQuantity { get; set; }
 
-        public Guid Category { get; set; }
+        public Guid CategoryId { get; set; }
 
         public string Brand { get; set; }
 
@@ -26,7 +28,10 @@ namespace KoiGuardian.Models.Request
 
         public DateTime ExpiryDate { get; set; }
 
+        [JsonConverter(typeof(ParameterImpactConverter))]
+        public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
+
         public Guid ShopId { get; set; }
-        
+
     }
 }

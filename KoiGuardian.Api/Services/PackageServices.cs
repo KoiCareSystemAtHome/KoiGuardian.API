@@ -23,7 +23,7 @@ namespace KoiGuardian.Api.Services
             {
                 package = new Package()
                 {
-                    PackageId = Guid.NewGuid(),
+                    PackageId = Guid.NewGuid().ToString(),
                     PackageTitle = packageRequest.PackageTitle,
                     PackageDescription = packageRequest.PackageDescription,
                     PackagePrice = packageRequest.PackagePrice,

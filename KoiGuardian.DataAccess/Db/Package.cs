@@ -8,7 +8,7 @@ namespace KoiGuardian.DataAccess.Db
 {
     public class Package
     {
-        public Guid PackageId { get; set; } 
+        public string PackageId { get; set; } = string.Empty;
 
         public string PackageTitle { get; set; } = string.Empty;
 

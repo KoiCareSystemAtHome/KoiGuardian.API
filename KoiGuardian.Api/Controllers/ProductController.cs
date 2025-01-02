@@ -22,7 +22,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("{productId}")]
-        public async Task<ProductResponse> GetProductById(Guid productId, CancellationToken cancellationToken)
+        public async Task<ProductResponse> GetProductById(string productId, CancellationToken cancellationToken)
         {
             return await services.GetProductByIdAsync(productId, cancellationToken);
         }

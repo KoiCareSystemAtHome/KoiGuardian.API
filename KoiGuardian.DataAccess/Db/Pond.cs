@@ -8,7 +8,7 @@ namespace KoiGuardian.DataAccess.Db
 {
     public class Pond
     {
-        public Guid PondID { get; set; }
+        public int PondID { get; set; }
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }

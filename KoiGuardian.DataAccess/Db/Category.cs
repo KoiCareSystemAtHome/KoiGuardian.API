@@ -1,3 +1,4 @@
+﻿using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 
 public class Category
@@ -7,7 +8,7 @@ public class Category
     public string Name { get; set; }
     public string Description { get; set; }
 
-    
+    // Navigation properties
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     public virtual Shop Shop { get; set; } = null!;
 }

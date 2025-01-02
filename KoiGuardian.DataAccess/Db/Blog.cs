@@ -1,4 +1,4 @@
-using KoiGuardian.DataAccess.Db;
+﻿using KoiGuardian.DataAccess.Db;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 

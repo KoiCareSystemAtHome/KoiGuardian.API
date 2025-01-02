@@ -11,7 +11,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
-        Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
+        Task<Fish> GetFishByIdAsync(int koiId, CancellationToken cancellationToken);
     }
 
     public class FishService : IFishService
@@ -63,7 +63,7 @@ namespace KoiGuardian.Api.Services
                 //Breeder = fishRequest.Breeder,
                 //Age = fishRequest.Age,
                 //Weight = fishRequest.Weight,
-                VarietyId = fishRequest.Variety,
+                Variety = fishRequest.Variety,
                 InPondSince = fishRequest.InPondSince,
                 Price = fishRequest.Price
             };
@@ -85,7 +85,7 @@ namespace KoiGuardian.Api.Services
             return fishResponse;
         }
 
-        public async Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
+        public async Task<Fish> GetFishByIdAsync(int koiId, CancellationToken cancellationToken)
         {
             return await _fishRepository.GetAsync(x => x.KoiID == koiId, cancellationToken);
         }
@@ -123,7 +123,7 @@ namespace KoiGuardian.Api.Services
             //existingFish.Breeder = fishRequest.Breeder;
             //existingFish.Age = fishRequest.Age;
             //existingFish.Weight = fishRequest.Weight;
-            existingFish.VarietyId = fishRequest.Variety;
+            existingFish.Variety = fishRequest.Variety;
             existingFish.InPondSince = fishRequest.InPondSince;
             existingFish.Price = fishRequest.Price;
 

@@ -65,8 +65,8 @@ IUnitOfWork<KoiGuardianDbContext> uow
                 TotalInactiveUser = u.Count(u => u.Status == UserStatus.InActived),
                 TotaNotVerifiedlUser = u.Count(u => u.Status == UserStatus.NotVerified),
                 TotalBannedUser = u.Count(u => u.Status == UserStatus.Banned),
-                PreniumUser = u.Count(u => u.PackageId !=  null), // TODO and package is valid
-                UnPreniumUser = u.Count(u => u.PackageId == null )
+                PreniumUser = u.Count(u => u.PackageId != string.Empty), // TODO and package is valid
+                UnPreniumUser = u.Count(u => u.PackageId == string.Empty)
             }).FirstAsync();
     }
 
@@ -111,7 +111,7 @@ IUnitOfWork<KoiGuardianDbContext> uow
 
         if (request.IsUsingPackage != null)
         {
-            result = result.Where(u => u.PackageId != null);
+            result = result.Where(u => !string.IsNullOrEmpty(u.PackageId));
         }
 
         if (request.PackageID != null)

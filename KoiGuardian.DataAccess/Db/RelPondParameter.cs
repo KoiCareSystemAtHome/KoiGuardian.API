@@ -11,9 +11,9 @@ namespace KoiGuardian.DataAccess.Db
         public Guid RelPondParameterId { get; set; }
 
 
-        public Guid PondId { get; set; }
+        public int PondId { get; set; }
 
-        public Guid ParameterUnitID { get; set; }
+        public int ParameterUnitID { get; set; }
 
         public DateTime CalculatedDate { get; set; }
 

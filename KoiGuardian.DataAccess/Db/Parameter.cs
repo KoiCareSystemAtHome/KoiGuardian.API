@@ -5,7 +5,7 @@ namespace KoiGuardian.DataAccess.Db;
 public class Parameter
 {
     [Key]
-    public Guid ParameterID {  get; set; }
+    public int ParameterID {  get; set; }
 
     public string Name { get; set; }
 

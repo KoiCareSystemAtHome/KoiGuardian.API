@@ -11,9 +11,9 @@ public class RelKoiParameter
 {
     [Key]
     public Guid RelKoiParameterID {  get; set; }
-    public Guid KoiId {  get; set; }
+    public int KoiId {  get; set; }
 
-    public Guid ParameterUnitID { get; set; }
+    public int ParameterUnitID { get; set; }
 
     public DateTime CalculatedDate { get; set; }
 

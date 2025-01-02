@@ -5,7 +5,7 @@ namespace KoiGuardian.DataAccess.Db;
 
 public class User : IdentityUser
 {
-    public Guid? PackageId { get; set; } 
+    public string PackageId { get; set; } = string.Empty;
 
     public UserStatus Status { get; set; }
 

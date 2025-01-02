@@ -11,7 +11,7 @@ public class Parameter
 
     public DateTime CreatedAt { get; set; }
 
-    public ParameterType Type { get; set; }
+    public string Type { get; set; }
 
     public IEnumerable<ParameterUnit>? ParameterUnits { get; set; }
 }

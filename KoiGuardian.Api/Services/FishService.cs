@@ -18,16 +18,19 @@ namespace KoiGuardian.Api.Services
     {
         private readonly IRepository<Fish> _fishRepository;
         private readonly IRepository<Pond> _pondRepository;
+        private readonly IRepository<Variety> _varietyRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public FishService(
             IRepository<Fish> fishRepository,
             IRepository<Pond> pondRepository,
-            IUnitOfWork<KoiGuardianDbContext> unitOfWork)
+            IUnitOfWork<KoiGuardianDbContext> unitOfWork,
+            IRepository<Variety> varietyRepository)
         {
             _fishRepository = fishRepository;
             _pondRepository = pondRepository;
             _unitOfWork = unitOfWork;
+            _varietyRepository = varietyRepository;
         }
 
         public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
@@ -52,18 +55,28 @@ namespace KoiGuardian.Api.Services
                 return fishResponse;
             }
 
+            var variety = await _varietyRepository
+                .GetAsync(x => x.VarietyName.ToLower() == fishRequest.VarietyName.ToLower(), cancellationToken);
+            if (variety == null)
+            {
+                variety = new Variety() { 
+                    VarietyId = Guid.NewGuid(),
+                    VarietyName = fishRequest.VarietyName,
+                    Description = "",
+                 };
+                _varietyRepository.Insert(variety);
+            }
+
             var fish = new Fish
             {
                 PondID = fishRequest.PondID,
                 Name = fishRequest.Name,
                 Image = fishRequest.Image,
-                //Physique = fishRequest.Physique,
-                //Length = fishRequest.Length,
-                //Sex = fishRequest.Sex,
-                //Breeder = fishRequest.Breeder,
-                //Age = fishRequest.Age,
-                //Weight = fishRequest.Weight,
-                VarietyId = fishRequest.Variety,
+                Physique = fishRequest.Physique,
+                Sex = fishRequest.Sex,
+                Breeder = fishRequest.Breeder,
+                Age = fishRequest.Age,
+                VarietyId = variety.VarietyId,
                 InPondSince = fishRequest.InPondSince,
                 Price = fishRequest.Price
             };
@@ -114,16 +127,27 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
+            var variety = await _varietyRepository
+                .GetAsync(x => x.VarietyName.ToLower() == fishRequest.VarietyName.ToLower(), cancellationToken);
+            if (variety == null)
+            {
+                variety = new Variety()
+                {
+                    VarietyId = Guid.NewGuid(),
+                    VarietyName = fishRequest.VarietyName,
+                    Description = "",
+                };
+                _varietyRepository.Insert(variety);
+            }
+
             existingFish.PondID = fishRequest.PondID;
             existingFish.Name = fishRequest.Name;
             existingFish.Image = fishRequest.Image;
-            //existingFish.Physique = fishRequest.Physique;
-            //existingFish.Length = fishRequest.Length;
-            //existingFish.Sex = fishRequest.Sex;
-            //existingFish.Breeder = fishRequest.Breeder;
-            //existingFish.Age = fishRequest.Age;
-            //existingFish.Weight = fishRequest.Weight;
-            existingFish.VarietyId = fishRequest.Variety;
+            existingFish.Physique = fishRequest.Physique;
+            existingFish.Sex = fishRequest.Sex;
+            existingFish.Breeder = fishRequest.Breeder;
+            existingFish.Age = fishRequest.Age;
+            existingFish.VarietyId = variety.VarietyId;
             existingFish.InPondSince = fishRequest.InPondSince;
             existingFish.Price = fishRequest.Price;
 

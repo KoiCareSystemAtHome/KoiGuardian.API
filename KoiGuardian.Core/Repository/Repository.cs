@@ -101,6 +101,7 @@ public class BaseRepository<TEntity>(DbContext dbContext) : IBaseRepository<TEnt
     public void Insert(TEntity entity)
     {
         DbSet.Add(entity);
+        dbContext.SaveChanges();
     }
     public void Update(TEntity entity)
     {

@@ -39,5 +39,20 @@ namespace KoiGuardian.Api.Controllers
         {
             return await _services.GetBlogByIdAsync(blogId, cancellationToken);
         }
+
+        [HttpGet("blogs/pending")]
+        public async Task<IActionResult> GetPendingBlogs(CancellationToken cancellationToken)
+        {
+            var blogs = await _services.GetAllBlogsIsApprovedFalseAsync(cancellationToken);
+            return Ok(blogs);
+        }
+
+        [HttpGet("blogs/approved")]
+        public async Task<IActionResult> GetApprovedBlogs(CancellationToken cancellationToken)
+        {
+            var blogs = await _services.GetAllBlogsIsApprovedTrueAsync(cancellationToken);
+            return Ok(blogs);
+        }
+
     }
 }

@@ -57,15 +57,16 @@ namespace KoiGuardian.Api.Services
 
             var product = new Product
             {
-                ProductId = productRequest.ProductId,
+                ProductId = new Guid(),
                 ProductName = productRequest.ProductName,
                 Description = productRequest.Description,
                 Price = productRequest.Price,
                 StockQuantity = productRequest.StockQuantity,
-                Category = productRequest.Category,
+                CategoryId = productRequest.CategoryId,
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
+                ParameterImpactment = productRequest.ParameterImpactment,
                 ShopId = productRequest.ShopId
             };
 
@@ -114,7 +115,7 @@ namespace KoiGuardian.Api.Services
             existingProduct.Description = productRequest.Description;
             existingProduct.Price = productRequest.Price;
             existingProduct.StockQuantity = productRequest.StockQuantity;
-            existingProduct.Category = productRequest.Category;
+            existingProduct.CategoryId = productRequest.CategoryId;
             existingProduct.Brand = productRequest.Brand;
             existingProduct.ManufactureDate = productRequest.ManufactureDate;
             existingProduct.ExpiryDate = productRequest.ExpiryDate;
@@ -139,8 +140,8 @@ namespace KoiGuardian.Api.Services
 
         public async Task<ProductResponse> GetProductByIdAsync(string productId, CancellationToken cancellationToken)
         {
-            var product = await _productRepository.GetAsync(x => x.ProductId == productId, cancellationToken);
-
+            var productGuid = Guid.Parse(productId); // or Guid.TryParse for safer conversion
+            var product = await _productRepository.GetAsync(x => x.ProductId == productGuid, cancellationToken);
             if (product == null)
             {
                 return new ProductResponse
@@ -149,12 +150,10 @@ namespace KoiGuardian.Api.Services
                     Message = "Product not found."
                 };
             }
-
             return new ProductResponse
             {
                 Status = "200",
-                Message = "Product retrieved successfully.",
-              
+                Message = "Product retrieved successfully."
             };
         }
     }

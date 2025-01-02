@@ -18,6 +18,11 @@ namespace KoiGuardian.Api.Services
         Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
         Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
         Task<Blog> GetBlogByIdAsync(string blogId, CancellationToken cancellationToken);
+        Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
+        Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken);
+
+        
+
     }
 
     public class BlogService : IBlogService
@@ -41,7 +46,9 @@ namespace KoiGuardian.Api.Services
 
         public async Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
         {
+
             var blogResponse = new BlogResponse();
+
 
             // Check if ShopId exists
             var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == blogRequest.ShopId, cancellationToken);
@@ -56,16 +63,18 @@ namespace KoiGuardian.Api.Services
 
             var blog = new Blog
             {
-                BlogId = Guid.NewGuid().ToString(),
+                BlogId = Guid.NewGuid(),
                 Title = blogRequest.Title,
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
                 Tag = blogRequest.Tag,
-                IsApproved = blogRequest.IsApproved,
+                IsApproved = false,
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
                 ReportedDate = blogRequest.ReportedDate,
-                View = 0
+                View = 0,
+                ReportedBy = blogRequest.ReportedBy
+              
             };
 
             _blogRepository.Insert(blog);
@@ -76,7 +85,7 @@ namespace KoiGuardian.Api.Services
                 {
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid().ToString(),
+                        BPId = Guid.NewGuid(),
                         BlogId = blog.BlogId,
                         ProductId = productId
                     };
@@ -105,7 +114,8 @@ namespace KoiGuardian.Api.Services
 
         public async Task<Blog> GetBlogByIdAsync(string blogId, CancellationToken cancellationToken)
         {
-            return await _blogRepository.GetAsync(x => x.BlogId == blogId, cancellationToken);
+            var blogGuid = Guid.Parse(blogId);
+            return await _blogRepository.GetAsync(x => x.BlogId == blogGuid, cancellationToken);
         }
 
         public async Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
@@ -121,6 +131,7 @@ namespace KoiGuardian.Api.Services
             existingBlog.Type = blogRequest.Type;
             existingBlog.ShopId = blogRequest.ShopId;
             existingBlog.ReportedDate = blogRequest.ReportedDate;
+            existingBlog.ReportedBy =blogRequest.ReportedBy;
 
             _blogRepository.Update(existingBlog);
 
@@ -137,7 +148,7 @@ namespace KoiGuardian.Api.Services
                 {
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid().ToString(),
+                        BPId = Guid.NewGuid(),
                         BlogId = existingBlog.BlogId,
                         ProductId = productId
                     };
@@ -163,8 +174,29 @@ namespace KoiGuardian.Api.Services
             return blogResponse;
         }
 
+        public async Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken)
+        {
+            return await _blogRepository.FindAsync(
+                b => b.IsApproved == false,
+                cancellationToken
+            );
+        }
+
+        public async Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken)
+        {
+            return await _blogRepository.FindAsync(
+                b => b.IsApproved == true,
+                cancellationToken
+            );
+        }
+
+       
+
+
 
     }
 
-  
+
+
+
 }

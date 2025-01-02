@@ -5,7 +5,7 @@ namespace KoiGuardian.DataAccess.Db
     public class Shop
     {
         
-        public string ShopId { get; set; }
+        public Guid ShopId { get; set; }
         public string ShopName { get; set; }
         public decimal ShopRate { get; set; }
         public string ShopDescription { get; set; }
@@ -13,8 +13,8 @@ namespace KoiGuardian.DataAccess.Db
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
 
+        public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
-        
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
         

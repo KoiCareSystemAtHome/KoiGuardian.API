@@ -101,19 +101,53 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
 
         // Product Configuration
+        
         modelBuilder.Entity<Product>(entity =>
         {
             entity.ToTable("Products");
             entity.HasKey(p => p.ProductId);
-            entity.Property(p => p.ProductId).IsRequired().HasMaxLength(50);
-            entity.Property(p => p.ProductName).IsRequired().HasMaxLength(200);
-            entity.Property(p => p.Description).HasMaxLength(1000);
-            entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
-            entity.Property(p => p.StockQuantity).IsRequired();
-            entity.Property(p => p.Category).HasMaxLength(100);
-            entity.Property(p => p.Brand).HasMaxLength(100);
-            entity.Property(p => p.ManufactureDate).HasColumnType("datetime");
-            entity.Property(p => p.ExpiryDate).HasColumnType("datetime");
+
+            // Property configurations
+            entity.Property(p => p.ProductId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier")
+                .ValueGeneratedOnAdd();
+            entity.Property(p => p.ProductName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(p => p.Description)
+                .HasMaxLength(1000);
+            entity.Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
+            entity.Property(p => p.StockQuantity)
+                .IsRequired();
+            entity.Property(p => p.Brand)
+                .HasMaxLength(100);
+            entity.Property(p => p.ParameterImpactment)
+                .HasMaxLength(500);
+            entity.Property(p => p.ManufactureDate)
+                .HasColumnType("datetime");
+            entity.Property(p => p.ExpiryDate)
+                .HasColumnType("datetime");
+            entity.Property(p => p.ShopId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+            entity.Property(p => p.CategoryId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+
+            // Relationships
+            entity.HasOne(p => p.Shop)
+                .WithMany(s => s.Products)
+                .HasForeignKey(p => p.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.Category)
+                .WithMany(p => p.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            
         });
 
         modelBuilder.Entity<BlogProduct>(entity =>
@@ -204,5 +238,43 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
                       .WithMany(u => u.ParameterUnits)
                       .HasForeignKey(u => u.ParameterID);
         });
+
+        // Category Configuration
+        // Category Configuration
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("Category");
+            entity.HasKey(c => c.CategoryId);
+
+            // Property configurations
+            entity.Property(c => c.CategoryId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(c => c.Description)
+                .HasMaxLength(500);
+
+            entity.Property(c => c.ShopId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+
+            // Relationship with Products
+            entity.HasMany(c => c.Products)
+                .WithOne(p => p.Category)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship with Shop
+            entity.HasOne(c => c.Shop)
+                .WithMany(s => s.Categories)
+                .HasForeignKey(c => c.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
     }
 }

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -21,6 +22,15 @@ namespace KoiGuardian.Api.Services
         Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken);
 
+        Task<IList<BlogDto>> GetAllBlogsAsync(CancellationToken cancellationToken);
+
+        Task<IList<BlogDto>> GetFilteredBlogsAsync(
+            DateTime? createDate,
+            string searchTitle,
+            CancellationToken cancellationToken);
+
+         Task<BlogResponse> IncrementBlogViewAsync(Guid blogId, CancellationToken cancellationToken);
+
 
 
     }
@@ -31,17 +41,20 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<BlogProduct> _blogProductRepository;
         private readonly IRepository<Shop> _shopRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
+        
 
         public BlogService(
             IRepository<Blog> blogRepository,
             IRepository<BlogProduct> blogProductRepository,
             IRepository<Shop> shopRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
+
         {
             _blogRepository = blogRepository;
             _blogProductRepository = blogProductRepository;
             _shopRepository = shopRepository;
             _unitOfWork = unitOfWork;
+
         }
 
         public async Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
@@ -63,7 +76,7 @@ namespace KoiGuardian.Api.Services
 
             var blog = new Blog
             {
-                BlogId = Guid.NewGuid(),
+                
                 Title = blogRequest.Title,
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
@@ -114,8 +127,10 @@ namespace KoiGuardian.Api.Services
 
         public async Task<Blog> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken)
         {
-            
-            return await _blogRepository.GetAsync(x => x.BlogId == blogId, cancellationToken);
+            return await _blogRepository
+                .GetQueryable()
+                .Include(b => b.BlogProducts) 
+                .FirstOrDefaultAsync(b => b.BlogId == blogId, cancellationToken);
         }
 
         public async Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
@@ -132,6 +147,7 @@ namespace KoiGuardian.Api.Services
             existingBlog.ShopId = blogRequest.ShopId;
             existingBlog.ReportedDate = blogRequest.ReportedDate;
             existingBlog.ReportedBy = blogRequest.ReportedBy;
+           
 
             _blogRepository.Update(existingBlog);
 
@@ -190,6 +206,140 @@ namespace KoiGuardian.Api.Services
             );
         }
 
+        public async Task<IList<BlogDto>> GetAllBlogsAsync(CancellationToken cancellationToken)
+        {
+            var blogs = await _blogRepository.GetQueryable()
+                .Include(b => b.BlogProducts)
+                    .ThenInclude(bp => bp.Product)
+                .Include(b => b.Shop)
+                .ToListAsync(cancellationToken);
+
+            return blogs.Select(blog => new BlogDto
+            {
+                BlogId = blog.BlogId,
+                Title = blog.Title,
+                Content = blog.Content,
+                Images = blog.Images,
+                Tag = blog.Tag,
+                IsApproved = blog.IsApproved,
+                Type = blog.Type,
+                ReportedBy = blog.ReportedBy,
+                ReportedDate = blog.ReportedDate,
+                View = blog.View,
+                ShopId = blog.ShopId,
+                Shop = blog.Shop != null ? new ShopBasicDto
+                {
+                    ShopId = blog.Shop.ShopId,
+                    Name = blog.Shop.ShopName,
+                    Description = blog.Shop.ShopDescription,
+                   
+                } : null,
+                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
+                {
+                    ProductId = bp.Product.ProductId,
+                    Name = bp.Product.ProductName,
+                    Price = bp.Product.Price,
+                   
+                }).ToList() ?? new List<ProductBasicDto>()
+            }).ToList();
+        }
+
+        public async Task<IList<BlogDto>> GetFilteredBlogsAsync(
+            DateTime? createDate,
+            string searchTitle,
+            CancellationToken cancellationToken)
+        {
+            var query = _blogRepository.GetQueryable()
+                .Include(b => b.BlogProducts)
+                    .ThenInclude(bp => bp.Product)
+                .Include(b => b.Shop)
+                .AsQueryable();
+
+            // Apply date filter if provided
+           /* if (createDate.HasValue)
+            {
+                query = query.Where(b => b.ReportedDate >= startDate.Value);
+            }*/
+
+           
+
+            // Apply title search if provided
+            if (!string.IsNullOrWhiteSpace(searchTitle))
+            {
+                searchTitle = searchTitle.ToLower();
+                query = query.Where(b => b.Title.ToLower().Contains(searchTitle));
+            }
+
+            var blogs = await query.ToListAsync(cancellationToken);
+
+            return blogs.Select(blog => new BlogDto
+            {
+                BlogId = blog.BlogId,
+                Title = blog.Title,
+                Content = blog.Content,
+                Images = blog.Images,
+                Tag = blog.Tag,
+                IsApproved = blog.IsApproved,
+                Type = blog.Type,
+                ReportedBy = blog.ReportedBy,
+                ReportedDate = blog.ReportedDate,
+                View = blog.View,
+                ShopId = blog.ShopId,
+                Shop = blog.Shop != null ? new ShopBasicDto
+                {
+                    ShopId = blog.Shop.ShopId,
+                    Name = blog.Shop.ShopName,
+                    Description = blog.Shop.ShopDescription,
+                } : null,
+                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
+                {
+                    ProductId = bp.Product.ProductId,
+                    Name = bp.Product.ProductName,
+                    Price = bp.Product.Price,
+                }).ToList() ?? new List<ProductBasicDto>()
+            }).ToList();
+        }
+
+        public async Task<BlogResponse> IncrementBlogViewAsync(Guid blogId, CancellationToken cancellationToken)
+        {
+            var blogResponse = new BlogResponse();
+
+            try
+            {
+                var blog = await _blogRepository.GetAsync(x => x.BlogId == blogId, cancellationToken);
+
+                if (blog == null)
+                {
+                    return new BlogResponse
+                    {
+                        Status = "404",
+                        Message = "Blog not found."
+                    };
+                }
+
+                // Increment the view count
+                blog.View += 1;
+
+                // Update the blog in the repository
+                _blogRepository.Update(blog);
+
+                // Save changes
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                blogResponse.Status = "200";
+                blogResponse.Message = "Blog view count incremented successfully.";
+            }
+            catch (Exception ex)
+            {
+                return new BlogResponse
+                {
+                    Status = "500",
+                    Message = "Error incrementing blog view count: " + ex.Message
+                };
+            }
+
+            return blogResponse;
+        }
 
 
 

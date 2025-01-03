@@ -39,5 +39,62 @@ namespace KoiGuardian.Api.Controllers
         {
             return await _services.GetBlogByIdAsync(blogId, cancellationToken);
         }
+
+        // Endpoint for getting all approved blogs
+        [HttpGet("approved-blogs")]
+        public async Task<IList<Blog>> GetAllApprovedBlogs(CancellationToken cancellationToken)
+        {
+            return await _services.GetAllBlogsIsApprovedTrueAsync(cancellationToken);
+        }
+
+        // Endpoint for getting all unapproved blogs
+        [HttpGet("unapproved-blogs")]
+        public async Task<IList<Blog>> GetAllUnapprovedBlogs(CancellationToken cancellationToken)
+        {
+            return await _services.GetAllBlogsIsApprovedFalseAsync(cancellationToken);
+        }
+
+        // Endpoint for getting all blogs
+        [HttpGet("all-blogs")]
+        public async Task<IList<BlogDto>> GetAllBlogsAsync(CancellationToken cancellationToken)
+        {
+            return await _services.GetAllBlogsAsync(cancellationToken);
+        }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<IList<BlogDto>>> SearchBlogs(
+    [FromQuery] DateTime? startDate,
+    [FromQuery] string searchTitle,
+    CancellationToken cancellationToken)
+        {
+            var results = await _services.GetFilteredBlogsAsync(
+                startDate,
+
+                searchTitle,
+                cancellationToken);
+
+            if (!results.Any())
+            {
+                return Ok(new { Message = "No blogs found matching the criteria." });
+            }
+
+            return Ok(results);
+        }
+
+        [HttpPost("blogs/{blogId}/view")]
+        public async Task<IActionResult> IncrementBlogView(Guid blogId, CancellationToken cancellationToken)
+        {
+            var response = await _services.IncrementBlogViewAsync(blogId, cancellationToken);
+
+            if (response.Status == "404")
+                return NotFound(response);
+
+            if (response.Status == "500")
+                return StatusCode(500, response);
+
+            return Ok(response);
+        }
+
     }
+
 }

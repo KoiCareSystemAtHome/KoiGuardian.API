@@ -10,6 +10,11 @@ namespace KoiGuardian.Api.Controllers
     [ApiController]
     public class PondController(IPondServices services) : ControllerBase
     {
+        [HttpPut("pond-required-param")]
+        public async Task<List<PondRerquireParam>> RequireParam( CancellationToken cancellationToken)
+        {
+            return await services.RequireParam( cancellationToken);
+        }
         [HttpPost("create-pond")]
         public async Task<PondResponse> CreatePond([FromBody] CreatePondRequest createPond, CancellationToken cancellationToken)
         {

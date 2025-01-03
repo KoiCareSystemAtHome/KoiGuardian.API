@@ -5,6 +5,7 @@ using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Azure.Core;
 using Azure;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -12,26 +13,47 @@ namespace KoiGuardian.Api.Services
     {
         Task<PondResponse> CreatePond(CreatePondRequest Request, CancellationToken cancellation);
         Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
+        Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
     }
 
     public class PondServices(
         IRepository<Pond> pondRepository, 
+        IRepository<ParameterUnit> parameterUnitRepository,
+        IRepository<RelPondParameter> relPondparameterRepository,
         KoiGuardianDbContext _dbContext, 
         IRepository<User> userRepository) : IPondServices
     {
         public async Task<PondResponse> CreatePond(CreatePondRequest request, CancellationToken cancellation)
         {
-            var response = new PondResponse();
-            var pond = new Pond
-            {
-                PondID = Guid.NewGuid(),
-                OwnerId = request.OwnerId,
-                CreateDate = request.CreateDate,
-                Name = request.Name
-            };
+            var requirementsParam = await RequireParam(cancellation);
 
+            var response = new PondResponse();
             try
             {
+                var pond = new Pond
+                {
+                    PondID = Guid.NewGuid(),
+                    OwnerId = request.OwnerId,
+                    CreateDate = request.CreateDate,
+                    Name = request.Name
+                };
+
+                var validValues = request.RequirementPondParam.Where ( u=>
+                    requirementsParam.Select( u => u.ParameterUntiID) .Contains(u.ParamterUnitID)
+                    );
+
+                foreach ( var validValue in validValues)
+                {
+                    relPondparameterRepository.Insert(new RelPondParameter()
+                    {
+                        RelPondParameterId = Guid.NewGuid(),
+                        PondId = pond.PondID,
+                        ParameterUnitID = validValue.ParamterUnitID,
+                        CalculatedDate = DateTime.Now,
+                        Value = validValue.Value
+                    });
+                }
+
                 pondRepository.Insert(pond);
                 await _dbContext.SaveChangesAsync(cancellation);
 
@@ -45,6 +67,26 @@ namespace KoiGuardian.Api.Services
             }
 
             return response;
+        }
+
+        public async Task<List<PondRerquireParam>> RequireParam( CancellationToken cancellation)
+        {
+            return (await parameterUnitRepository.FindAsync(
+                u => u.Parameter.Type == ParameterType.Pond
+                    &&  u.IsActive && u.IsStandard && u.ValidUnitl == null,
+                u => u.Include(p => p.Parameter),
+                cancellationToken: cancellation))
+                .Select(u => new PondRerquireParam()
+                {
+                    ParameterUntiID = u.ParameterUnitID,
+                    ParameterName = u.Parameter.Name,
+                    UnitName = u.UnitName,
+                    WarningLowwer = u.WarningLowwer,
+                    WarningUpper = u.WarningUpper,
+                    DangerLower = u.DangerLower,
+                    DangerUpper = u.DangerUpper,
+                    MeasurementInstruction = u.MeasurementInstruction,
+                }).ToList();
         }
 
         public async Task<PondResponse> UpdatePond(UpdatePondRequest request, CancellationToken cancellation)

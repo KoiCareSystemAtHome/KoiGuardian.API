@@ -12,7 +12,18 @@ namespace KoiGuardian.Models.Request
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
+
+        public required List <PondParam> RequirementPondParam {  get; set; } 
+
     }
+    public class PondParam
+    {
+        //public Guid PondID { get; set; }
+        public Guid ParamterUnitID { get; set; }    
+        public float Value { get; set; }
+    }
+
+
 
     public class UpdatePondRequest
     {

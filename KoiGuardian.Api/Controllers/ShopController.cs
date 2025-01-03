@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Api.Services;
+using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +34,7 @@ namespace KoiGuardian.Api.Controllers
 
         [HttpGet]
         [Route("{shopId}")]
-        public async Task<IActionResult> GetShop(string shopId, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetShopById(Guid shopId, CancellationToken cancellationToken)
         {
             var response = await _shopService.GetShop(shopId, cancellationToken);
 
@@ -46,9 +47,15 @@ namespace KoiGuardian.Api.Controllers
             return BadRequest(response);
         }
 
+        [HttpGet("all-shop")]
+        public async Task<IList<Shop>> GetAllCategoriesAsync(CancellationToken cancellationToken)
+        {
+            return await _shopService.GetAllShopAsync(cancellationToken);
+        }
+
         [HttpDelete]
         [Route("{shopId}")]
-        public async Task<IActionResult> DeleteShop(string shopId, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteShop(Guid shopId, CancellationToken cancellationToken)
         {
             var response = await _shopService.DeleteShop(shopId, cancellationToken);
 

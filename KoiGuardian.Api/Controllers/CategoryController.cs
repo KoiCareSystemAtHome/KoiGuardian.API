@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Api.Services;
+using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -34,21 +35,19 @@ namespace KoiGuardian.Api.Controllers
             return await _services.UpdateCategoryAsync(updateCategory, cancellationToken);
         }
 
-
         [HttpGet("{categoryId}")]
         public async Task<IActionResult> GetCategoryById(Guid categoryId, CancellationToken cancellationToken)
         {
-            var response = await _services.GetCategoryByIdAsync(categoryId, cancellationToken);
-            return StatusCode(int.Parse(response.Status), response);
+            var category = await _services.GetCategoryByIdAsync(categoryId, cancellationToken);
+
+            return Ok(category);
         }
 
 
-        /*  [HttpGet("categories")]
-          public async Task<IActionResult> GetAllCategories(CancellationToken cancellationToken)
-          {
-
-              var categories = await _services.GetAllCategoriesAsync(cancellationToken);
-              return Ok(categories);
-          }*/
+        [HttpGet("all-categories")]
+        public async Task<IList<Category>> GetAllCategoriesAsync(CancellationToken cancellationToken)
+        {
+            return await _services.GetAllCategoriesAsync(cancellationToken);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.DataAccess.Db;
+using System.Text.Json.Serialization;
 
 public class Blog
 {
@@ -15,5 +16,7 @@ public class Blog
     public string ReportedBy { get; set; }
 
     public virtual Shop Shop { get; set; }
+
+   
     public virtual ICollection<BlogProduct> BlogProducts { get; set; } = new List<BlogProduct>();
 }

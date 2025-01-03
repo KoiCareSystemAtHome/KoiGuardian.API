@@ -4,6 +4,7 @@ using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +15,9 @@ namespace KoiGuardian.Api.Services
     {
         Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
-        Task<ProductResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
+        Task<Product> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
+
+        Task<IEnumerable<Product>> SearchProductsAsync(string productName, string brand, string parameterImpact, CancellationToken cancellationToken);
     }
 
     public class ProductService : IProductService
@@ -140,23 +143,43 @@ namespace KoiGuardian.Api.Services
             return productResponse;
         }
 
-        public async Task<ProductResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
+        public async Task<Product> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
         {
-            
-            var product = await _productRepository.GetAsync(x => x.ProductId == productId, cancellationToken);
-            if (product == null)
+
+            return await _productRepository
+            .GetQueryable()
+            .FirstOrDefaultAsync(b => b.ProductId == productId, cancellationToken);
+        }
+
+        public async Task<IEnumerable<Product>> SearchProductsAsync(
+        string productName,
+        string brand,
+        string parameterImpact,
+        CancellationToken cancellationToken)
+        {
+            var query = _productRepository.GetQueryable();
+
+            // Apply filters if provided
+            if (!string.IsNullOrWhiteSpace(productName))
             {
-                return new ProductResponse
-                {
-                    Status = "404",
-                    Message = "Product not found."
-                };
+                query = query.Where(p => p.ProductName.Contains(productName));
             }
-            return new ProductResponse
+
+            if (!string.IsNullOrWhiteSpace(brand))
             {
-                Status = "200",
-                Message = "Product retrieved successfully."
-            };
+                query = query.Where(p => p.Brand.Contains(brand));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameterImpact))
+            {
+                
+                query = query.Where(p => p.ParameterImpactment.Contains(parameterImpact));
+            }
+
+            // Execute query and return results
+            return await query
+                .AsNoTracking()  // For better performance since we're just reading
+                .ToListAsync(cancellationToken);
         }
     }
 }

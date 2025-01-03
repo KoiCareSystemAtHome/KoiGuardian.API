@@ -16,4 +16,6 @@ namespace KoiGuardian.Models.Request
 
         public Guid ShopId { get; set; }
     }
+
+  
 }

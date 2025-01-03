@@ -4,7 +4,10 @@ using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +17,8 @@ namespace KoiGuardian.Api.Services
     {
         Task<CategoryResponse> CreateCategoryAsync(CategoryRequest categoryRequest, CancellationToken cancellationToken);
         Task<CategoryResponse> UpdateCategoryAsync(CategoryRequest categoryRequest, CancellationToken cancellationToken);
-        Task<CategoryResponse> GetCategoryByIdAsync(Guid categoryId, CancellationToken cancellationToken);
+        Task<CategoryRequest> GetCategoryByIdAsync(Guid categoryId, CancellationToken cancellationToken);
+        Task<IList<Category>> GetAllCategoriesAsync(CancellationToken cancellationToken);
     }
 
     public class CategoryService : ICategoryService
@@ -49,7 +53,6 @@ namespace KoiGuardian.Api.Services
                 Name = categoryRequest.Name,
                 Description = categoryRequest.Description,
                 ShopId = categoryRequest.ShopId
-
             };
 
             _categoryRepository.Insert(category);
@@ -59,6 +62,7 @@ namespace KoiGuardian.Api.Services
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 categoryResponse.Status = "201";
                 categoryResponse.Message = "Category created successfully.";
+                
             }
             catch (Exception ex)
             {
@@ -91,6 +95,7 @@ namespace KoiGuardian.Api.Services
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 categoryResponse.Status = "200";
                 categoryResponse.Message = "Category updated successfully.";
+                
             }
             catch (Exception ex)
             {
@@ -101,24 +106,36 @@ namespace KoiGuardian.Api.Services
             return categoryResponse;
         }
 
-        public async Task<CategoryResponse> GetCategoryByIdAsync(Guid categoryId, CancellationToken cancellationToken)
+        public async Task<CategoryRequest> GetCategoryByIdAsync(Guid categoryId, CancellationToken cancellationToken)
         {
-            var category = await _categoryRepository.GetAsync(x => x.CategoryId == categoryId, cancellationToken);
+            var category = await _categoryRepository
+                .GetQueryable()
+                .Include(p => p.Products)
+                .Include(s => s.Shop)
+                .FirstOrDefaultAsync(b => b.CategoryId == categoryId, cancellationToken);
+
             if (category == null)
             {
-                return new CategoryResponse
-                {
-                    Status = "404",
-                    Message = "Category not found."
-                };
+                return null; // or throw an exception depending on your business logic
             }
 
-            return new CategoryResponse
+            // Mapping Category entity to CategoryRequest model
+            var categoryRequest = new CategoryRequest
             {
-                Status = "200",
-                Message = "Category retrieved successfully.",
-
+                CategoryId = category.CategoryId,
+                Name = category.Name,
+                Description = category.Description,
+                ShopId = category.Shop.ShopId
             };
+
+            return categoryRequest;
+        }
+
+
+
+        public async Task<IList<Category>> GetAllCategoriesAsync(CancellationToken cancellationToken)
+        {
+            return await _categoryRepository.GetQueryable().ToListAsync(cancellationToken);
         }
     }
 }

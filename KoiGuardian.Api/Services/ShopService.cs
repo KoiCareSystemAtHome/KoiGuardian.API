@@ -4,14 +4,18 @@ using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
     public interface IShopService
     {
         Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation);
-        Task<ShopResponse> GetShop(string shopId, CancellationToken cancellation);
-        Task<ShopResponse> DeleteShop(string shopId, CancellationToken cancellation);
+        Task<ShopResponse> GetShop(Guid shopId, CancellationToken cancellation);
+        Task<ShopResponse> DeleteShop(Guid shopId, CancellationToken cancellation);
+        Task<Shop> GetShopByIdAsync(Guid shopId, CancellationToken cancellationToken);
+
+        Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken);
     }
 
     public class ShopService : IShopService
@@ -67,7 +71,7 @@ namespace KoiGuardian.Api.Services
             return shopResponse;
         }
 
-        public async Task<ShopResponse> GetShop(string shopId, CancellationToken cancellation)
+        public async Task<ShopResponse> GetShop(Guid shopId, CancellationToken cancellation)
         {
             var shopResponse = new ShopResponse();
             var shop = await _shopRepository.GetAsync(x => x.ShopId.Equals(shopId), cancellation);
@@ -95,7 +99,7 @@ namespace KoiGuardian.Api.Services
             return shopResponse;
         }
 
-        public async Task<ShopResponse> DeleteShop(string shopId, CancellationToken cancellation)
+        public async Task<ShopResponse> DeleteShop(Guid shopId, CancellationToken cancellation)
         {
             var shopResponse = new ShopResponse();
             var shop = await _shopRepository.GetAsync(x => x.ShopId.Equals(shopId), cancellation);
@@ -124,6 +128,18 @@ namespace KoiGuardian.Api.Services
             }
 
             return shopResponse;
+        }
+
+        public async Task<Shop> GetShopByIdAsync(Guid shopId, CancellationToken cancellationToken)
+        {
+            return await _shopRepository
+               .GetQueryable()
+               .FirstOrDefaultAsync(b => b.ShopId == shopId, cancellationToken);
+        }
+
+        public async Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken)
+        {
+            return await _shopRepository.GetQueryable().ToListAsync(cancellationToken);
         }
     }
 }

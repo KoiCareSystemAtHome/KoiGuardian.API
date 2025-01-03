@@ -1,9 +1,11 @@
-﻿using KoiGuardian.Core.Repository;
+﻿using Azure.Core;
+using KoiGuardian.Core.Repository;
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -12,6 +14,7 @@ namespace KoiGuardian.Api.Services
         Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
+        Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
     }
 
     public class FishService : IFishService
@@ -19,22 +22,31 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Fish> _fishRepository;
         private readonly IRepository<Pond> _pondRepository;
         private readonly IRepository<Variety> _varietyRepository;
+        private readonly IRepository<ParameterUnit> _parameterUnitRepository;
+        private readonly IRepository<RelKoiParameter> _relKoiparameterRepository;
+
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public FishService(
             IRepository<Fish> fishRepository,
             IRepository<Pond> pondRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
+            IRepository<ParameterUnit> parameterUnitRepository,
+            IRepository<RelKoiParameter> relKoiparameterRepository,
             IRepository<Variety> varietyRepository)
         {
             _fishRepository = fishRepository;
             _pondRepository = pondRepository;
             _unitOfWork = unitOfWork;
             _varietyRepository = varietyRepository;
+            _relKoiparameterRepository = relKoiparameterRepository;
+            _parameterUnitRepository = parameterUnitRepository;
         }
 
         public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
         {
+            var requirementsParam = await RequireParam(cancellationToken);
+
             var fishResponse = new FishResponse();
 
             // Check if the fish already exists
@@ -80,6 +92,23 @@ namespace KoiGuardian.Api.Services
                 InPondSince = fishRequest.InPondSince,
                 Price = fishRequest.Price
             };
+            
+            // xử lý lưu value require từng dòng
+            var validValues = fishRequest.RequirementFishParam.Where(u =>
+                   requirementsParam.Select(u => u.ParameterUntiID).Contains(u.ParamterUnitID)
+                   );
+
+            foreach (var validValue in validValues)
+            {
+                _relKoiparameterRepository.Insert(new RelKoiParameter()
+                {
+                    RelKoiParameterID = Guid.NewGuid(),
+                    KoiId = fish.KoiID,
+                    ParameterUnitID = validValue.ParamterUnitID,
+                    CalculatedDate = DateTime.Now,
+                    Value = validValue.Value
+                });
+            }
 
             _fishRepository.Insert(fish);
 
@@ -101,6 +130,26 @@ namespace KoiGuardian.Api.Services
         public async Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
         {
             return await _fishRepository.GetAsync(x => x.KoiID == koiId, cancellationToken);
+        }
+
+        public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation)
+        {
+            return (await _parameterUnitRepository.FindAsync(
+               u => u.Parameter.Type == ParameterType.Fish.ToString()
+                   && u.IsActive && u.IsStandard && u.ValidUnitl == null,
+               u => u.Include(p => p.Parameter),
+               cancellationToken: cancellation))
+               .Select(u => new FishRerquireParam()
+               {
+                   ParameterUntiID = u.ParameterUnitID,
+                   ParameterName = u.Parameter.Name,
+                   UnitName = u.UnitName,
+                   WarningLowwer = u.WarningLowwer,
+                   WarningUpper = u.WarningUpper,
+                   DangerLower = u.DangerLower,
+                   DangerUpper = u.DangerUpper,
+                   MeasurementInstruction = u.MeasurementInstruction,
+               }).ToList();
         }
 
         public async Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)

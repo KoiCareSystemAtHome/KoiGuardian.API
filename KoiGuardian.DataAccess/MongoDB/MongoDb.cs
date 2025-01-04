@@ -19,22 +19,18 @@ public class KoiMongoDb : IKoiMongoDb
 
         var settings = MongoClientSettings.FromConnectionString(connectionUri);
         settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        // Create a new client and connect to the server
         var client = new MongoClient(settings);
-        // Send a ping to confirm a successful connection
+            
         try
         {
             var result = client.GetDatabase("KoiGuardian").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
             Console.WriteLine("Pinged your deployment. You successfully connected to MongoDB!");
 
-            // Get the "user" collection from the "KoiGuardian" database
             var database = client.GetDatabase("KoiGuardian");
             var collection = database.GetCollection<BsonDocument>("EWallet");
 
-            // Query all documents from the "user" collection
             var users = collection.Find(new BsonDocument()).ToList();
 
-            // Display the data from the "user" collection
             foreach (var user in users)
             {
                 Console.WriteLine(user.ToString());
@@ -48,7 +44,6 @@ public class KoiMongoDb : IKoiMongoDb
                 { "createdAt", DateTime.Now }
             };
 
-            // Insert the new document into the collection
             collection.InsertOne(newUser);
 
             return result;

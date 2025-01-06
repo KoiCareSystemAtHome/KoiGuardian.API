@@ -13,7 +13,7 @@ namespace KoiGuardian.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class AccountController
-        (IAccountServices service)
+        (IAccountServices service, IImageUploadService image)
         : ControllerBase
     {
         [HttpPost("login")]
@@ -82,6 +82,14 @@ namespace KoiGuardian.Api.Controllers
         public async Task<string> UpdateProfile(UpdateProfileRequest request)
         {
             return await service.UpdateProfile(request);
+        }
+
+        [HttpPost("test")]
+        public async Task<string> test(IFormFile filene)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+
+            return await image.UploadImageAsync(baseUrl,"test", "123", filene);
         }
     }
 }

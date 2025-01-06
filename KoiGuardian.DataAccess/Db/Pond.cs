@@ -12,6 +12,8 @@ namespace KoiGuardian.DataAccess.Db
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
+        public string Image { get; set; }
+
 
         public virtual ICollection<Fish> Fish { get; set; }
         public virtual IEnumerable<RelPondParameter>? RelPondParameter { get; set; }

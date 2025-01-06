@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Azure;
+using Azure.Core;
 using KoiGuardian.Api.Constants;
 using KoiGuardian.Api.Helper;
 using KoiGuardian.Api.Utils;
@@ -10,10 +11,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq.Expressions;
 using System.Text.Json;
 using static KoiGuardian.Models.Enums.CommonEnums;
 
@@ -26,7 +24,7 @@ public interface IAccountServices
 
     Task<bool> AssingRole(User user, string roleName, CancellationToken cancellation);
 
-    Task<string> Register(RegistrationRequestDto model, CancellationToken cancellationToken);
+    Task<string> Register(string baseurl, RegistrationRequestDto model, CancellationToken cancellationToken);
 
     Task<AccountDashboardResponse> AccountDashboard(DateTime? dateTime, DateTime? endDate);
 
@@ -39,7 +37,7 @@ public interface IAccountServices
     Task<string> ForgotPassword(string email);
 
     Task<string> ChangePassword(string email, string oldPass, string newPass);
-    Task<string> UpdateProfile(UpdateProfileRequest request);
+    Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -50,7 +48,8 @@ RoleManager<IdentityRole> _roleManager,
 IJwtTokenGenerator _jwtTokenGenerator,
 IRepository<User> userRepository,
 IMapper mapper,
-IUnitOfWork<KoiGuardianDbContext> uow
+IUnitOfWork<KoiGuardianDbContext> uow,
+IImageUploadService imageUpload
 )
 : IAccountServices
 {
@@ -69,8 +68,8 @@ IUnitOfWork<KoiGuardianDbContext> uow
                 TotalInactiveUser = u.Count(u => u.Status == UserStatus.InActived),
                 TotaNotVerifiedlUser = u.Count(u => u.Status == UserStatus.NotVerified),
                 TotalBannedUser = u.Count(u => u.Status == UserStatus.Banned),
-                PreniumUser = u.Count(u => u.PackageId !=  null), // TODO and package is valid
-                UnPreniumUser = u.Count(u => u.PackageId == null )
+                PreniumUser = u.Count(u => u.PackageId != null), // TODO and package is valid
+                UnPreniumUser = u.Count(u => u.PackageId == null)
             }).FirstAsync();
     }
 
@@ -162,7 +161,7 @@ IUnitOfWork<KoiGuardianDbContext> uow
         return loginResponse;
     }
 
-    public async Task<string> Register(RegistrationRequestDto registrationRequestDto, CancellationToken cancellationToken)
+    public async Task<string> Register(string baseUrl, RegistrationRequestDto registrationRequestDto, CancellationToken cancellationToken)
     {
 
         var user = new User()
@@ -171,11 +170,11 @@ IUnitOfWork<KoiGuardianDbContext> uow
             Email = registrationRequestDto.Email,
             NormalizedEmail = registrationRequestDto.Email.ToUpper(),
             Status = UserStatus.NotVerified,
-            Avatar = registrationRequestDto.Avatar,
             Code = SD.RandomCode(),
             CreatedDate = DateTime.Now,
             ValidUntil = DateTime.Now,
         };
+        user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
 
         try
         {
@@ -372,7 +371,7 @@ IUnitOfWork<KoiGuardianDbContext> uow
         return loginResponse;
     }
 
-    public async Task<string> UpdateProfile(UpdateProfileRequest request)
+    public async Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request)
     {
         var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(request.Email.ToLower()), CancellationToken.None);
 
@@ -382,13 +381,13 @@ IUnitOfWork<KoiGuardianDbContext> uow
         }
 
         var address = JsonSerializer.Deserialize<List<string>>(user.Address);
-        if(address != null)
+        if (address != null)
         {
             address.Add(request.Address);
         }
         user.Address = JsonSerializer.Serialize(address);
         user.UserName = request.Name;
-        user.Avatar = request.Avatar;
+        user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, request.Avatar);
         user.Gender = request.Gender;
 
         await uow.SaveChangesAsync();

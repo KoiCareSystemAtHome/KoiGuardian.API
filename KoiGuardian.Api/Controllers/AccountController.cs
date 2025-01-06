@@ -16,6 +16,7 @@ namespace KoiGuardian.Api.Controllers
         (IAccountServices service, IImageUploadService image)
         : ControllerBase
     {
+
         [HttpPost("login")]
         public async Task<LoginResponse> Login(string username, string password, CancellationToken token)
         {
@@ -31,7 +32,9 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("register")]
         public async Task<string> Register([FromBody] RegistrationRequestDto model)
         {
-            return await service.Register(model, CancellationToken.None);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+
+            return await service.Register(baseUrl ,model, CancellationToken.None);
         }
 
         [HttpGet("dashboard")]
@@ -81,7 +84,9 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("Updateprofile")]
         public async Task<string> UpdateProfile(UpdateProfileRequest request)
         {
-            return await service.UpdateProfile(request);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+
+            return await service.UpdateProfile(baseUrl, request);
         }
 
         [HttpPost("test")]

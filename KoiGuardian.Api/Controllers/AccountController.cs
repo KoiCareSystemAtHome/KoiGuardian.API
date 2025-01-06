@@ -22,6 +22,12 @@ namespace KoiGuardian.Api.Controllers
             return await service.Login(username, password, token);
         }
 
+        [HttpPost("login/google")]
+        public async Task<LoginResponse> LoginbyGoogle(string email, CancellationToken token)
+        {
+            return await service.Login(email, token);
+        }
+
         [HttpPost("register")]
         public async Task<string> Register([FromBody] RegistrationRequestDto model)
         {
@@ -70,6 +76,12 @@ namespace KoiGuardian.Api.Controllers
         public async Task<string> ChangePassword(string email, string oldPass, string newPass)
         {
             return await service.ChangePassword(email, oldPass, newPass);
+        }
+
+        [HttpPost("Updateprofile")]
+        public async Task<string> UpdateProfile(UpdateProfileRequest request)
+        {
+            return await service.UpdateProfile(request);
         }
     }
 }

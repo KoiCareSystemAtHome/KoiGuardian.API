@@ -23,6 +23,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Pond> _pondRepository;
         private readonly IRepository<Variety> _varietyRepository;
         private readonly IRepository<ParameterUnit> _parameterUnitRepository;
+        private readonly IRepository<Parameter> _parameterRepository;
         private readonly IRepository<RelKoiParameter> _relKoiparameterRepository;
 
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
@@ -32,6 +33,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Pond> pondRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
             IRepository<ParameterUnit> parameterUnitRepository,
+            IRepository<Parameter> parameterRepository,
             IRepository<RelKoiParameter> relKoiparameterRepository,
             IRepository<Variety> varietyRepository)
         {
@@ -41,6 +43,7 @@ namespace KoiGuardian.Api.Services
             _varietyRepository = varietyRepository;
             _relKoiparameterRepository = relKoiparameterRepository;
             _parameterUnitRepository = parameterUnitRepository;
+            _parameterRepository = parameterRepository;
         }
 
         public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
@@ -95,7 +98,7 @@ namespace KoiGuardian.Api.Services
             
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
-                   requirementsParam.Select(u => u.ParameterUntiID).Contains(u.ParamterUnitID)
+                   requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
                    );
 
             foreach (var validValue in validValues)
@@ -134,21 +137,26 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation)
         {
-            return (await _parameterUnitRepository.FindAsync(
-               u => u.Parameter.Type == ParameterType.Fish.ToString()
-                   && u.IsActive && u.IsStandard && u.ValidUnitl == null,
-               u => u.Include(p => p.Parameter),
+            return (await _parameterRepository.FindAsync(
+               u => u.Type == ParameterType.Fish.ToString(),
+               u => u.Include(p => p.ParameterUnits.Where( u => u.IsActive && u.IsStandard && u.ValidUnitl == null)),
                cancellationToken: cancellation))
                .Select(u => new FishRerquireParam()
                {
-                   ParameterUntiID = u.ParameterUnitID,
-                   ParameterName = u.Parameter.Name,
-                   UnitName = u.UnitName,
-                   WarningLowwer = u.WarningLowwer,
-                   WarningUpper = u.WarningUpper,
-                   DangerLower = u.DangerLower,
-                   DangerUpper = u.DangerUpper,
-                   MeasurementInstruction = u.MeasurementInstruction,
+                   ParameterID = u.ParameterID,
+                   ParameterName = u.Name,
+                   ParameterUnits = u.ParameterUnits.Select(
+                       u => new FishRerquireParamUnit()
+                       {
+                           ParameterUntiID = u.ParameterUnitID,
+                           UnitName = u.UnitName,
+                           WarningLowwer = u.WarningLowwer,
+                           WarningUpper = u.WarningUpper,
+                           DangerLower = u.DangerLower,
+                           DangerUpper = u.DangerUpper,
+                           MeasurementInstruction = u.MeasurementInstruction,
+                       }).ToList()
+                   
                }).ToList();
         }
 

@@ -10,9 +10,11 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq.Expressions;
+using System.Text.Json;
 using static KoiGuardian.Models.Enums.CommonEnums;
 
 namespace KoiGuardian.Api.Services;
@@ -20,6 +22,7 @@ namespace KoiGuardian.Api.Services;
 public interface IAccountServices
 {
     Task<LoginResponse> Login(string username, string password, CancellationToken cancellation);
+    Task<LoginResponse> Login(string email, CancellationToken cancellation);
 
     Task<bool> AssingRole(User user, string roleName, CancellationToken cancellation);
 
@@ -36,6 +39,7 @@ public interface IAccountServices
     Task<string> ForgotPassword(string email);
 
     Task<string> ChangePassword(string email, string oldPass, string newPass);
+    Task<string> UpdateProfile(UpdateProfileRequest request);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -332,5 +336,63 @@ IUnitOfWork<KoiGuardianDbContext> uow
         {
             return ex.Message;
         }
+    }
+
+    public async Task<LoginResponse> Login(string email, CancellationToken cancellation)
+    {
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), cancellation);
+
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return new()
+            {
+                User = new(),
+                Token = string.Empty
+            };
+        }
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var token = _jwtTokenGenerator.GenerateToken(user, roles);
+        UserDto userDto = new()
+        {
+            Email = user.Email ?? string.Empty,
+            ID = user.Id,
+            Name = user.UserName ?? string.Empty,
+            PackageID = user.PackageId,
+            Avatar = user.Avatar,
+            Status = user.Status.ToString(),
+        };
+
+        LoginResponse loginResponse = new()
+        {
+            User = userDto,
+            Token = token
+        };
+
+        return loginResponse;
+    }
+
+    public async Task<string> UpdateProfile(UpdateProfileRequest request)
+    {
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(request.Email.ToLower()), CancellationToken.None);
+
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return "Account is not valid!";
+        }
+
+        var address = JsonSerializer.Deserialize<List<string>>(user.Address);
+        if(address != null)
+        {
+            address.Add(request.Address);
+        }
+        user.Address = JsonSerializer.Serialize(address);
+        user.UserName = request.Name;
+        user.Avatar = request.Avatar;
+        user.Gender = request.Gender;
+
+        await uow.SaveChangesAsync();
+
+        return string.Empty;
     }
 }

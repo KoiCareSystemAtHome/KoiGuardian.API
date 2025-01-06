@@ -18,7 +18,9 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("create-pond")]
         public async Task<PondResponse> CreatePond([FromBody] CreatePondRequest createPond, CancellationToken cancellationToken)
         {
-            return await services.CreatePond(createPond, cancellationToken);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+
+            return await services.CreatePond(baseUrl, createPond, cancellationToken);
         }
 
         [HttpPut("update-pond")]

@@ -1,4 +1,6 @@
-﻿namespace KoiGuardian.Api.Services;
+﻿using System.Security.Claims;
+
+namespace KoiGuardian.Api.Services;
 
 public interface ICurrentUser
 {
@@ -10,13 +12,22 @@ public interface ICurrentUser
 
 public class CurrentUser : ICurrentUser
 {
-    public string Rolename()
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public CurrentUser(IHttpContextAccessor httpContextAccessor)
     {
-        throw new NotImplementedException();
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public string UserName()
     {
-        throw new NotImplementedException();
+        var username = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value;
+        return username ?? string.Empty;
+    }
+
+    public string Rolename()
+    {
+        var role = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
+        return role ?? string.Empty;
     }
 }

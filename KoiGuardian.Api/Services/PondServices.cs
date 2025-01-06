@@ -11,7 +11,7 @@ namespace KoiGuardian.Api.Services
 {
     public interface IPondServices 
     {
-        Task<PondResponse> CreatePond(CreatePondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest Request, CancellationToken cancellation);
         Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
     }
@@ -21,9 +21,10 @@ namespace KoiGuardian.Api.Services
         IRepository<ParameterUnit> parameterUnitRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
         KoiGuardianDbContext _dbContext, 
+        IImageUploadService imageUpload,
         IRepository<User> userRepository) : IPondServices
     {
-        public async Task<PondResponse> CreatePond(CreatePondRequest request, CancellationToken cancellation)
+        public async Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest request, CancellationToken cancellation)
         {
             var requirementsParam = await RequireParam(cancellation);
 
@@ -37,6 +38,8 @@ namespace KoiGuardian.Api.Services
                     CreateDate = request.CreateDate,
                     Name = request.Name
                 };
+                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(),request.Image);
+                pond.Image = image;
 
                 var validValues = request.RequirementPondParam.Where ( u=>
                     requirementsParam.Select( u => u.ParameterUntiID) .Contains(u.ParamterUnitID)

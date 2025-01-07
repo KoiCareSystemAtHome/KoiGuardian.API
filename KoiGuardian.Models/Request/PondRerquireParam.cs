@@ -2,8 +2,14 @@
 {
     public class PondRerquireParam
     {
-        public Guid ParameterUntiID { get; set; }
+        public Guid ParameterID { get; set; }
         public string ParameterName { get; set; }
+        public List<PondRerquireParamUnit>? ParameterUnits { get; set; }
+    }
+
+    public class PondRerquireParamUnit
+    {
+        public Guid ParameterUntiID { get; set; }
         public string UnitName { get; set; }
         public double? WarningUpper { get; set; }
         public double? WarningLowwer { get; set; }

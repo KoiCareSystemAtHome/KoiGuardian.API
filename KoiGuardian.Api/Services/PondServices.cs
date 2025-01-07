@@ -42,7 +42,7 @@ namespace KoiGuardian.Api.Services
                 pond.Image = image;
 
                 var validValues = request.RequirementPondParam.Where ( u=>
-                    requirementsParam.Select( u => u.ParameterUntiID) .Contains(u.ParamterUnitID)
+                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
                     );
 
                 foreach ( var validValue in validValues)
@@ -81,14 +81,20 @@ namespace KoiGuardian.Api.Services
                 cancellationToken: cancellation))
                 .Select(u => new PondRerquireParam()
                 {
-                    ParameterUntiID = u.ParameterUnitID,
+                    ParameterID = u.ParameterID,
                     ParameterName = u.Parameter.Name,
-                    UnitName = u.UnitName,
-                    WarningLowwer = u.WarningLowwer,
-                    WarningUpper = u.WarningUpper,
-                    DangerLower = u.DangerLower,
-                    DangerUpper = u.DangerUpper,
-                    MeasurementInstruction = u.MeasurementInstruction,
+                    ParameterUnits = u.Parameter.ParameterUnits.Select(
+                       u => new PondRerquireParamUnit()
+                       {
+                           ParameterUntiID = u.ParameterUnitID,
+                           UnitName = u.UnitName,
+                           WarningLowwer = u.WarningLowwer,
+                           WarningUpper = u.WarningUpper,
+                           DangerLower = u.DangerLower,
+                           DangerUpper = u.DangerUpper,
+                           MeasurementInstruction = u.MeasurementInstruction,
+                       }).ToList()
+
                 }).ToList();
         }
 

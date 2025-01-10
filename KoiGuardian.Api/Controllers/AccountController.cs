@@ -30,10 +30,10 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<string> Register([FromBody] RegistrationRequestDto model)
+        public async Task<string> Register(RegistrationRequestDto model, [FromBody] IFormFile avatar)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
-
+            model.Avatar = avatar;
             return await service.Register(baseUrl ,model, CancellationToken.None);
         }
 

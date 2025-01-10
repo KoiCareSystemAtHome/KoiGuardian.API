@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace KoiGuardian.DataAccess.Db
 {
     public class PondFeedingMode
     {
+        [Key]
         public Guid ModeId { get; set; } 
         public Guid PondId { get; set; }
         public string ModeName { get; set; } = string.Empty;

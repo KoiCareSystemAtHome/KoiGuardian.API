@@ -16,12 +16,11 @@ using KoiGuardian.DataAccess.MongoDB;
 var builder = WebApplication.CreateBuilder(args);
 
 // Database 
-builder.Services.AddDbContext<KoiGuardianDbContext>(
-                option =>
-                {
-                    option.UseSqlServer(builder.Configuration.GetConnectionString("MyDB"),
-                        b => b.MigrationsAssembly("KoiGuardian.DataAccess"));
-                });
+builder.Services.AddDbContext<KoiGuardianDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("MyDB"),
+        npgsqlOptions => npgsqlOptions.MigrationsAssembly("KoiGuardian.DataAccess"));
+});
 IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
 builder.Services.AddSingleton(mapper);
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

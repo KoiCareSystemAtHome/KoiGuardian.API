@@ -10,6 +10,13 @@ namespace KoiGuardian.Api.Controllers
     [ApiController]
     public class ProductController(IProductService services) : ControllerBase
     {
+
+        [HttpGet]
+        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+        {
+            return await services.GetAllProductsAsync(cancellationToken);
+        }
+
         [HttpPost("create-product")]
         public async Task<ProductResponse> CreateProduct([FromBody] ProductRequest createProduct, CancellationToken cancellationToken)
         {
@@ -23,10 +30,10 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("{productId}")]
-        public async Task<Product> GetProductById(Guid productId, CancellationToken cancellationToken)
+        public async Task<ProductDetailResponse> GetProductById(Guid productId, CancellationToken cancellationToken)
         {
              
-            return await services.GetProductByIdAsync(productId, cancellationToken);
+            return await services.GetProductByIdAsync(productId,cancellationToken);
         }
 
         [HttpGet("search")]

@@ -41,11 +41,11 @@ namespace KoiGuardian.Models.Request
         public DateTime? ReportedDate { get; set; }
         public int View { get; set; }
 
-        // Shop information
+      
         public Guid ShopId { get; set; }
         public ShopBasicDto Shop { get; set; }
 
-        // Related products
+       
         public List<ProductBasicDto> Products { get; set; } = new List<ProductBasicDto>();
     }
 

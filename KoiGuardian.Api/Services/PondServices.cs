@@ -14,6 +14,9 @@ namespace KoiGuardian.Api.Services
         Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest Request, CancellationToken cancellation);
         Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
+
+        Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null);
+        Task<PondResponse> GetPondById(Guid pondId, CancellationToken cancellation);
     }
 
     public class PondServices(
@@ -127,6 +130,89 @@ namespace KoiGuardian.Api.Services
                 response.status = "409 ";
                 response.message = "Pond Haven't Existed";
             }
+            return response;
+        }
+
+        public async Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null)
+        {
+            var response = new PondResponse();
+            try
+            {
+                
+                var ponds = await pondRepository.FindAsync(
+                    predicate: null,
+                    include: query => query
+                        .Include(p => p.RelPondParameter)
+                            .ThenInclude(r => r.ParameterUnit)
+                                .ThenInclude(pu => pu.Parameter)
+                        .Include(p => p.Fish)
+                        .Include(p => p.FeedingMode),
+                    cancellationToken: cancellation
+                );
+
+                
+                if (!string.IsNullOrEmpty(name))
+                {
+                    ponds = ponds.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+
+                
+                if (ponds != null && ponds.Any())
+                {
+                    response.status = "200";
+                    response.message = "Ponds retrieved successfully";
+                }
+                else
+                {
+                    response.status = "404";
+                    response.message = "No ponds found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.status = "500";
+                response.message = $"An error occurred: {ex.Message}";
+            }
+
+            return response;
+        }
+
+
+
+        public async Task<PondResponse> GetPondById(Guid pondId, CancellationToken cancellation)
+        {
+            var response = new PondResponse();
+            try
+            {
+                var pond = await pondRepository.GetAsync(
+                    predicate: p => p.PondID == pondId,
+                    include: query => query
+                        .Include(p => p.RelPondParameter)
+                            .ThenInclude(r => r.ParameterUnit)
+                                .ThenInclude(pu => pu.Parameter)
+                        .Include(p => p.Fish)
+                        .Include(p => p.FeedingMode),
+                    cancellationToken: cancellation
+                );
+
+                if (pond != null)
+                {
+                    response.status = "200";
+                    response.message = "Pond retrieved successfully";
+                   
+                }
+                else
+                {
+                    response.status = "404";
+                    response.message = "Pond not found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.status = "500";
+                response.message = $"An error occurred: {ex.Message}";
+            }
+
             return response;
         }
     }

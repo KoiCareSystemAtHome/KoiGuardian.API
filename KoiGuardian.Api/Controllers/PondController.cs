@@ -28,5 +28,19 @@ namespace KoiGuardian.Api.Controllers
         {
             return await services.UpdatePond(updatePond, cancellationToken);
         }
+
+        [HttpGet("get-all-ponds")]
+        public async Task<PondResponse> GetAllPonds(CancellationToken cancellationToken, [FromQuery] string? name)
+        {
+            return await services.GetAllPonds(cancellationToken, name);
+        }
+
+
+
+        [HttpGet("get-pond/{pondId}")]
+        public async Task<PondResponse> GetPondById(Guid pondId, CancellationToken cancellationToken)
+        {
+            return await services.GetPondById(pondId, cancellationToken);
+        }
     }
 }

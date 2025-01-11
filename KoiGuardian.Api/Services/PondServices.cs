@@ -11,12 +11,14 @@ namespace KoiGuardian.Api.Services
 {
     public interface IPondServices 
     {
-        Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest Request, CancellationToken cancellation);
-        Task<PondResponse> UpdatePond(string baseUrl,UpdatePondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> CreatePond(CreatePondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
 
-        Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null);
+        Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default);
         Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
+        
+    
     }
 
     public class PondServices(
@@ -27,7 +29,7 @@ namespace KoiGuardian.Api.Services
         IImageUploadService imageUpload,
         IRepository<User> userRepository) : IPondServices
     {
-        public async Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest request, CancellationToken cancellation)
+        public async Task<PondResponse> CreatePond(CreatePondRequest request, CancellationToken cancellation)
         {
             var requirementsParam = await RequireParam(cancellation);
 
@@ -39,16 +41,16 @@ namespace KoiGuardian.Api.Services
                     PondID = Guid.NewGuid(),
                     OwnerId = request.OwnerId,
                     CreateDate = request.CreateDate,
-                    Name = request.Name
+                    Name = request.Name,
+                    Image = request.Image,
                     
                 };
-                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(), request.Image);
-                pond.Image = image;
+
 
                 pondRepository.Insert(pond);
 
                 var validValues = request.RequirementPondParam.Where ( u=>
-                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.Key)
+                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
                     );
 
                 foreach ( var validValue in validValues)
@@ -57,7 +59,7 @@ namespace KoiGuardian.Api.Services
                     {
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
-                        ParameterUnitID = validValue.Key,
+                        ParameterUnitID = validValue.ParamterUnitID,
                         CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
@@ -104,7 +106,7 @@ namespace KoiGuardian.Api.Services
                 }).ToList();
         }
 
-        public async Task<PondResponse> UpdatePond(string baseUrl,UpdatePondRequest request, CancellationToken cancellation)
+        public async Task<PondResponse> UpdatePond(UpdatePondRequest request, CancellationToken cancellation)
         {
             var requirementsParam = await RequireParam(cancellation);
             var response = new PondResponse();
@@ -114,9 +116,7 @@ namespace KoiGuardian.Api.Services
                 pond.OwnerId = request.OwnerId;
                 pond.CreateDate = request.CreateDate;
                 pond.Name = request.Name;
-
-                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(), request.Image);
-                pond.Image = image;
+                pond.Image = request.Image;
 
                 var validValues = request.RequirementPondParam.Where(u =>
                     requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
@@ -155,48 +155,25 @@ namespace KoiGuardian.Api.Services
             return response;
         }
 
-        public async Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null)
+        public async Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default)
         {
-            var response = new PondResponse();
-            try
-            {
-                
-                var ponds = await pondRepository.FindAsync(
-                    predicate: null,
-                    include: query => query
-                        .Include(p => p.RelPondParameter)
-                            .ThenInclude(r => r.ParameterUnit)
-                                .ThenInclude(pu => pu.Parameter)
-                        .Include(p => p.Fish)
-                        .Include(p => p.FeedingMode),
-                    cancellationToken: cancellation
-                );
+            // Gọi FindAsync với predicate và các tham số khác
+            var result = await pondRepository.FindAsync(
+                predicate: !string.IsNullOrWhiteSpace(name)
+                    ? f => f.Name.ToLower().Contains(name.ToLower())
+                    : null, // Không lọc nếu name là null hoặc rỗng
+                include: query => query
+                    .Include(p => p.RelPondParameter)
+                        .ThenInclude(r => r.ParameterUnit)
+                            .ThenInclude(pu => pu.Parameter)
+                    .Include(p => p.Fish)
+                    .Include(p => p.FeedingMode), // Thêm quan hệ liên quan nếu cần
+                orderBy: query => query.OrderBy(f => f.Name), // Sắp xếp theo Name
+                cancellationToken: cancellationToken
+            );
 
-                
-                if (!string.IsNullOrEmpty(name))
-                {
-                    ponds = ponds.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
-                }
-
-                
-                if (ponds != null && ponds.Any())
-                {
-                    response.status = "200";
-                    response.message = "Ponds retrieved successfully";
-                }
-                else
-                {
-                    response.status = "404";
-                    response.message = "No ponds found";
-                }
-            }
-            catch (Exception ex)
-            {
-                response.status = "500";
-                response.message = $"An error occurred: {ex.Message}";
-            }
-
-            return response;
+            // Chuyển đổi kết quả thành danh sách
+            return result.ToList();
         }
 
 

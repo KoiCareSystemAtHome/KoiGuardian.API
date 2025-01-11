@@ -16,7 +16,7 @@ namespace KoiGuardian.Models.Request
         public decimal Weight { get; set; } 
         public string VarietyName { get; set; }
         public DateTime InPondSince { get; set; }
-        public IFormFile Image { get; set; }
+        public string Image { get; set; }
         public decimal Price { get; set; }
         public required List<FishParam> RequirementFishParam { get; set; }
     }

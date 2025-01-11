@@ -13,9 +13,8 @@ namespace KoiGuardian.Models.Request
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
-        public IFormFile Image { get; set; }
-
-        public Dictionary <Guid, float> ? RequirementPondParam {  get; set; } 
+        public string Image { get; set; }
+        public required List<PondParam> RequirementPondParam { get; set; }
 
     }
     public class PondParam
@@ -33,7 +32,7 @@ namespace KoiGuardian.Models.Request
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
-        public IFormFile Image { get; set; }
+        public string Image { get; set; }
 
         public required List<PondParam> RequirementPondParam { get; set; }
     }

@@ -81,20 +81,38 @@ builder.Services.AddSwaggerGen(option =>
             );
 
 builder.AppAuthentication();
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(p => p.AddPolicy(MyAllowSpecificOrigins, builder =>
+{
+    builder.WithOrigins(
+        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003")
+           .AllowAnyMethod()
+           .AllowAnyHeader()
+           .AllowCredentials(); // Add this line to allow credentials
+
+    // Other configurations...
+}));
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    if (!app.Environment.IsDevelopment())
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "KOI GUADIAN API");
+        c.RoutePrefix = string.Empty;
+    }
+});
 
 app.UseHttpsRedirection();
+app.UseCors(MyAllowSpecificOrigins);
 app.UseStaticFiles();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -16,31 +16,17 @@ namespace KoiGuardian.Api.Controllers
             return await services.RequireParam( cancellationToken);
         }
         [HttpPost("create-pond")]
-        public async Task<PondResponse> CreatePond(/*[FromBody]*/ CreatePondRequest createPond, CancellationToken cancellationToken)
+        public async Task<PondResponse> CreatePond(/*[FromBody] */CreatePondRequest createPond, CancellationToken cancellationToken)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
-
             return await services.CreatePond(baseUrl, createPond, cancellationToken);
         }
 
         [HttpPut("update-pond")]
-        public async Task<PondResponse> UpdatePond([FromBody] UpdatePondRequest updatePond, CancellationToken cancellationToken)
+        public async Task<PondResponse> UpdatePond(/*[FromBody] */UpdatePondRequest updatePond, CancellationToken cancellationToken)
         {
-            return await services.UpdatePond(updatePond, cancellationToken);
-        }
-
-        [HttpGet("get-all-ponds")]
-        public async Task<PondResponse> GetAllPonds(CancellationToken cancellationToken, [FromQuery] string? name)
-        {
-            return await services.GetAllPonds(cancellationToken, name);
-        }
-
-
-
-        [HttpGet("get-pond/{pondId}")]
-        public async Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellationToken)
-        {
-            return await services.GetPondById(pondId, cancellationToken);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.UpdatePond(baseUrl,updatePond, cancellationToken);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace KoiGuardian.Api.Services
     public interface IPondServices 
     {
         Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest Request, CancellationToken cancellation);
-        Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
+        Task<PondResponse> UpdatePond(string baseUrl,UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
 
         Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null);
@@ -40,8 +40,9 @@ namespace KoiGuardian.Api.Services
                     OwnerId = request.OwnerId,
                     CreateDate = request.CreateDate,
                     Name = request.Name
+                    
                 };
-                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(),request.Image);
+                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(), request.Image);
                 pond.Image = image;
 
                 var validValues = request.RequirementPondParam.Where ( u=>
@@ -101,8 +102,9 @@ namespace KoiGuardian.Api.Services
                 }).ToList();
         }
 
-        public async Task<PondResponse> UpdatePond(UpdatePondRequest request, CancellationToken cancellation)
+        public async Task<PondResponse> UpdatePond(string baseUrl,UpdatePondRequest request, CancellationToken cancellation)
         {
+            var requirementsParam = await RequireParam(cancellation);
             var response = new PondResponse();
             var pond = await pondRepository.GetAsync(x => x.PondID.Equals(request.PondID), cancellation);
             if (pond != null)
@@ -111,6 +113,24 @@ namespace KoiGuardian.Api.Services
                 pond.CreateDate = request.CreateDate;
                 pond.Name = request.Name;
 
+                var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(), request.Image);
+                pond.Image = image;
+
+                var validValues = request.RequirementPondParam.Where(u =>
+                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
+                    );
+
+                foreach (var validValue in validValues)
+                {
+                    relPondparameterRepository.Insert(new RelPondParameter()
+                    {
+                        RelPondParameterId = Guid.NewGuid(),
+                        PondId = pond.PondID,
+                        ParameterUnitID = validValue.ParamterUnitID,
+                        CalculatedDate = DateTime.Now,
+                        Value = validValue.Value
+                    });
+                }
                 try
                 {
                     pondRepository.Update(pond);

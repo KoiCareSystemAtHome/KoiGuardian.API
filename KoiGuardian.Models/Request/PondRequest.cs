@@ -33,6 +33,9 @@ namespace KoiGuardian.Models.Request
         public string OwnerId { get; set; }
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
+        public IFormFile Image { get; set; }
+
+        public required List<PondParam> RequirementPondParam { get; set; }
     }
 
 

@@ -45,6 +45,8 @@ namespace KoiGuardian.Api.Services
                 var image = await imageUpload.UploadImageAsync(baseUrl, "Pond", pond.PondID.ToString(), request.Image);
                 pond.Image = image;
 
+                pondRepository.Insert(pond);
+
                 var validValues = request.RequirementPondParam.Where ( u=>
                     requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
                     );
@@ -56,12 +58,12 @@ namespace KoiGuardian.Api.Services
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
                         ParameterUnitID = validValue.ParamterUnitID,
-                        CalculatedDate = DateTime.Now,
+                        CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
                 }
 
-                pondRepository.Insert(pond);
+                
                 await _dbContext.SaveChangesAsync(cancellation);
 
                 response.status = "201";
@@ -90,7 +92,7 @@ namespace KoiGuardian.Api.Services
                     ParameterUnits = u.Parameter.ParameterUnits.Select(
                        u => new PondRerquireParamUnit()
                        {
-                           ParameterUntiID = u.ParameterUnitID,
+                           ParameterUntiID = u.HistoryID,
                            UnitName = u.UnitName,
                            WarningLowwer = u.WarningLowwer,
                            WarningUpper = u.WarningUpper,
@@ -127,7 +129,7 @@ namespace KoiGuardian.Api.Services
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
                         ParameterUnitID = validValue.ParamterUnitID,
-                        CalculatedDate = DateTime.Now,
+                        CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
                 }

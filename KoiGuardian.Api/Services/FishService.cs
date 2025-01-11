@@ -89,6 +89,7 @@ namespace KoiGuardian.Api.Services
 
             var fish = new Fish
             {
+                KoiID = Guid.NewGuid(),
                 PondID = fishRequest.PondID,
                 Name = fishRequest.Name,
                 Physique = fishRequest.Physique,
@@ -103,6 +104,9 @@ namespace KoiGuardian.Api.Services
             var image = await _imageUploadService.UploadImageAsync(baseUrl, "Fish", fish.KoiID.ToString(), fishRequest.Image);
             fish.Image = image;
 
+            _fishRepository.Insert(fish);
+
+
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
@@ -115,12 +119,11 @@ namespace KoiGuardian.Api.Services
                     RelKoiParameterID = Guid.NewGuid(),
                     KoiId = fish.KoiID,
                     ParameterUnitID = validValue.ParamterUnitID,
-                    CalculatedDate = DateTime.Now,
+                    CalculatedDate = DateTime.UtcNow,
                     Value = validValue.Value
                 });
             }
 
-            _fishRepository.Insert(fish);
 
             try
             {
@@ -228,7 +231,7 @@ namespace KoiGuardian.Api.Services
                     RelKoiParameterID = Guid.NewGuid(),
                     KoiId = existingFish.KoiID,
                     ParameterUnitID = validValue.ParamterUnitID,
-                    CalculatedDate = DateTime.Now,
+                    CalculatedDate = DateTime.UtcNow,
                     Value = validValue.Value
                 });
             }

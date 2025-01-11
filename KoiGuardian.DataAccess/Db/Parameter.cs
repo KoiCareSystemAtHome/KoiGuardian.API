@@ -20,6 +20,7 @@ public enum ParameterType
 {
     Fish,
     Pond, 
-    Disease
+    Disease,
+
 };
 

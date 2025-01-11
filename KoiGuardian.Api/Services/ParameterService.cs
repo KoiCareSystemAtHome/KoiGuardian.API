@@ -11,6 +11,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken);
+        Task<List<Parameter>> getAll(string parameterType, CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
@@ -168,6 +169,11 @@ namespace KoiGuardian.Api.Services
         {
             return await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
 
+        }
+
+        public async Task<List<Parameter>> getAll(string parameterType, CancellationToken cancellationToken)
+        {
+            return (await _parameterRepository.FindAsync(u => u.Type == parameterType)).ToList();
         }
     }
 }

@@ -9,7 +9,7 @@
 
     public class PondRerquireParamUnit
     {
-        public Guid ParameterUntiID { get; set; }
+        public Guid HistoryId { get; set; }
         public string UnitName { get; set; }
         public double? WarningUpper { get; set; }
         public double? WarningLowwer { get; set; }

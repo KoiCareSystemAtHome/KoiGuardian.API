@@ -1,5 +1,6 @@
 ﻿using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Request;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,7 +44,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<List<Parameter>> Get(string type,CancellationToken cancellationToken)
+        public async Task<List<PondRerquireParam>> Get(string type,CancellationToken cancellationToken)
         {
             return await _parameterService.getAll(type, cancellationToken);
         }

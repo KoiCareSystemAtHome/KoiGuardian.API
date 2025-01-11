@@ -5,6 +5,7 @@ using KoiGuardian.DataAccess;
 using OfficeOpenXml;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using KoiGuardian.Models.Request;
 
 namespace KoiGuardian.Api.Services
 {
@@ -12,7 +13,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken);
-        Task<List<Parameter>> getAll(string parameterType, CancellationToken cancellationToken);
+        Task<List<PondRerquireParam>> getAll(string parameterType, CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
@@ -172,9 +173,30 @@ namespace KoiGuardian.Api.Services
 
         }
 
-        public async Task<List<Parameter>> getAll(string parameterType, CancellationToken cancellationToken)
+        public async Task<List<PondRerquireParam>> getAll(string parameterType, CancellationToken cancellationToken)
         {
-            return (await _parameterRepository.FindAsync(u => u.Type == parameterType, include: u => u.Include(u =>u.ParameterUnits))).ToList();
+            return (await _parameterUnitRepository.FindAsync(
+                u => u.Parameter.Type.ToLower() == parameterType.ToLower()
+                    && u.IsActive && u.IsStandard && u.ValidUnitl == null,
+                u => u.Include(p => p.Parameter),
+                cancellationToken: cancellationToken))
+                .Select(u => new PondRerquireParam()
+                {
+                    ParameterID = u.ParameterID,
+                    ParameterName = u.Parameter.Name,
+                    ParameterUnits = u.Parameter.ParameterUnits.Select(
+                       u => new PondRerquireParamUnit()
+                       {
+                           HistoryId = u.HistoryID,
+                           UnitName = u.UnitName,
+                           WarningLowwer = u.WarningLowwer,
+                           WarningUpper = u.WarningUpper,
+                           DangerLower = u.DangerLower,
+                           DangerUpper = u.DangerUpper,
+                           MeasurementInstruction = u.MeasurementInstruction,
+                       }).ToList()
+
+                }).ToList();
         }
     }
 }

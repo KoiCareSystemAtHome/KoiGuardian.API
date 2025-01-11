@@ -1,4 +1,5 @@
-﻿using KoiGuardian.Core.Repository;
+﻿using Azure.Core;
+using KoiGuardian.Core.Repository;
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
@@ -13,11 +14,14 @@ namespace KoiGuardian.Api.Services
 {
     public interface IProductService
     {
-        Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> CreateProductAsync(string baseUrl,ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
-        Task<Product> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
+        Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
 
         Task<IEnumerable<Product>> SearchProductsAsync(string productName, string brand, string parameterImpact, CancellationToken cancellationToken);
+
+        Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken);
+       
     }
 
     public class ProductService : IProductService
@@ -25,18 +29,23 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Shop> _shopRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
+        private readonly IImageUploadService _imageUploadService;
 
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Shop> shopRepository,
-            IUnitOfWork<KoiGuardianDbContext> unitOfWork)
+            IUnitOfWork<KoiGuardianDbContext> unitOfWork,
+            IImageUploadService imageUpload
+            )
+            
         {
             _productRepository = productRepository;
             _shopRepository = shopRepository;
             _unitOfWork = unitOfWork;
+            _imageUploadService = imageUpload;
         }
 
-        public async Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateProductAsync(string baseUrl, ProductRequest productRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 
@@ -58,9 +67,10 @@ namespace KoiGuardian.Api.Services
                 return productResponse;
             }
 
+            // Create the new product
             var product = new Product
             {
-                ProductId = new Guid(),
+                ProductId = Guid.NewGuid(),
                 ProductName = productRequest.ProductName,
                 Description = productRequest.Description,
                 Price = productRequest.Price,
@@ -72,25 +82,24 @@ namespace KoiGuardian.Api.Services
                 ShopId = productRequest.ShopId
             };
 
+            // Upload the image
+            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
+            product.Image = image;
 
+            // Set parameter impacts
             product.SetParameterImpacts(productRequest.ParameterImpacts);
 
+            // Insert the product into the repository and save changes
             _productRepository.Insert(product);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            try
-            {
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                productResponse.Status = "201";
-                productResponse.Message = "Product created successfully.";
-            }
-            catch (Exception ex)
-            {
-                productResponse.Status = "500";
-                productResponse.Message = "Error creating product: " + ex.Message;
-            }
+            productResponse.Status = "201";
+            productResponse.Message = "Product created successfully.";
 
             return productResponse;
         }
+
+
 
         public async Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
         {
@@ -143,12 +152,49 @@ namespace KoiGuardian.Api.Services
             return productResponse;
         }
 
-        public async Task<Product> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
+        public async Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
         {
+            var product = await _productRepository
+                .GetQueryable()
+                .Include(p => p.Category)
+                .Include(p => p.Shop)
+                .Include(p => p.Feedbacks)
+                   /* .ThenInclude(f => f.Member)*/
+                .FirstOrDefaultAsync(p => p.ProductId == productId, cancellationToken);
 
-            return await _productRepository
-            .GetQueryable()
-            .FirstOrDefaultAsync(b => b.ProductId == productId, cancellationToken);
+            if (product == null)
+                return null;
+
+            return new ProductDetailResponse
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                Description = product.Description,
+                Image = product.Image,
+                Price = product.Price,
+                StockQuantity = product.StockQuantity,
+                Brand = product.Brand,
+                ManufactureDate = product.ManufactureDate,
+                ExpiryDate = product.ExpiryDate,
+                ParameterImpactment = product.ParameterImpactment,
+                Category = new CategoryInfo
+                {
+                    CategoryId = product.Category?.CategoryId ?? Guid.Empty,
+                    Name = product.Category?.Name
+                },
+                Shop = new ShopInfo
+                {
+                    ShopId = product.Shop?.ShopId ?? Guid.Empty,
+                    ShopName = product.Shop?.ShopName
+                },
+                Feedbacks = product.Feedbacks?.Select(f => new FeedbackInfo
+                {
+                    FeedbackId = f.FeedbackId,
+                    /*MemberName = f.Member?.UserName,*/
+                    Rate = f.Rate,
+                    Content = f.Content
+                }).ToList()
+            };
         }
 
         public async Task<IEnumerable<Product>> SearchProductsAsync(
@@ -159,7 +205,7 @@ namespace KoiGuardian.Api.Services
         {
             var query = _productRepository.GetQueryable();
 
-            // Apply filters if provided
+            
             if (!string.IsNullOrWhiteSpace(productName))
             {
                 query = query.Where(p => p.ProductName.Contains(productName));
@@ -181,6 +227,15 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()  // For better performance since we're just reading
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+        {
+            return await _productRepository
+                .GetQueryable()
+                .AsNoTracking()  // For better performance since we're just reading
+                .ToListAsync(cancellationToken);
+        }
+
     }
 }
 

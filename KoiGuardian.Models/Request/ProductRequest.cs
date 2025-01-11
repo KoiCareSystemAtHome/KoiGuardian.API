@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Models.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,8 @@ namespace KoiGuardian.Models.Request
         public decimal Price { get; set; }
 
         public int StockQuantity { get; set; }
+
+        public IFormFile Image {  get; set; }
 
         public Guid CategoryId { get; set; }
 

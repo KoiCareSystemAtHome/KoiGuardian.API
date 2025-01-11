@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Api.Services;
+using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,12 @@ namespace KoiGuardian.Api.Controllers
     [ApiController]
     public class FishController(IFishService fishService) : ControllerBase
     {
+        [HttpGet]
+        public async Task<List<Fish>> GetAllFishAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
+        {
+            return await fishService.GetAllFishAsync(name,cancellationToken);
+        }
+
         [HttpPut("pond-required-param")]
         public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellationToken)
         {

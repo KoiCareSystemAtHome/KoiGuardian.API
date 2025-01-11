@@ -203,16 +203,17 @@ namespace KoiGuardian.Api.Services
 
             return (await _parameterUnitRepository.FindAsync(
                     u => u.Parameter.Type.ToLower() == parameterType.ToLower()
-                        && u.IsActive && u.IsStandard && u.ValidUnitl == null
+                        && u.IsActive  && u.ValidUnitl == null
                         && u.AgeFrom <= age && u.AgeTo >= age
                         ,
                     u => u.Include(p => p.Parameter),
                     cancellationToken: cancellationToken))
+                    .GroupBy( u => new { u.ParameterID, u.Parameter.Name})
                     .Select(u => new PondRerquireParam()
                     {
-                        ParameterID = u.ParameterID,
-                        ParameterName = u.Parameter.Name,
-                        ParameterUnits = u.Parameter.ParameterUnits.Select(
+                        ParameterID = u.Key.ParameterID,
+                        ParameterName = u.Key.Name,
+                        ParameterUnits = u.Select(
                            u => new PondRerquireParamUnit()
                            {
                                HistoryId = u.HistoryID,

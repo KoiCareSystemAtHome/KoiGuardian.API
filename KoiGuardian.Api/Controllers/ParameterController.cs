@@ -44,9 +44,9 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<List<PondRerquireParam>> Get(string type,CancellationToken cancellationToken)
+        public async Task<List<PondRerquireParam>> Get(string type, int fishAgebyDay,CancellationToken cancellationToken)
         {
-            return await _parameterService.getAll(type, cancellationToken);
+            return await _parameterService.getAll(type, fishAgebyDay, cancellationToken);
         }
 
 

@@ -153,7 +153,7 @@ namespace KoiGuardian.Api.Services
                    ParameterUnits = u.ParameterUnits.Select(
                        u => new FishRerquireParamUnit()
                        {
-                           ParameterUntiID = u.ParameterUnitID,
+                           ParameterUntiID = u.HistoryID,
                            UnitName = u.UnitName,
                            WarningLowwer = u.WarningLowwer,
                            WarningUpper = u.WarningUpper,

@@ -16,15 +16,18 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("create-fish")]
-        public async Task<FishResponse> CreateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> CreateFishAsync(/*[FromBody]*/ FishRequest fishRequest, CancellationToken cancellationToken)
         {
-            return await fishService.CreateFishAsync(fishRequest, cancellationToken);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await fishService.CreateFishAsync(baseUrl,fishRequest, cancellationToken);
         }
 
         [HttpPut("update-fish")]
-        public async Task<FishResponse> UpdateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> UpdateFishAsync(/*[FromBody]*/ FishRequest fishRequest, CancellationToken cancellationToken)
         {
-            return await fishService.UpdateFishAsync(fishRequest, cancellationToken);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+
+            return await fishService.UpdateFishAsync(baseUrl,fishRequest, cancellationToken);
         }
 
         [HttpGet("{koiId}")]

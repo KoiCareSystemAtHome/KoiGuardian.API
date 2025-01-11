@@ -11,8 +11,8 @@ namespace KoiGuardian.Api.Services
 {
     public interface IFishService
     {
-        Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
-        Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
+        Task<FishResponse> CreateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken);
+        Task<FishResponse> UpdateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
     }
@@ -25,6 +25,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<ParameterUnit> _parameterUnitRepository;
         private readonly IRepository<Parameter> _parameterRepository;
         private readonly IRepository<RelKoiParameter> _relKoiparameterRepository;
+        private readonly IImageUploadService _imageUploadService;
 
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
@@ -35,7 +36,8 @@ namespace KoiGuardian.Api.Services
             IRepository<ParameterUnit> parameterUnitRepository,
             IRepository<Parameter> parameterRepository,
             IRepository<RelKoiParameter> relKoiparameterRepository,
-            IRepository<Variety> varietyRepository)
+            IRepository<Variety> varietyRepository,
+            IImageUploadService imageUpload)
         {
             _fishRepository = fishRepository;
             _pondRepository = pondRepository;
@@ -44,9 +46,10 @@ namespace KoiGuardian.Api.Services
             _relKoiparameterRepository = relKoiparameterRepository;
             _parameterUnitRepository = parameterUnitRepository;
             _parameterRepository = parameterRepository;
+            _imageUploadService = imageUpload;
         }
 
-        public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> CreateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken)
         {
             var requirementsParam = await RequireParam(cancellationToken);
 
@@ -86,7 +89,6 @@ namespace KoiGuardian.Api.Services
             {
                 PondID = fishRequest.PondID,
                 Name = fishRequest.Name,
-                Image = fishRequest.Image,
                 Physique = fishRequest.Physique,
                 Sex = fishRequest.Sex,
                 Breeder = fishRequest.Breeder,
@@ -95,7 +97,10 @@ namespace KoiGuardian.Api.Services
                 InPondSince = fishRequest.InPondSince,
                 Price = fishRequest.Price
             };
-            
+
+            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Fish", fish.KoiID.ToString(), fishRequest.Image);
+            fish.Image = image;
+
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
@@ -160,8 +165,9 @@ namespace KoiGuardian.Api.Services
                }).ToList();
         }
 
-        public async Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> UpdateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken)
         {
+            var requirementsParam = await RequireParam(cancellationToken);
             var fishResponse = new FishResponse();
 
             var existingFish = await _fishRepository.GetAsync(x => x.KoiID.Equals(fishRequest.KoiID), cancellationToken);
@@ -199,7 +205,6 @@ namespace KoiGuardian.Api.Services
 
             existingFish.PondID = fishRequest.PondID;
             existingFish.Name = fishRequest.Name;
-            existingFish.Image = fishRequest.Image;
             existingFish.Physique = fishRequest.Physique;
             existingFish.Sex = fishRequest.Sex;
             existingFish.Breeder = fishRequest.Breeder;
@@ -207,6 +212,24 @@ namespace KoiGuardian.Api.Services
             existingFish.VarietyId = variety.VarietyId;
             existingFish.InPondSince = fishRequest.InPondSince;
             existingFish.Price = fishRequest.Price;
+            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Fish", existingFish.KoiID.ToString(), fishRequest.Image);
+            existingFish.Image = image;
+
+            var validValues = fishRequest.RequirementFishParam.Where(u =>
+                   requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
+                   );
+
+            foreach (var validValue in validValues)
+            {
+                _relKoiparameterRepository.Insert(new RelKoiParameter()
+                {
+                    RelKoiParameterID = Guid.NewGuid(),
+                    KoiId = existingFish.KoiID,
+                    ParameterUnitID = validValue.ParamterUnitID,
+                    CalculatedDate = DateTime.Now,
+                    Value = validValue.Value
+                });
+            }
 
             _fishRepository.Update(existingFish);
 

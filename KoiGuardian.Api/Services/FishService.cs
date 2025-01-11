@@ -11,12 +11,13 @@ namespace KoiGuardian.Api.Services
 {
     public interface IFishService
     {
-        Task<FishResponse> CreateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken);
-        Task<FishResponse> UpdateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken);
+        Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
+        Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
 
         Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
+
     }
 
     public class FishService : IFishService
@@ -51,7 +52,7 @@ namespace KoiGuardian.Api.Services
             _imageUploadService = imageUpload;
         }
 
-        public async Task<FishResponse> CreateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
         {
             var requirementsParam = await RequireParam(cancellationToken);
 
@@ -98,11 +99,12 @@ namespace KoiGuardian.Api.Services
                 Age = fishRequest.Age,
                 VarietyId = variety.VarietyId,
                 InPondSince = fishRequest.InPondSince,
-                Price = fishRequest.Price
+                Price = fishRequest.Price,
+                Image = fishRequest.Image,
+
             };
 
-            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Fish", fish.KoiID.ToString(), fishRequest.Image);
-            fish.Image = image;
+            
 
             _fishRepository.Insert(fish);
 
@@ -170,7 +172,7 @@ namespace KoiGuardian.Api.Services
                }).ToList();
         }
 
-        public async Task<FishResponse> UpdateFishAsync(string baseUrl, FishRequest fishRequest, CancellationToken cancellationToken)
+        public async Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
         {
             var requirementsParam = await RequireParam(cancellationToken);
             var fishResponse = new FishResponse();
@@ -217,8 +219,8 @@ namespace KoiGuardian.Api.Services
             existingFish.VarietyId = variety.VarietyId;
             existingFish.InPondSince = fishRequest.InPondSince;
             existingFish.Price = fishRequest.Price;
-            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Fish", existingFish.KoiID.ToString(), fishRequest.Image);
-            existingFish.Image = image;
+            
+            existingFish.Image = fishRequest.Image;
 
             var validValues = fishRequest.RequirementFishParam.Where(u =>
                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.ParameterUntiID)).Contains(u.ParamterUnitID)

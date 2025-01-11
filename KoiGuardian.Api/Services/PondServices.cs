@@ -48,7 +48,7 @@ namespace KoiGuardian.Api.Services
                 pondRepository.Insert(pond);
 
                 var validValues = request.RequirementPondParam.Where ( u=>
-                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
+                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.Key)
                     );
 
                 foreach ( var validValue in validValues)
@@ -57,7 +57,7 @@ namespace KoiGuardian.Api.Services
                     {
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
-                        ParameterUnitID = validValue.ParamterUnitID,
+                        ParameterUnitID = validValue.Key,
                         CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });

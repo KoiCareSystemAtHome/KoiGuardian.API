@@ -15,7 +15,7 @@ namespace KoiGuardian.Models.Request
         public DateTime CreateDate { get; set; }
         public IFormFile Image { get; set; }
 
-        public required List <PondParam> RequirementPondParam {  get; set; } 
+        public Dictionary <Guid, float> ? RequirementPondParam {  get; set; } 
 
     }
     public class PondParam

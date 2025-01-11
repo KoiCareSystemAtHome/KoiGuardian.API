@@ -15,6 +15,8 @@ namespace KoiGuardian.Api.Services
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
+
+        Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
     }
 
     public class FishService : IFishService
@@ -224,5 +226,20 @@ namespace KoiGuardian.Api.Services
 
             return fishResponse;
         }
+
+        public async Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default)
+        {
+            return (await _fishRepository.FindAsync(
+                predicate: !string.IsNullOrWhiteSpace(name)
+                    ? f => f.Name.ToLower().Contains(name.ToLower())
+                    : null,
+                include: query => query
+                    .Include(f => f.Variety)
+                    .Include(f => f.Pond),
+                orderBy: query => query.OrderBy(f => f.Name),
+                cancellationToken: cancellationToken
+            )).ToList();
+        }
+
     }
 }

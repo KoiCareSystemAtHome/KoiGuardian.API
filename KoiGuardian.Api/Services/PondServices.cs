@@ -16,7 +16,7 @@ namespace KoiGuardian.Api.Services
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
 
         Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null);
-        Task<PondResponse> GetPondById(Guid pondId, CancellationToken cancellation);
+        Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
     }
 
     public class PondServices(
@@ -179,9 +179,9 @@ namespace KoiGuardian.Api.Services
 
 
 
-        public async Task<PondResponse> GetPondById(Guid pondId, CancellationToken cancellation)
+        public async Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation)
         {
-            var response = new PondResponse();
+            var response = new PondDetailResponse();
             try
             {
                 var pond = await pondRepository.GetAsync(
@@ -197,23 +197,52 @@ namespace KoiGuardian.Api.Services
 
                 if (pond != null)
                 {
-                    response.status = "200";
-                    response.message = "Pond retrieved successfully";
+                    
+
                    
+                    return new PondDetailResponse
+                    {
+                        PondID = pond.PondID,
+                        Name = pond.Name,
+                        Image = pond.Image,
+                        CreateDate = pond.CreateDate,
+                        OwnerId = pond.OwnerId,
+                        PondParameters = pond.RelPondParameter.Select(rp => new PondParameterInfo
+                        {
+                            ParameterUnitID = rp.ParameterUnit.ParameterUnitID,
+                            UnitName = rp.ParameterUnit.UnitName,
+                            WarningLowwer = rp.ParameterUnit.WarningLowwer,
+                            WarningUpper = rp.ParameterUnit.WarningUpper,
+                            DangerLower = rp.ParameterUnit.DangerLower,
+                            DangerUpper = rp.ParameterUnit.DangerUpper,
+                            MeasurementInstruction = rp.ParameterUnit.MeasurementInstruction
+                        }).ToList(),
+                        Fish = pond.Fish.Select(f => new FishInfo
+                        {
+                            FishId = f.KoiID,
+                            FishName = f.Name
+                        }).ToList(),
+                        FeedingMode = pond.FeedingMode != null ? new FeedingModeInfo
+                        {
+                            FeedingModeId = pond.FeedingMode.ModeId,
+                            ModeName = pond.FeedingMode.ModeName
+                        } : null
+                    };
                 }
                 else
                 {
-                    response.status = "404";
-                    response.message = "Pond not found";
+                    
                 }
             }
             catch (Exception ex)
             {
-                response.status = "500";
-                response.message = $"An error occurred: {ex.Message}";
+               
             }
 
-            return response;
+            return response;  
         }
+
+
+
     }
 }

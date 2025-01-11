@@ -4,6 +4,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.DataAccess;
 using OfficeOpenXml;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -173,7 +174,7 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<Parameter>> getAll(string parameterType, CancellationToken cancellationToken)
         {
-            return (await _parameterRepository.FindAsync(u => u.Type == parameterType)).ToList();
+            return (await _parameterRepository.FindAsync(u => u.Type == parameterType, include: u => u.Include(u =>u.ParameterUnits))).ToList();
         }
     }
 }

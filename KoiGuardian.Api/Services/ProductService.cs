@@ -14,7 +14,7 @@ namespace KoiGuardian.Api.Services
 {
     public interface IProductService
     {
-        Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> CreateProductAsync(string baseUrl,ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
 
@@ -45,7 +45,7 @@ namespace KoiGuardian.Api.Services
             _imageUploadService = imageUpload;
         }
 
-        public async Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateProductAsync(string baseUrl, ProductRequest productRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 
@@ -83,7 +83,7 @@ namespace KoiGuardian.Api.Services
             };
 
             // Upload the image
-            var image = await _imageUploadService.UploadImageAsync("Product", "Product", product.ProductId.ToString(), productRequest.Image);
+            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
             product.Image = image;
 
             // Set parameter impacts

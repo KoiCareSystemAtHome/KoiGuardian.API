@@ -18,13 +18,14 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("create-product")]
-        public async Task<ProductResponse> CreateProduct([FromBody] ProductRequest createProduct, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateProduct( ProductRequest createProduct, CancellationToken cancellationToken)
         {
-            return await services.CreateProductAsync(createProduct, cancellationToken);
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateProductAsync(baseUrl,createProduct, cancellationToken);
         }
 
         [HttpPut("update-product")]
-        public async Task<ProductResponse> UpdateProduct([FromBody] ProductRequest updateProduct, CancellationToken cancellationToken)
+        public async Task<ProductResponse> UpdateProduct( ProductRequest updateProduct, CancellationToken cancellationToken)
         {
             return await services.UpdateProductAsync(updateProduct, cancellationToken);
         }

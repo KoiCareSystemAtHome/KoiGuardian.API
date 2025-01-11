@@ -28,5 +28,11 @@ namespace KoiGuardian.Api.Controllers
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
             return await services.UpdatePond(baseUrl,updatePond, cancellationToken);
         }
+
+        [HttpGet("get-pond/{pondId}")]
+        public async Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellationToken)
+        {
+            return await services.GetPondById(pondId, cancellationToken);
+        }
     }
 }

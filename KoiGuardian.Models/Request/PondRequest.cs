@@ -37,4 +37,29 @@ namespace KoiGuardian.Models.Request
 
         public required List<PondParam> RequirementPondParam { get; set; }
     }
+
+
+    public class PondDetailResponse
+    {
+        public Guid PondID { get; set; }
+        public string Name { get; set; }
+        public string Image { get; set; }
+        public DateTime CreateDate { get; set; }
+        public string OwnerId { get; set; }
+
+        public List<PondParameterInfo> PondParameters { get; set; }
+        public List<FishInfo> Fish { get; set; }
+        public FeedingModeInfo FeedingMode { get; set; }
+    }
+
+    
+
+  
+
+    public class FeedingModeInfo
+    {
+        public Guid FeedingModeId { get; set; }
+        public string ModeName { get; set; }
+    }
+
 }

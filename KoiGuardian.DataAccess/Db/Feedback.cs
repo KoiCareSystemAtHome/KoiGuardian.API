@@ -3,12 +3,11 @@
 public class Feedback
 {
     public Guid FeedbackId { get; set; }
-    public Guid OrderDetailId { get; set; }    
-    public Guid MemberId { get; set; }
+    public Guid ProductId { get; set; }    
+    public string MemberId { get; set; }
     public int Rate { get; set; }
     public string Content { get; set; }
 
     public virtual User? Member { get; set; }
-    public virtual OrderDetail? OrderDetail { get; set; }    
-
+    public virtual Product? Product { get; set; }     
 }

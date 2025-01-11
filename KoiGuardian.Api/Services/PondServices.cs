@@ -14,6 +14,9 @@ namespace KoiGuardian.Api.Services
         Task<PondResponse> CreatePond(string baseUrl, CreatePondRequest Request, CancellationToken cancellation);
         Task<PondResponse> UpdatePond(string baseUrl,UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
+
+        Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null);
+        Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
     }
 
     public class PondServices(
@@ -149,5 +152,117 @@ namespace KoiGuardian.Api.Services
             }
             return response;
         }
+
+        public async Task<PondResponse> GetAllPonds(CancellationToken cancellation, string name = null)
+        {
+            var response = new PondResponse();
+            try
+            {
+                
+                var ponds = await pondRepository.FindAsync(
+                    predicate: null,
+                    include: query => query
+                        .Include(p => p.RelPondParameter)
+                            .ThenInclude(r => r.ParameterUnit)
+                                .ThenInclude(pu => pu.Parameter)
+                        .Include(p => p.Fish)
+                        .Include(p => p.FeedingMode),
+                    cancellationToken: cancellation
+                );
+
+                
+                if (!string.IsNullOrEmpty(name))
+                {
+                    ponds = ponds.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+
+                
+                if (ponds != null && ponds.Any())
+                {
+                    response.status = "200";
+                    response.message = "Ponds retrieved successfully";
+                }
+                else
+                {
+                    response.status = "404";
+                    response.message = "No ponds found";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.status = "500";
+                response.message = $"An error occurred: {ex.Message}";
+            }
+
+            return response;
+        }
+
+
+
+        public async Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation)
+        {
+            var response = new PondDetailResponse();
+            try
+            {
+                var pond = await pondRepository.GetAsync(
+                    predicate: p => p.PondID == pondId,
+                    include: query => query
+                        .Include(p => p.RelPondParameter)
+                            .ThenInclude(r => r.ParameterUnit)
+                                .ThenInclude(pu => pu.Parameter)
+                        .Include(p => p.Fish)
+                        .Include(p => p.FeedingMode),
+                    cancellationToken: cancellation
+                );
+
+                if (pond != null)
+                {
+                    
+
+                   
+                    return new PondDetailResponse
+                    {
+                        PondID = pond.PondID,
+                        Name = pond.Name,
+                        Image = pond.Image,
+                        CreateDate = pond.CreateDate,
+                        OwnerId = pond.OwnerId,
+                        PondParameters = pond.RelPondParameter.Select(rp => new PondParameterInfo
+                        {
+                            ParameterUnitID = rp.ParameterUnit.ParameterUnitID,
+                            UnitName = rp.ParameterUnit.UnitName,
+                            WarningLowwer = rp.ParameterUnit.WarningLowwer,
+                            WarningUpper = rp.ParameterUnit.WarningUpper,
+                            DangerLower = rp.ParameterUnit.DangerLower,
+                            DangerUpper = rp.ParameterUnit.DangerUpper,
+                            MeasurementInstruction = rp.ParameterUnit.MeasurementInstruction
+                        }).ToList(),
+                        Fish = pond.Fish.Select(f => new FishInfo
+                        {
+                            FishId = f.KoiID,
+                            FishName = f.Name
+                        }).ToList(),
+                        FeedingMode = pond.FeedingMode != null ? new FeedingModeInfo
+                        {
+                            FeedingModeId = pond.FeedingMode.ModeId,
+                            ModeName = pond.FeedingMode.ModeName
+                        } : null
+                    };
+                }
+                else
+                {
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+               
+            }
+
+            return response;  
+        }
+
+
+
     }
 }

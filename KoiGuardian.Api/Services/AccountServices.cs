@@ -171,8 +171,8 @@ IImageUploadService imageUpload
             NormalizedEmail = registrationRequestDto.Email.ToUpper(),
             Status = UserStatus.NotVerified,
             Code = SD.RandomCode(),
-            CreatedDate = DateTime.Now,
-            ValidUntil = DateTime.Now,
+            CreatedDate = DateTime.UtcNow,
+            ValidUntil = DateTime.UtcNow,
         };
         user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
 
@@ -248,7 +248,7 @@ IImageUploadService imageUpload
         }
 
         user.Code = SD.RandomCode();
-        user.ValidUntil = DateTime.Now.AddMinutes(5);
+        user.ValidUntil = DateTime.UtcNow.AddMinutes(5);
 
         string sendMail = SendMail.SendEmail(user.Email ?? "", "Code for register", EmailTemplate.Register(user.Code), "");
         if (sendMail != "")

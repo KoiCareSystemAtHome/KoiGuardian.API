@@ -40,5 +40,7 @@ namespace KoiGuardian.DataAccess.Db
         }
 
         public virtual ICollection<BlogProduct> BlogProducts { get; set; } = new List<BlogProduct>();
+
+        public virtual IEnumerable<Feedback> Feedbacks { get; set; }
     }
 }

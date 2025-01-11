@@ -10,23 +10,31 @@ namespace KoiGuardian.Api.Controllers
     [ApiController]
     public class ProductController(IProductService services) : ControllerBase
     {
-        [HttpPost("create-product")]
-        public async Task<ProductResponse> CreateProduct([FromBody] ProductRequest createProduct, CancellationToken cancellationToken)
+
+        [HttpGet]
+        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
         {
-            return await services.CreateProductAsync(createProduct, cancellationToken);
+            return await services.GetAllProductsAsync(cancellationToken);
+        }
+
+        [HttpPost("create-product")]
+        public async Task<ProductResponse> CreateProduct( ProductRequest createProduct, CancellationToken cancellationToken)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateProductAsync(baseUrl,createProduct, cancellationToken);
         }
 
         [HttpPut("update-product")]
-        public async Task<ProductResponse> UpdateProduct([FromBody] ProductRequest updateProduct, CancellationToken cancellationToken)
+        public async Task<ProductResponse> UpdateProduct( ProductRequest updateProduct, CancellationToken cancellationToken)
         {
             return await services.UpdateProductAsync(updateProduct, cancellationToken);
         }
 
         [HttpGet("{productId}")]
-        public async Task<Product> GetProductById(Guid productId, CancellationToken cancellationToken)
+        public async Task<ProductDetailResponse> GetProductById(Guid productId, CancellationToken cancellationToken)
         {
              
-            return await services.GetProductByIdAsync(productId, cancellationToken);
+            return await services.GetProductByIdAsync(productId,cancellationToken);
         }
 
         [HttpGet("search")]

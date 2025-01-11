@@ -11,6 +11,6 @@ namespace KoiGuardian.DataAccess.Db
 
         public virtual Product Product { get; set; }
         public virtual Order Order { get; set; }
-        public virtual IEnumerable<Feedback> Feedbacks { get; set; }
+        
     }
 }

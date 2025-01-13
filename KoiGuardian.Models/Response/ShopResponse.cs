@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KoiGuardian.Models.Request;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,20 +12,11 @@ namespace KoiGuardian.Models.Response
         public string Status { get; set; }
         public string Message { get; set; }
 
-        public ShopDTO Shop { get; set; }
+        public ShopRequest Shop { get; set; }
 
     }
 
-    public class ShopDTO
-    {
-        public Guid ShopId { get; set; }
-        public string ShopName { get; set; }
-        public decimal ShopRate { get; set; }
-        public string ShopDescription { get; set; }
-        public string ShopAddress { get; set; }
-        public bool IsActivate { get; set; }
-        public string BizLicences { get; set; }
-    }
+    
 
 
 

@@ -38,10 +38,11 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<Product>>> SearchProducts(
+        public async Task<ActionResult<IEnumerable<ProductDetailResponse>>> SearchProducts(
             [FromQuery] string? productName = null,
             [FromQuery] string? brand = null,
             [FromQuery] string? parameterImpact = null,
+            [FromQuery] string? CategoryName = null,
             CancellationToken cancellationToken = default)
         {
             try
@@ -50,6 +51,7 @@ namespace KoiGuardian.Api.Controllers
                     productName,
                     brand,
                     parameterImpact,
+                    CategoryName,
                     cancellationToken);
 
                 if (!results.Any())

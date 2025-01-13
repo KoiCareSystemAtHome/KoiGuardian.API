@@ -18,7 +18,12 @@ namespace KoiGuardian.Api.Services
         Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
 
-        Task<IEnumerable<Product>> SearchProductsAsync(string productName, string brand, string parameterImpact, CancellationToken cancellationToken);
+        Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
+      string productName,
+      string brand,
+      string parameterImpact,
+      string categoryName,
+      CancellationToken cancellationToken);
 
         Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken);
        
@@ -79,12 +84,13 @@ namespace KoiGuardian.Api.Services
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
+                Image = productRequest.Image,
                 ShopId = productRequest.ShopId
             };
 
             // Upload the image
-            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
-            product.Image = image;
+           /* var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
+            product.Image = image;*/
 
             // Set parameter impacts
             product.SetParameterImpacts(productRequest.ParameterImpacts);
@@ -197,15 +203,15 @@ namespace KoiGuardian.Api.Services
             };
         }
 
-        public async Task<IEnumerable<Product>> SearchProductsAsync(
-        string productName,
-        string brand,
-        string parameterImpact,
-        CancellationToken cancellationToken)
+    public async Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
+     string productName,
+     string brand,
+     string parameterImpact,
+     string categoryName,
+     CancellationToken cancellationToken)
         {
             var query = _productRepository.GetQueryable();
 
-            
             if (!string.IsNullOrWhiteSpace(productName))
             {
                 query = query.Where(p => p.ProductName.Contains(productName));
@@ -218,14 +224,40 @@ namespace KoiGuardian.Api.Services
 
             if (!string.IsNullOrWhiteSpace(parameterImpact))
             {
-                
                 query = query.Where(p => p.ParameterImpactment.Contains(parameterImpact));
             }
 
-            // Execute query and return results
-            return await query
-                .AsNoTracking()  // For better performance since we're just reading
+            if (!string.IsNullOrWhiteSpace(categoryName))
+            {
+                query = query.Include(p => p.Category)
+                            .Where(p => p.Category.Name.Contains(categoryName));
+            }
+
+            // Project to response model to avoid circular references
+            var results = await query
+                .Include(p => p.Category)
+                .Select(p => new ProductSearchResponse
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    Brand = p.Brand,
+                    ManufactureDate = p.ManufactureDate,
+                    ExpiryDate = p.ExpiryDate,
+                    ParameterImpactment = p.ParameterImpactment,
+                    Image = p.Image,
+                    Category = new CategoryInfo
+                    {
+                        CategoryId = p.Category.CategoryId,
+                        Name = p.Category.Name
+                    }
+                })
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
+
+            return results;
         }
 
         public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)

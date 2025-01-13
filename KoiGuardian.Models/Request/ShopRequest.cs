@@ -15,5 +15,11 @@ namespace KoiGuardian.Models.Request
         public string ShopAddress { get; set; }
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
+
+        public List<ProductRequest> Products { get; set; }
     }
+
+  
+
+
 }

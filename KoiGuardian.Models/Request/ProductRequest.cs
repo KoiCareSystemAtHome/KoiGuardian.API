@@ -21,7 +21,7 @@ namespace KoiGuardian.Models.Request
 
         public int StockQuantity { get; set; }
 
-        public IFormFile Image {  get; set; }
+        public string Image {  get; set; }
 
         public Guid CategoryId { get; set; }
 

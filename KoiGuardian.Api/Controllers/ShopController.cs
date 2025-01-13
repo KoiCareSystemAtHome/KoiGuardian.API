@@ -36,7 +36,7 @@ namespace KoiGuardian.Api.Controllers
         [Route("{shopId}")]
         public async Task<IActionResult> GetShopById(Guid shopId, CancellationToken cancellationToken)
         {
-            var response = await _shopService.GetShop(shopId, cancellationToken);
+            var response = await _shopService.GetShopById(shopId, cancellationToken);
 
             if (response.Status == "200")
                 return Ok(response);

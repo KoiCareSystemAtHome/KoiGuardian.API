@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,5 +48,21 @@ namespace KoiGuardian.Models.Response
         public string MemberName { get; set; }
         public int Rate { get; set; }
         public string Content { get; set; }
+    }
+
+    public class ProductSearchResponse
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public string Description { get; set; }
+        public decimal Price { get; set; }
+        public int StockQuantity { get; set; }
+        public string Brand { get; set; }
+        public DateTime? ManufactureDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string ParameterImpactment { get; set; }
+        public string Image { get; set; }
+        // Include only necessary Category information
+        public CategoryInfo Category { get; set; }
     }
 }

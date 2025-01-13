@@ -11,7 +11,7 @@ namespace KoiGuardian.Api.Services
     public interface IShopService
     {
         Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation);
-        Task<ShopResponse> GetShop(Guid shopId, CancellationToken cancellation);
+        Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellation);
         Task<ShopResponse> DeleteShop(Guid shopId, CancellationToken cancellation);
         Task<Shop> GetShopByIdAsync(Guid shopId, CancellationToken cancellationToken);
 
@@ -71,13 +71,17 @@ namespace KoiGuardian.Api.Services
             return shopResponse;
         }
 
-        public async Task<ShopResponse> GetShop(Guid shopId, CancellationToken cancellation)
+        public async Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellation)
         {
             var shopResponse = new ShopResponse();
-            var shop = await _shopRepository.GetAsync(x => x.ShopId.Equals(shopId), cancellation);
+            var shop = await _shopRepository
+                .GetQueryable()
+                .Include(s => s.Products)  // Include products
+                .FirstOrDefaultAsync(x => x.ShopId == shopId, cancellation);
+
             if (shop is not null)
             {
-                shopResponse.Shop = new ShopDTO
+                shopResponse.Shop = new ShopRequest
                 {
                     ShopId = shop.ShopId,
                     ShopName = shop.ShopName,
@@ -85,7 +89,20 @@ namespace KoiGuardian.Api.Services
                     ShopDescription = shop.ShopDescription,
                     ShopAddress = shop.ShopAddress,
                     IsActivate = shop.IsActivate,
-                    BizLicences = shop.BizLicences
+                    BizLicences = shop.BizLicences,
+                    Products = shop.Products?.Select(p => new ProductRequest
+                    {
+                        ProductId = p.ProductId,
+                        ProductName = p.ProductName,
+                        Price = p.Price,
+                        Image = p.Image,
+                        ExpiryDate = p.ExpiryDate,
+                        Brand = p.Brand,
+                        ManufactureDate = p.ManufactureDate,
+                        StockQuantity = p.StockQuantity,
+                        Description = p.Description
+
+                    }).ToList()
                 };
                 shopResponse.Status = "200";
                 shopResponse.Message = "Get Shop Success";

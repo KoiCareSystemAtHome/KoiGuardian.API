@@ -28,6 +28,7 @@ namespace KoiGuardian.DataAccess.Db
         public bool? FoodIsFloat { get; set; }
         public int AgeFrom { get; set; } // từ số tháng tuổi 
         public int AgeTo { get; set; } // tới số tháng tuồi
+        public int ProductWeight { get; set; } // tới cân nặng tính theo gram để so sánh mua không bị dư quá đà nè sốp
 
 
         public virtual Category Category { get; set; }

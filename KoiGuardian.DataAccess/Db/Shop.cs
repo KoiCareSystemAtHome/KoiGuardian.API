@@ -19,5 +19,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
+        public virtual User User { get; set; }  
+
     }
 }

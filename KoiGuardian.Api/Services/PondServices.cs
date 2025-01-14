@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
-    public interface IPondServices 
+    public interface IPondServices
     {
         Task<PondResponse> CreatePond(CreatePondRequest Request, CancellationToken cancellation);
         Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
@@ -17,15 +17,15 @@ namespace KoiGuardian.Api.Services
 
         Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default);
         Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
-        
-    
+
+
     }
 
     public class PondServices(
-        IRepository<Pond> pondRepository, 
-        IRepository<ParameterUnit> parameterUnitRepository,
+        IRepository<Pond> pondRepository,
+        IRepository<Parameter> parameterRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
-        KoiGuardianDbContext _dbContext, 
+        KoiGuardianDbContext _dbContext,
         IImageUploadService imageUpload,
         IRepository<User> userRepository) : IPondServices
     {
@@ -43,29 +43,29 @@ namespace KoiGuardian.Api.Services
                     CreateDate = request.CreateDate,
                     Name = request.Name,
                     Image = request.Image,
-                    
+
                 };
 
 
                 pondRepository.Insert(pond);
 
-                var validValues = request.RequirementPondParam.Where ( u=>
-                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.HistoryId)).Contains(u.ParamterUnitID)
+                var validValues = request.RequirementPondParam.Where(u =>
+                    requirementsParam.Select(u => u.HistoryId).Contains(u.HistoryId)
                     );
 
-                foreach ( var validValue in validValues)
+                foreach (var validValue in validValues)
                 {
                     relPondparameterRepository.Insert(new RelPondParameter()
                     {
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
-                        ParameterUnitID = validValue.ParamterUnitID,
+                        ParameterHistoryId = validValue.HistoryId,
                         CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
                 }
 
-                
+
                 await _dbContext.SaveChangesAsync(cancellation);
 
                 response.status = "201";
@@ -80,29 +80,22 @@ namespace KoiGuardian.Api.Services
             return response;
         }
 
-        public async Task<List<PondRerquireParam>> RequireParam( CancellationToken cancellation)
+        public async Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation)
         {
-            return (await parameterUnitRepository.FindAsync(
-                u => u.Parameter.Type == ParameterType.Pond.ToString()
-                    &&  u.IsActive && u.IsStandard && u.ValidUnitl == null,
-                u => u.Include(p => p.Parameter),
+            return (await parameterRepository.FindAsync(
+                u => u.Type == ParameterType.Pond.ToString()
+                    && u.IsActive && u.ValidUntil == null,
                 cancellationToken: cancellation))
                 .Select(u => new PondRerquireParam()
                 {
-                    ParameterID = u.ParameterID,
-                    ParameterName = u.Parameter.Name,
-                    ParameterUnits = u.Parameter.ParameterUnits.Select(
-                       u => new PondRerquireParamUnit()
-                       {
-                           HistoryId = u.HistoryID,
-                           UnitName = u.UnitName,
-                           WarningLowwer = u.WarningLowwer,
-                           WarningUpper = u.WarningUpper,
-                           DangerLower = u.DangerLower,
-                           DangerUpper = u.DangerUpper,
-                           MeasurementInstruction = u.MeasurementInstruction,
-                       }).ToList()
-
+                    HistoryId = u.ParameterID,
+                    ParameterName = u.Name,
+                    UnitName = u.UnitName,
+                    WarningLowwer = u.WarningLowwer,
+                    WarningUpper = u.WarningUpper,
+                    DangerLower = u.DangerLower,
+                    DangerUpper = u.DangerUpper,
+                    MeasurementInstruction = u.MeasurementInstruction,
                 }).ToList();
         }
 
@@ -119,7 +112,7 @@ namespace KoiGuardian.Api.Services
                 pond.Image = request.Image;
 
                 var validValues = request.RequirementPondParam.Where(u =>
-                    requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.HistoryId)).Contains(u.ParamterUnitID)
+                    requirementsParam.Select(u => u.HistoryId).Contains(u.HistoryId)
                     );
 
                 foreach (var validValue in validValues)
@@ -128,7 +121,7 @@ namespace KoiGuardian.Api.Services
                     {
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
-                        ParameterUnitID = validValue.ParamterUnitID,
+                        ParameterHistoryId = validValue.HistoryId,
                         CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
@@ -164,7 +157,6 @@ namespace KoiGuardian.Api.Services
                     : null, // Không lọc nếu name là null hoặc rỗng
                 include: query => query
                     .Include(p => p.RelPondParameter)
-                        .ThenInclude(r => r.ParameterUnit)
                             .ThenInclude(pu => pu.Parameter)
                     .Include(p => p.Fish)
                     .Include(p => p.FeedingMode), // Thêm quan hệ liên quan nếu cần
@@ -187,7 +179,6 @@ namespace KoiGuardian.Api.Services
                     predicate: p => p.PondID == pondId,
                     include: query => query
                         .Include(p => p.RelPondParameter)
-                            .ThenInclude(r => r.ParameterUnit)
                                 .ThenInclude(pu => pu.Parameter)
                         .Include(p => p.Fish)
                         .Include(p => p.FeedingMode),
@@ -196,9 +187,6 @@ namespace KoiGuardian.Api.Services
 
                 if (pond != null)
                 {
-                    
-
-                   
                     return new PondDetailResponse
                     {
                         PondID = pond.PondID,
@@ -208,13 +196,13 @@ namespace KoiGuardian.Api.Services
                         OwnerId = pond.OwnerId,
                         PondParameters = pond.RelPondParameter.Select(rp => new PondParameterInfo
                         {
-                            ParameterUnitID = rp.ParameterUnit.ParameterUnitID,
-                            UnitName = rp.ParameterUnit.UnitName,
-                            WarningLowwer = rp.ParameterUnit.WarningLowwer,
-                            WarningUpper = rp.ParameterUnit.WarningUpper,
-                            DangerLower = rp.ParameterUnit.DangerLower,
-                            DangerUpper = rp.ParameterUnit.DangerUpper,
-                            MeasurementInstruction = rp.ParameterUnit.MeasurementInstruction
+                            ParameterUnitID = rp.Parameter.HistoryId,
+                            UnitName = rp.Parameter.UnitName,
+                            WarningLowwer = rp.Parameter.WarningLowwer,
+                            WarningUpper = rp.Parameter.WarningUpper,
+                            DangerLower = rp.Parameter.DangerLower,
+                            DangerUpper = rp.Parameter.DangerUpper,
+                            MeasurementInstruction = rp.Parameter.MeasurementInstruction
                         }).ToList(),
                         Fish = pond.Fish.Select(f => new FishInfo
                         {
@@ -230,15 +218,15 @@ namespace KoiGuardian.Api.Services
                 }
                 else
                 {
-                    
+
                 }
             }
             catch (Exception ex)
             {
-               
+
             }
 
-            return response;  
+            return response;
         }
 
 

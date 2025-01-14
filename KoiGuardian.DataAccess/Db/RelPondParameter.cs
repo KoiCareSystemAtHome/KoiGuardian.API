@@ -13,7 +13,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public Guid PondId { get; set; }
 
-        public Guid ParameterUnitID { get; set; }
+        public Guid ParameterHistoryId { get; set; }
 
         public DateTime CalculatedDate { get; set; }
 
@@ -21,7 +21,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public Pond? Pond { get; set; } 
 
-        public ParameterUnit? ParameterUnit { get; set; }
+        public Parameter? Parameter { get; set; }
 
     }
 }

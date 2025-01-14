@@ -25,7 +25,6 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Fish> _fishRepository;
         private readonly IRepository<Pond> _pondRepository;
         private readonly IRepository<Variety> _varietyRepository;
-        private readonly IRepository<ParameterUnit> _parameterUnitRepository;
         private readonly IRepository<Parameter> _parameterRepository;
         private readonly IRepository<RelKoiParameter> _relKoiparameterRepository;
         private readonly IImageUploadService _imageUploadService;
@@ -36,7 +35,6 @@ namespace KoiGuardian.Api.Services
             IRepository<Fish> fishRepository,
             IRepository<Pond> pondRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
-            IRepository<ParameterUnit> parameterUnitRepository,
             IRepository<Parameter> parameterRepository,
             IRepository<RelKoiParameter> relKoiparameterRepository,
             IRepository<Variety> varietyRepository,
@@ -47,7 +45,6 @@ namespace KoiGuardian.Api.Services
             _unitOfWork = unitOfWork;
             _varietyRepository = varietyRepository;
             _relKoiparameterRepository = relKoiparameterRepository;
-            _parameterUnitRepository = parameterUnitRepository;
             _parameterRepository = parameterRepository;
             _imageUploadService = imageUpload;
         }
@@ -80,11 +77,12 @@ namespace KoiGuardian.Api.Services
                 .GetAsync(x => x.VarietyName.ToLower() == fishRequest.VarietyName.ToLower(), cancellationToken);
             if (variety == null)
             {
-                variety = new Variety() { 
+                variety = new Variety()
+                {
                     VarietyId = Guid.NewGuid(),
                     VarietyName = fishRequest.VarietyName,
                     Description = "",
-                 };
+                };
                 _varietyRepository.Insert(variety);
             }
 
@@ -104,14 +102,14 @@ namespace KoiGuardian.Api.Services
 
             };
 
-            
+
 
             _fishRepository.Insert(fish);
 
 
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
-                   requirementsParam.SelectMany(u => u.ParameterUnits?.Select( u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
+                   requirementsParam.Select(u => u.HistoryID).Contains(u.ParameterHistoryId)
                    );
 
             foreach (var validValue in validValues)
@@ -120,7 +118,7 @@ namespace KoiGuardian.Api.Services
                 {
                     RelKoiParameterID = Guid.NewGuid(),
                     KoiId = fish.KoiID,
-                    ParameterUnitID = validValue.ParamterUnitID,
+                    ParameterHistoryId = validValue.ParameterHistoryId,
                     CalculatedDate = DateTime.UtcNow,
                     Value = validValue.Value
                 });
@@ -150,25 +148,18 @@ namespace KoiGuardian.Api.Services
         public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation)
         {
             return (await _parameterRepository.FindAsync(
-               u => u.Type == ParameterType.Fish.ToString(),
-               u => u.Include(p => p.ParameterUnits.Where( u => u.IsActive && u.IsStandard && u.ValidUnitl == null)),
-               cancellationToken: cancellation))
+               u => u.Type == ParameterType.Fish.ToString() && u.IsActive && u.ValidUntil == null))
                .Select(u => new FishRerquireParam()
                {
                    ParameterID = u.ParameterID,
                    ParameterName = u.Name,
-                   ParameterUnits = u.ParameterUnits.Select(
-                       u => new FishRerquireParamUnit()
-                       {
-                           ParameterUntiID = u.HistoryID,
-                           UnitName = u.UnitName,
-                           WarningLowwer = u.WarningLowwer,
-                           WarningUpper = u.WarningUpper,
-                           DangerLower = u.DangerLower,
-                           DangerUpper = u.DangerUpper,
-                           MeasurementInstruction = u.MeasurementInstruction,
-                       }).ToList()
-                   
+                   UnitName = u.UnitName,
+                   WarningLowwer = u.WarningLowwer,
+                   WarningUpper = u.WarningUpper,
+                   DangerLower = u.DangerLower,
+                   DangerUpper = u.DangerUpper,
+                   MeasurementInstruction = u.MeasurementInstruction,
+
                }).ToList();
         }
 
@@ -219,11 +210,11 @@ namespace KoiGuardian.Api.Services
             existingFish.VarietyId = variety.VarietyId;
             existingFish.InPondSince = fishRequest.InPondSince;
             existingFish.Price = fishRequest.Price;
-            
+
             existingFish.Image = fishRequest.Image;
 
             var validValues = fishRequest.RequirementFishParam.Where(u =>
-                   requirementsParam.SelectMany(u => u.ParameterUnits?.Select(u => u.ParameterUntiID)).Contains(u.ParamterUnitID)
+                   requirementsParam.Select(u => u.HistoryID).Contains(u.ParameterHistoryId)
                    );
 
             foreach (var validValue in validValues)
@@ -232,7 +223,7 @@ namespace KoiGuardian.Api.Services
                 {
                     RelKoiParameterID = Guid.NewGuid(),
                     KoiId = existingFish.KoiID,
-                    ParameterUnitID = validValue.ParamterUnitID,
+                    ParameterHistoryId = validValue.ParameterHistoryId,
                     CalculatedDate = DateTime.UtcNow,
                     Value = validValue.Value
                 });

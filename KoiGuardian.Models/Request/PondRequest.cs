@@ -20,7 +20,7 @@ namespace KoiGuardian.Models.Request
     public class PondParam
     {
         //public Guid PondID { get; set; }
-        public Guid ParamterUnitID { get; set; }    
+        public Guid HistoryId { get; set; }    
         public float Value { get; set; }
     }
 

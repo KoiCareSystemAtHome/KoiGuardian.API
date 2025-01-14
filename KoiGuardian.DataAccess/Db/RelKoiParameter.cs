@@ -13,7 +13,7 @@ public class RelKoiParameter
     public Guid RelKoiParameterID {  get; set; }
     public Guid KoiId {  get; set; }
 
-    public Guid ParameterUnitID { get; set; }
+    public Guid ParameterHistoryId { get; set; }
 
     public DateTime CalculatedDate { get; set; }
 
@@ -21,5 +21,5 @@ public class RelKoiParameter
 
     public Fish? Fish { get; set; }
 
-    public virtual ParameterUnit? ParameterUnit { get; set; }
+    public virtual Parameter? Parameter { get; set; }
 }

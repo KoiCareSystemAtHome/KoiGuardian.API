@@ -389,6 +389,7 @@ IImageUploadService imageUpload
         user.UserName = request.Name;
         user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, request.Avatar);
         user.Gender = request.Gender;
+        user.UserReminder = request.UserReminder;
 
         await uow.SaveChangesAsync();
 

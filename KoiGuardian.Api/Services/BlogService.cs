@@ -85,7 +85,6 @@ namespace KoiGuardian.Api.Services
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
                 ReportedDate = blogRequest.ReportedDate,
-                View = 0,
                 ReportedBy = blogRequest.ReportedBy
 
             };
@@ -225,7 +224,6 @@ namespace KoiGuardian.Api.Services
                 Type = blog.Type,
                 ReportedBy = blog.ReportedBy,
                 ReportedDate = blog.ReportedDate,
-                View = blog.View,
                 ShopId = blog.ShopId,
                 Shop = blog.Shop != null ? new ShopBasicDto
                 {
@@ -283,7 +281,6 @@ namespace KoiGuardian.Api.Services
                 Type = blog.Type,
                 ReportedBy = blog.ReportedBy,
                 ReportedDate = blog.ReportedDate,
-                View = blog.View,
                 ShopId = blog.ShopId,
                 Shop = blog.Shop != null ? new ShopBasicDto
                 {
@@ -316,9 +313,6 @@ namespace KoiGuardian.Api.Services
                         Message = "Blog not found."
                     };
                 }
-
-                // Increment the view count
-                blog.View += 1;
 
                 // Update the blog in the repository
                 _blogRepository.Update(blog);

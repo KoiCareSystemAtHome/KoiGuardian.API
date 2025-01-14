@@ -24,6 +24,11 @@ namespace KoiGuardian.DataAccess.Db
         public virtual Shop Shop { get; set; }
 
         public Guid CategoryId { get; set; }
+        public ProductType Type { get; set; }
+        public bool? FoodIsFloat { get; set; }
+        public int AgeFrom { get; set; } // từ số tháng tuổi 
+        public int AgeTo { get; set; } // tới số tháng tuồi
+
 
         public virtual Category Category { get; set; }
 
@@ -42,5 +47,13 @@ namespace KoiGuardian.DataAccess.Db
         public virtual ICollection<BlogProduct> BlogProducts { get; set; } = new List<BlogProduct>();
 
         public virtual IEnumerable<Feedback> Feedbacks { get; set; }
+    }
+
+    public enum ProductType
+    {
+        Food,
+        Pond_Equipment,
+        Medicine,
+        Funtional_Food
     }
 }

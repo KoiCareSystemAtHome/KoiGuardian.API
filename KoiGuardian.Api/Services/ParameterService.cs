@@ -19,16 +19,13 @@ namespace KoiGuardian.Api.Services
     public class ParameterService : IParameterService
     {
         private readonly IRepository<Parameter> _parameterRepository;
-        private readonly IRepository<ParameterUnit> _parameterUnitRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public ParameterService(
             IRepository<Parameter> parameterRepository,
-            IRepository<ParameterUnit> parameterUnitRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _parameterRepository = parameterRepository;
-            _parameterUnitRepository = parameterUnitRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -52,7 +49,6 @@ namespace KoiGuardian.Api.Services
                 }
 
                 var parameters = new List<Parameter>();
-                var parameterUnits = new List<ParameterUnit>();
 
                 for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
                 {
@@ -74,7 +70,7 @@ namespace KoiGuardian.Api.Services
                     }
 
                     var unitIdString = worksheet.Cells[row, 4].GetValue<string>();
-                    if (!Guid.TryParse(unitIdString, out var unitId))
+                    if (!Guid.TryParse(unitIdString, out var paramId))
                     {
                         response.status = "400";
                         response.message = $"Invalid Guid format in row {row}, column 4.";
@@ -116,26 +112,24 @@ namespace KoiGuardian.Api.Services
                     }
 
                     // Upsert Parameter Unit
-                    var parameterUnit = await _parameterUnitRepository.GetAsync(pu => pu.ParameterUnitID == unitId, cancellationToken);
+                    var parameterUnit = await _parameterRepository.GetAsync(pu => pu.ParameterID == paramId, cancellationToken);
                     if (parameterUnit == null)
                     {
-                        parameterUnit = new ParameterUnit
+                        parameterUnit = new Parameter
                         {
-                            ParameterUnitID = unitId,
+                            HistoryId = Guid.NewGuid(),
                             ParameterID = parameterId,
                             UnitName = unitName,
                             WarningUpper = warningUpper,
                             WarningLowwer = warningLower,
                             DangerUpper = dangerUpper,
                             DangerLower = dangerLower,
-                            IsStandard = isStandard,
                             IsActive = isActive,
-                            Convertionrate = conversionRate,
                             MeasurementInstruction = measurementInstruction,
                             AgeFrom = ageFrom,
                             AgeTo = ageTo
                         };
-                        _parameterUnitRepository.Insert(parameterUnit);
+                        _parameterRepository.Insert(parameterUnit);
                     }
                     else
                     {
@@ -144,13 +138,11 @@ namespace KoiGuardian.Api.Services
                         parameterUnit.WarningLowwer = warningLower;
                         parameterUnit.DangerUpper = dangerUpper;
                         parameterUnit.DangerLower = dangerLower;
-                        parameterUnit.IsStandard = isStandard;
                         parameterUnit.IsActive = isActive;
-                        parameterUnit.Convertionrate = conversionRate;
                         parameterUnit.MeasurementInstruction = measurementInstruction;
                         parameterUnit.AgeFrom = ageFrom;
                         parameterUnit.AgeTo = ageTo;
-                        _parameterUnitRepository.Update(parameterUnit);
+                        _parameterRepository.Update(parameterUnit);
                     }
                 }
 
@@ -167,7 +159,7 @@ namespace KoiGuardian.Api.Services
             return response;
         }
 
-        public async Task<Parameter> getAll(Guid parameterId,CancellationToken cancellationToken)
+        public async Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken)
         {
             return await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
 
@@ -177,56 +169,42 @@ namespace KoiGuardian.Api.Services
         {
             if (age < 1)
             {
-                return (await _parameterUnitRepository.FindAsync(
-                    u => u.Parameter.Type.ToLower() == parameterType.ToLower()
-                        && u.IsActive && u.IsStandard && u.ValidUnitl == null,
-                    u => u.Include(p => p.Parameter),
+                return (await _parameterRepository.FindAsync(
+                    u => u.Type.ToLower() == parameterType.ToLower()
+                        && u.IsActive && u.ValidUntil == null,
                     cancellationToken: cancellationToken))
                     .Select(u => new PondRerquireParam()
                     {
-                        ParameterID = u.ParameterID,
-                        ParameterName = u.Parameter.Name,
-                        ParameterUnits = u.Parameter.ParameterUnits.Select(
-                           u => new PondRerquireParamUnit()
-                           {
-                               HistoryId = u.HistoryID,
-                               UnitName = u.UnitName,
-                               WarningLowwer = u.WarningLowwer,
-                               WarningUpper = u.WarningUpper,
-                               DangerLower = u.DangerLower,
-                               DangerUpper = u.DangerUpper,
-                               MeasurementInstruction = u.MeasurementInstruction,
-                           }).ToList()
+                        HistoryId = u.ParameterID,
+                        ParameterName = u.Name,
+                        UnitName = u.UnitName,
+                        WarningLowwer = u.WarningLowwer,
+                        WarningUpper = u.WarningUpper,
+                        DangerLower = u.DangerLower,
+                        DangerUpper = u.DangerUpper,
+                        MeasurementInstruction = u.MeasurementInstruction,
 
                     }).ToList();
             }
 
-            return (await _parameterUnitRepository.FindAsync(
-                    u => u.Parameter.Type.ToLower() == parameterType.ToLower()
-                        && u.IsActive  && u.ValidUnitl == null
+            return (await _parameterRepository.FindAsync(
+                    u => u.Type.ToLower() == parameterType.ToLower()
+                        && u.IsActive && u.ValidUntil == null
                         && u.AgeFrom <= age && u.AgeTo >= age
                         ,
-                    u => u.Include(p => p.Parameter),
                     cancellationToken: cancellationToken))
-                    .GroupBy( u => new { u.ParameterID, u.Parameter.Name})
                     .Select(u => new PondRerquireParam()
                     {
-                        ParameterID = u.Key.ParameterID,
-                        ParameterName = u.Key.Name,
-                        ParameterUnits = u.Select(
-                           u => new PondRerquireParamUnit()
-                           {
-                               HistoryId = u.HistoryID,
-                               UnitName = u.UnitName,
-                               WarningLowwer = u.WarningLowwer,
-                               WarningUpper = u.WarningUpper,
-                               DangerLower = u.DangerLower,
-                               DangerUpper = u.DangerUpper,
-                               MeasurementInstruction = u.MeasurementInstruction,
-                           }).ToList()
+                        HistoryId = u.HistoryId,
+                        ParameterName = u.Name,
+                        UnitName = u.UnitName,
+                        WarningLowwer = u.WarningLowwer,
+                        WarningUpper = u.WarningUpper,
+                        DangerLower = u.DangerLower,
+                        DangerUpper = u.DangerUpper,
+                        MeasurementInstruction = u.MeasurementInstruction,
 
                     }).ToList();
-
         }
     }
 }

@@ -10,7 +10,6 @@ public class Blog
     public string Content { get; set; }
     public string Images { get; set; }
     public string Tag { get; set; }
-    public int View { get; set; }
     public Guid ShopId { get; set; }
     public DateTime? ReportedDate { get; set; }
     public string ReportedBy { get; set; }

@@ -19,10 +19,10 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Blog> Blogs { get; set; } = null!;
     public virtual DbSet<BlogProduct> BlogProducts { get; set; } = null!;
     public virtual DbSet<Fish> Fishes { get; set; } = null!;
+    public virtual DbSet<NormFoodAmount> NormFoodAmount { get; set; } = null!;
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
     public virtual DbSet<Parameter> Parameters { get; set; } = null!;
-    public virtual DbSet<ParameterUnit> ParameterUnit { get; set; } = null!;
     public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
     public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
     public virtual DbSet<Variety> Variety { get; set; } = null!;
@@ -96,7 +96,6 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(b => b.Images).HasMaxLength(1000);
             entity.Property(b => b.Tag).HasMaxLength(100);
             entity.Property(b => b.ReportedDate).HasColumnType("datetime");
-            entity.Property(b => b.View).IsRequired();
             entity.Property(b => b.IsApproved).IsRequired();
             entity.Property(b => b.Type).HasMaxLength(50);
             entity.Property(b => b.ShopId).IsRequired().HasMaxLength(50);
@@ -207,16 +206,6 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
         modelBuilder.Entity<Parameter>(entity =>
         {
             entity.ToTable("Parameter");
-            entity.HasMany(p => p.ParameterUnits)
-                      .WithOne(u => u.Parameter)
-                      .HasForeignKey(u => u.ParameterID);
-        });
-        modelBuilder.Entity<ParameterUnit>(entity =>
-        {
-            entity.ToTable("ParameterUnit");
-            entity.HasOne(p => p.Parameter)
-                      .WithMany(u => u.ParameterUnits)
-                      .HasForeignKey(u => u.ParameterID);
         });
     }
 }

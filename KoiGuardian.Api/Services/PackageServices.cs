@@ -3,6 +3,7 @@ using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -10,6 +11,7 @@ namespace KoiGuardian.Api.Services
     public interface IPackageServices
     {
          Task<PackageResponse> CreatePackage(CreatePackageRequest packageRequest, CancellationToken cancellation);
+        Task<IEnumerable<Package>> GetAllPackageAsync(CancellationToken cancellationToken);
     }
 
     public class PackageServices(IRepository<Package> packageRepository,  KoiGuardianDbContext _dbContext) : IPackageServices
@@ -43,6 +45,14 @@ namespace KoiGuardian.Api.Services
                 packakeResponse.message = "Package Has Existed";
             }
             return packakeResponse;
+        }
+
+        public async Task<IEnumerable<Package>> GetAllPackageAsync(CancellationToken cancellationToken)
+        {
+            return await packageRepository
+                .GetQueryable()
+                .AsNoTracking()   
+                .ToListAsync(cancellationToken);
         }
     }
 }

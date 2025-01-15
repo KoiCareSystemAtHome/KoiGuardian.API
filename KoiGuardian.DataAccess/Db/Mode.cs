@@ -18,8 +18,5 @@ namespace KoiGuardian.DataAccess.Db
         public string WarningMessage { get; set; } = string.Empty;
         public float TemperatureUpper { get; set; } // temperature in standard unit : Cencius
         public float TemperatureLower { get; set; } // temperature in standard unit : Cencius
-
-
-        public virtual Pond? Pond { get; set; }
     }
 }

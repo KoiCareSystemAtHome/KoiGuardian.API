@@ -49,7 +49,7 @@ namespace KoiGuardian.Api.Services
 
             var category = new Category
             {
-                CategoryId = Guid.NewGuid(),
+               
                 Name = categoryRequest.Name,
                 Description = categoryRequest.Description,
                 ShopId = categoryRequest.ShopId

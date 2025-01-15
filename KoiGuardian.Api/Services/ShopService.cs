@@ -44,7 +44,7 @@ namespace KoiGuardian.Api.Services
             {
                 shop = new()
                 {
-                    ShopId = shopRequest.ShopId,
+                    
                     ShopName = shopRequest.ShopName,
                     ShopRate = shopRequest.ShopRate,
                     ShopDescription = shopRequest.ShopDescription,

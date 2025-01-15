@@ -75,7 +75,7 @@ namespace KoiGuardian.Api.Services
             // Create the new product
             var product = new Product
             {
-                ProductId = Guid.NewGuid(),
+                
                 ProductName = productRequest.ProductName,
                 Description = productRequest.Description,
                 Price = productRequest.Price,

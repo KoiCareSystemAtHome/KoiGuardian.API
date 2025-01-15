@@ -12,7 +12,7 @@ namespace KoiGuardian.Models.Response
         public string Status { get; set; }
         public string Message { get; set; }
 
-        public ShopRequest Shop { get; set; }
+        public ShopRequestDetails Shop { get; set; }
 
     }
 

@@ -34,6 +34,10 @@ namespace KoiGuardian.Api.Services
         public async Task<ShopResponse> CreateShop(ShopRequest shopRequest, CancellationToken cancellation)
         {
             var shopResponse = new ShopResponse();
+
+            // Remove this line as it overwrites the input parameter
+            // shopRequest = new ShopRequest();
+
             var shop = await _shopRepository.GetAsync(x => x.ShopId.Equals(shopRequest.ShopId), cancellation);
 
             if (shop is null)
@@ -47,7 +51,9 @@ namespace KoiGuardian.Api.Services
                     ShopAddress = shopRequest.ShopAddress,
                     IsActivate = true,
                     BizLicences = shopRequest.BizLicences
+                    // Products will be empty by default - no need to initialize
                 };
+
                 _shopRepository.Insert(shop);
 
                 try
@@ -55,6 +61,7 @@ namespace KoiGuardian.Api.Services
                     await _unitOfWork.SaveChangesAsync(cancellation);
                     shopResponse.Status = "201";
                     shopResponse.Message = "Create Shop Success";
+                   
                 }
                 catch (Exception ex)
                 {
@@ -81,7 +88,7 @@ namespace KoiGuardian.Api.Services
 
             if (shop is not null)
             {
-                shopResponse.Shop = new ShopRequest
+                shopResponse.Shop = new ShopRequestDetails
                 {
                     ShopId = shop.ShopId,
                     ShopName = shop.ShopName,

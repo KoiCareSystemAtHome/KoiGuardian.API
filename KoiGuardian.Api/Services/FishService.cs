@@ -6,6 +6,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
 
 namespace KoiGuardian.Api.Services
 {
@@ -15,7 +16,7 @@ namespace KoiGuardian.Api.Services
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
-
+        Task<List<Fish>> GetFishByOwnerId(Guid Owner,CancellationToken cancellation);
         Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
 
     }
@@ -110,7 +111,7 @@ namespace KoiGuardian.Api.Services
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
                    requirementsParam.Select(u => u.HistoryID).Contains(u.ParameterHistoryId)
-                   );
+                   ).ToList();
 
             foreach (var validValue in validValues)
             {
@@ -151,7 +152,7 @@ namespace KoiGuardian.Api.Services
                u => u.Type == ParameterType.Fish.ToString() && u.IsActive && u.ValidUntil == null))
                .Select(u => new FishRerquireParam()
                {
-                   ParameterID = u.ParameterID,
+                   HistoryID = u.HistoryId,
                    ParameterName = u.Name,
                    UnitName = u.UnitName,
                    WarningLowwer = u.WarningLowwer,
@@ -260,5 +261,15 @@ namespace KoiGuardian.Api.Services
             )).ToList();
         }
 
+        public async Task<List<Fish>> GetFishByOwnerId(Guid Owner, CancellationToken cancellationToken = default)
+        {
+           var result = await _fishRepository.FindAsync(x => x.Pond.OwnerId.Equals(Owner), 
+                include: query => query
+                    .Include(f => f.Variety)
+                    .Include(f => f.Pond),
+                orderBy: query => query.OrderBy(f => f.Name),
+                cancellationToken: cancellationToken);
+            return result.ToList();
+        }
     }
 }

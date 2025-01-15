@@ -148,7 +148,7 @@ namespace KoiGuardian.Api.Services
                     cancellationToken: cancellationToken))
                     .Select(u => new PondRerquireParam()
                     {
-                        HistoryId = u.ParameterID,
+                        HistoryId = u.HistoryId,
                         ParameterName = u.Name,
                         UnitName = u.UnitName,
                         WarningLowwer = u.WarningLowwer,

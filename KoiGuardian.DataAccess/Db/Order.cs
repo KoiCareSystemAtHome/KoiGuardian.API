@@ -6,7 +6,7 @@ namespace KoiGuardian.DataAccess.Db
     {
         public Guid OrderId { get; set; }
         public Guid ShopId { get; set; }
-        public Guid AccountId { get; set; }
+        public string AccountId { get; set; }
         public string ShipType { get; set; }
         public string oder_code { get; set; }
         public string Status { get; set; }
@@ -15,5 +15,14 @@ namespace KoiGuardian.DataAccess.Db
 
         public virtual ICollection<OrderDetail> OrderDetail { get; set; }
         public virtual Shop Shop { get; set; }
+        public virtual User User { get; set; }
+    }
+
+    public enum OrderStatus
+    {
+        Pending, 
+        Confirm,
+        Complete,
+        Inprogress
     }
 }

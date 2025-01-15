@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace KoiGuardian.DataAccess.Db
 {
-    public class PondFeedingMode
+    public class 
+        Mode
     {
         [Key]
         public Guid ModeId { get; set; } 

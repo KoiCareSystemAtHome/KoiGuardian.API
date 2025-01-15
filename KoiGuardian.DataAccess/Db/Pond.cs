@@ -17,7 +17,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public virtual ICollection<Fish> Fish { get; set; }
         public virtual IEnumerable<RelPondParameter>? RelPondParameter { get; set; }
-        public virtual PondFeedingMode? FeedingMode { get; set; }
+        public virtual Mode? Mode { get; set; }
 
     }
 }

@@ -159,7 +159,7 @@ namespace KoiGuardian.Api.Services
                     .Include(p => p.RelPondParameter)
                             .ThenInclude(pu => pu.Parameter)
                     .Include(p => p.Fish)
-                    .Include(p => p.FeedingMode), // Thêm quan hệ liên quan nếu cần
+                    .Include(p => p.Mode), // Thêm quan hệ liên quan nếu cần
                 orderBy: query => query.OrderBy(f => f.Name), // Sắp xếp theo Name
                 cancellationToken: cancellationToken
             );
@@ -181,7 +181,7 @@ namespace KoiGuardian.Api.Services
                         .Include(p => p.RelPondParameter)
                                 .ThenInclude(pu => pu.Parameter)
                         .Include(p => p.Fish)
-                        .Include(p => p.FeedingMode),
+                        .Include(p => p.Mode),
                     cancellationToken: cancellation
                 );
 
@@ -209,10 +209,10 @@ namespace KoiGuardian.Api.Services
                             FishId = f.KoiID,
                             FishName = f.Name
                         }).ToList(),
-                        FeedingMode = pond.FeedingMode != null ? new FeedingModeInfo
+                        FeedingMode = pond.Mode != null ? new FeedingModeInfo
                         {
-                            FeedingModeId = pond.FeedingMode.ModeId,
-                            ModeName = pond.FeedingMode.ModeName
+                            FeedingModeId = pond.Mode.ModeId,
+                            ModeName = pond.Mode.ModeName
                         } : null
                     };
                 }

@@ -48,8 +48,6 @@ namespace KoiGuardian.Api.Services
                     return response;
                 }
 
-                var parameters = new List<Parameter>();
-
                 for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
                 {
                     var parameterIdString = worksheet.Cells[row, 1].GetValue<string>();
@@ -69,27 +67,17 @@ namespace KoiGuardian.Api.Services
                         return response;
                     }
 
-                    var unitIdString = worksheet.Cells[row, 4].GetValue<string>();
-                    if (!Guid.TryParse(unitIdString, out var paramId))
-                    {
-                        response.status = "400";
-                        response.message = $"Invalid Guid format in row {row}, column 4.";
-                        return response;
-                    }
-
-                    var unitName = worksheet.Cells[row, 5].GetValue<string>();
+                    var unitName = worksheet.Cells[row, 4].GetValue<string>();
 
                     // Ensure that Warning and Danger values are handled safely
-                    var warningUpper = worksheet.Cells[row, 6].GetValue<double?>();
-                    var warningLower = worksheet.Cells[row, 7].GetValue<double?>();
-                    var dangerUpper = worksheet.Cells[row, 8].GetValue<double?>();
-                    var dangerLower = worksheet.Cells[row, 9].GetValue<double?>();
-                    var isStandard = worksheet.Cells[row, 10].GetValue<bool>(); // Assuming it's in column 10
-                    var isActive = worksheet.Cells[row, 11].GetValue<bool>();  // Assuming it's in column 11
-                    var conversionRate = worksheet.Cells[row, 12].GetValue<float>(); // Assuming it's in column 12
-                    var measurementInstruction = worksheet.Cells[row, 13].GetValue<string>(); // Assuming it's in column 13
-                    var ageFrom = worksheet.Cells[row, 14].GetValue<int>();  // Assuming it's in column 14
-                    var ageTo = worksheet.Cells[row, 15].GetValue<int>();    // Assuming it's in column 15
+                    var warningUpper = worksheet.Cells[row, 5].GetValue<double?>();
+                    var warningLower = worksheet.Cells[row, 6].GetValue<double?>();
+                    var dangerUpper = worksheet.Cells[row, 7].GetValue<double?>();
+                    var dangerLower = worksheet.Cells[row, 8].GetValue<double?>();
+                    var isActive = worksheet.Cells[row, 9].GetValue<bool>(); // Assuming it's in column 9
+                    var measurementInstruction = worksheet.Cells[row, 10].GetValue<string>(); // Assuming it's in column 10
+                    var ageFrom = worksheet.Cells[row, 11].GetValue<int>();  // Assuming it's in column 11
+                    var ageTo = worksheet.Cells[row, 12].GetValue<int>();    // Assuming it's in column 12
 
                     // Upsert Parameter
                     var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
@@ -100,25 +88,6 @@ namespace KoiGuardian.Api.Services
                             ParameterID = parameterId,
                             Name = parameterName,
                             Type = parameterType.ToString(),
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _parameterRepository.Insert(parameter);
-                    }
-                    else
-                    {
-                        parameter.Name = parameterName;
-                        parameter.Type = parameterType.ToString();
-                        _parameterRepository.Update(parameter);
-                    }
-
-                    // Upsert Parameter Unit
-                    var parameterUnit = await _parameterRepository.GetAsync(pu => pu.ParameterID == paramId, cancellationToken);
-                    if (parameterUnit == null)
-                    {
-                        parameterUnit = new Parameter
-                        {
-                            HistoryId = Guid.NewGuid(),
-                            ParameterID = parameterId,
                             UnitName = unitName,
                             WarningUpper = warningUpper,
                             WarningLowwer = warningLower,
@@ -127,22 +96,25 @@ namespace KoiGuardian.Api.Services
                             IsActive = isActive,
                             MeasurementInstruction = measurementInstruction,
                             AgeFrom = ageFrom,
-                            AgeTo = ageTo
+                            AgeTo = ageTo,
+                            CreatedAt = DateTime.UtcNow
                         };
-                        _parameterRepository.Insert(parameterUnit);
+                        _parameterRepository.Insert(parameter);
                     }
                     else
                     {
-                        parameterUnit.UnitName = unitName;
-                        parameterUnit.WarningUpper = warningUpper;
-                        parameterUnit.WarningLowwer = warningLower;
-                        parameterUnit.DangerUpper = dangerUpper;
-                        parameterUnit.DangerLower = dangerLower;
-                        parameterUnit.IsActive = isActive;
-                        parameterUnit.MeasurementInstruction = measurementInstruction;
-                        parameterUnit.AgeFrom = ageFrom;
-                        parameterUnit.AgeTo = ageTo;
-                        _parameterRepository.Update(parameterUnit);
+                        parameter.Name = parameterName;
+                        parameter.Type = parameterType.ToString();
+                        parameter.UnitName = unitName;
+                        parameter.WarningUpper = warningUpper;
+                        parameter.WarningLowwer = warningLower;
+                        parameter.DangerUpper = dangerUpper;
+                        parameter.DangerLower = dangerLower;
+                        parameter.IsActive = isActive;
+                        parameter.MeasurementInstruction = measurementInstruction;
+                        parameter.AgeFrom = ageFrom;
+                        parameter.AgeTo = ageTo;
+                        _parameterRepository.Update(parameter);
                     }
                 }
 
@@ -158,6 +130,7 @@ namespace KoiGuardian.Api.Services
 
             return response;
         }
+
 
         public async Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken)
         {

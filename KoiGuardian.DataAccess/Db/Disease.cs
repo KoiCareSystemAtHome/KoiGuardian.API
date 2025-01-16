@@ -13,6 +13,8 @@ public class Disease
     public string Name { get; set; }
     public string Description { get; set; }
     public DiseaseType Type { get; set; }
+    public float FoodModifyPercent { get; set; }
+
 
     public virtual Variety? Variety { get; set; }   
     public virtual IEnumerable<Medicine>? Medicine { get; set; }

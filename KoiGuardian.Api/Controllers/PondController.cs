@@ -16,6 +16,11 @@ namespace KoiGuardian.Api.Controllers
         {
             return await services.GetAllPondhAsync(name,cancellationToken);
         }
+        [HttpGet("get-by-owner")]
+        public async Task<List<PondDto>> GetAllFishOwnerAsync([FromQuery] Guid owner, CancellationToken cancellationToken = default)
+        {
+            return await services.GetAllPondByOwnerId(owner, cancellationToken);
+        }
 
         [HttpGet("pond-required-param")]
         public async Task<List<PondRerquireParam>> RequireParam( CancellationToken cancellationToken)

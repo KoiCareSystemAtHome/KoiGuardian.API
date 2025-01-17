@@ -16,7 +16,7 @@ namespace KoiGuardian.Api.Services
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation);
-        Task<List<Fish>> GetFishByOwnerId(Guid Owner,CancellationToken cancellation);
+        Task<List<FishDto>> GetFishByOwnerId(Guid Owner,CancellationToken cancellation);
         Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
 
     }
@@ -261,15 +261,45 @@ namespace KoiGuardian.Api.Services
             )).ToList();
         }
 
-        public async Task<List<Fish>> GetFishByOwnerId(Guid Owner, CancellationToken cancellationToken = default)
+        public async Task<List<FishDto>> GetFishByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
         {
-           var result = await _fishRepository.FindAsync(x => x.Pond.OwnerId.Equals(Owner), 
+            var fishEntities = await _fishRepository.FindAsync(
+                predicate: x => x.Pond.OwnerId.Equals(ownerId.ToString()),
                 include: query => query
                     .Include(f => f.Variety)
                     .Include(f => f.Pond),
                 orderBy: query => query.OrderBy(f => f.Name),
-                cancellationToken: cancellationToken);
-            return result.ToList();
+                cancellationToken: cancellationToken
+            );
+
+            // Ánh xạ sang DTO
+            var fishDtos = fishEntities.Select(f => new FishDto
+            {
+                KoiID = f.KoiID,
+                Name = f.Name,
+                Image = f.Image,
+                Price = f.Price,
+                Sex = f.Sex,
+                Age = f.Age,
+                Pond = f.Pond == null ? null : new PondDto
+                {
+                    PondID = f.Pond.PondID,
+                    Name = f.Pond.Name,
+                    OwnerId = f.Pond.OwnerId,
+                    CreateDate = f.Pond.CreateDate,
+                    Image = f.Pond.Image
+                },
+                Variety = f.Variety == null ? null : new VarietyDto
+                {
+                    VarietyId = f.Variety.VarietyId,
+                    VarietyName = f.Variety.VarietyName,
+                    Description = f.Variety.Description,
+                    AuthorId = f.Variety.AuthorId
+                }
+            }).ToList();
+
+            return fishDtos;
         }
+
     }
 }

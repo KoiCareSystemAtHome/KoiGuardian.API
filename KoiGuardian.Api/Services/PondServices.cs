@@ -17,6 +17,7 @@ namespace KoiGuardian.Api.Services
 
         Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default);
         Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
+        Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default);
 
 
     }
@@ -222,6 +223,44 @@ namespace KoiGuardian.Api.Services
             return response;
         }
 
+        public async Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
+        {
+            // Lấy danh sách ao thuộc về chủ sở hữu
+            var pondEntities = await pondRepository.FindAsync(
+                predicate: pond => pond.OwnerId.Equals(ownerId.ToString()),
+                include: query => query.Include(p => p.Fish).ThenInclude(f => f.Variety),
+                orderBy: query => query.OrderBy(p => p.Name),
+                cancellationToken: cancellationToken
+            );
+
+            // Ánh xạ sang DTO
+            var pondDtos = pondEntities.Select(p => new PondDto
+            {
+                PondID = p.PondID,
+                Name = p.Name,
+                OwnerId = p.OwnerId,
+                CreateDate = p.CreateDate,
+                Image = p.Image,
+                Fish = p.Fish?.Select(f => new FishDto
+                {
+                    KoiID = f.KoiID,
+                    Name = f.Name,
+                    Image = f.Image,
+                    Price = f.Price,
+                    Sex = f.Sex,
+                    Age = f.Age,
+                    Variety = f.Variety == null ? null : new VarietyDto
+                    {
+                        VarietyId = f.Variety.VarietyId,
+                        VarietyName = f.Variety.VarietyName,
+                        Description = f.Variety.Description,
+                        AuthorId = f.Variety.AuthorId
+                    }
+                }).ToList()
+            }).ToList();
+
+            return pondDtos;
+        }
 
 
     }

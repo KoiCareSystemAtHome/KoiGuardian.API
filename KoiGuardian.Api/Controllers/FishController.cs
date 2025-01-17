@@ -17,7 +17,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("get-by-owner")]
-        public async Task<List<Fish>> GetAllFishOwnerAsync([FromQuery] Guid owner , CancellationToken cancellationToken = default)
+        public async Task<List<FishDto>> GetAllFishOwnerAsync([FromQuery] Guid owner , CancellationToken cancellationToken = default)
         {
             return await fishService.GetFishByOwnerId(owner, cancellationToken);
         }

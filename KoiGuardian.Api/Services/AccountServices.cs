@@ -150,6 +150,8 @@ IImageUploadService imageUpload
             PackageID = user.PackageId,
             Avatar = user.Avatar,
             Status = user.Status.ToString(),
+            Gender = user.Gender,
+            Address = user.Address,
         };
 
         LoginResponse loginResponse = new()
@@ -173,6 +175,8 @@ IImageUploadService imageUpload
             Code = SD.RandomCode(),
             CreatedDate = DateTime.UtcNow,
             ValidUntil = DateTime.UtcNow,
+            Gender = registrationRequestDto.Gender ?? "",
+            Address = registrationRequestDto.Address ?? ""
         };
         user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
 

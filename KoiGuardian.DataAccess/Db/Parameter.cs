@@ -24,6 +24,8 @@ public class Parameter
     public string MeasurementInstruction { get; set; }
     public int AgeFrom { get; set; } // từ số tháng tuổi 
     public int AgeTo { get; set; } // tới số tháng tuồi
+    public int WarningAcceptantDay { get; set; } = 5;// số ngày cá có thể sống trong hồ nếu param vượt mức warning
+    public int DangerAcceptantDay { get; set; } = 3;// số ngày cá có thể sống trong hồ nếu param vượt mức danger
     public DateTime? ValidUntil { get; set; }
 
 

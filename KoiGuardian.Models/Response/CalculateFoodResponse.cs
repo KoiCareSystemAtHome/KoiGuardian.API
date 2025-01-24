@@ -10,6 +10,6 @@ namespace KoiGuardian.Models.Response
     {
         public float FoodAmount {  get; set; }
         public string FeedingOften { get; set; }
-        public string AddtionalInstruction { get; set; }
+        public List<string> AddtionalInstruction { get; set; }
     }
 }

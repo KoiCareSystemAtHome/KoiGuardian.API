@@ -10,23 +10,23 @@ namespace KoiGuardian.Api.Controllers
     [ApiController]
     public class PondReminderController : ControllerBase
     {
-        private readonly IPondRemiderService _pondReminderService;
+        private readonly IPondReminderService _pondReminderService;
 
-        public PondReminderController(IPondRemiderService pondReminderService)
+        public PondReminderController(IPondReminderService pondReminderService)
         {
             _pondReminderService = pondReminderService;
         }
 
         // Tính toán và trả về lịch bảo trì (không lưu)
         [HttpPost("calculate-maintenance")]
-        public async Task<IActionResult> CalculateMaintenance([FromBody] MaintenanceRequest request)
+        public async Task<IActionResult> CalculateMaintenance([FromBody] MaintenanceRequest request, CancellationToken cancellationToken)
         {
             try
             {
                 var reminder = await _pondReminderService.GenerateMaintenanceReminderAsync(
                     request.PondId,
-                    request.CurrentNitrogenDensity,
-                    request.AverageNitrogenIncreasePerDay
+                    request.ParameterId,
+                    cancellationToken
                 );
 
                 return Ok(reminder);
@@ -43,11 +43,11 @@ namespace KoiGuardian.Api.Controllers
 
         // Lưu lịch bảo trì vào DB
         [HttpPost("save-maintenance")]
-        public async Task<IActionResult> SaveMaintenance([FromBody] PondReminder reminder)
+        public async Task<IActionResult> SaveMaintenance([FromBody] PondReminder reminder, CancellationToken cancellationToken)
         {
             try
             {
-                await _pondReminderService.SaveMaintenanceReminderAsync(reminder);
+                await _pondReminderService.SaveMaintenanceReminderAsync(reminder, cancellationToken);
 
                 return Ok(new
                 {

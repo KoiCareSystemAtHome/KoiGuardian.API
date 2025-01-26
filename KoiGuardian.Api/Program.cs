@@ -35,7 +35,7 @@ builder.Services.AddScoped<IAccountServices, AccountService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped <IPackageServices, PackageServices>();
 builder.Services.AddScoped<IParameterService, ParameterService>();
-builder.Services.AddScoped<IPondRemiderService, PondRemiderService>();
+builder.Services.AddScoped<IPondReminderService, PondReminderService>();
 builder.Services.AddScoped <IKoiMongoDb, KoiMongoDb>();
 builder.Services.AddHttpClient<GhnService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

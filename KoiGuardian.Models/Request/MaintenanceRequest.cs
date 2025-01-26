@@ -9,7 +9,7 @@ namespace KoiGuardian.Models.Request
     public class MaintenanceRequest
     {
         public Guid PondId { get; set; }
-        public double CurrentNitrogenDensity { get; set; }
-        public double AverageNitrogenIncreasePerDay { get; set; }
+        public Guid ParameterId { get; set; }
     }
 }
+

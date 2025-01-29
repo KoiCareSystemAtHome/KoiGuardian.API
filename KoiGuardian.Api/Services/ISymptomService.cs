@@ -6,7 +6,7 @@ namespace KoiGuardian.Api.Services;
 public interface ISymptomService
 {
     Task<List<Symptom>> DiseaseTypePredict(List<Symptom> symptoms);
-    Task<List<Symptom>> GetByType(SymptomType? type);
+    Task<List<Symptom>> GetByType();
 }
 
 public class SymptomService( 
@@ -18,11 +18,10 @@ public class SymptomService(
         throw new NotImplementedException();
     }
 
-    public async Task<List<Symptom>> GetByType(SymptomType? type)
+    public async Task<List<Symptom>> GetByType()
     {
-        if (type == null) type = SymptomType.Common;
         return (await symptomRepository
-            .FindAsync( u => u.Type == type, CancellationToken.None)).ToList();
+            .FindAsync( u => u.SymptomPriority, CancellationToken.None)).ToList();
     }
 
 

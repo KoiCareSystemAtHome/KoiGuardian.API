@@ -13,8 +13,9 @@ public class Symptom
 
     public Guid SymtompId { get; set; }
     public string Name { get; set; }
-    public string NormalRange { get; set; }
-    public SymptomType Type { get; set; }
+    public bool SymptomPriority { get; set; }
+    public string SymptomUnit { get; set; }
+    public string Type { get; set; }
 }
 
 public enum SymptomType
@@ -23,4 +24,11 @@ public enum SymptomType
     Food,
     Enviroment,
     Disease
+}
+
+public enum SymptomUnit
+{
+    check,
+    range,
+    rate, // from 1 to 5 
 }

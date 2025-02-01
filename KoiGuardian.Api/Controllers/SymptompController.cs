@@ -1,6 +1,7 @@
 ﻿using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
+using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,14 +12,14 @@ namespace KoiGuardian.Api.Controllers
     public class SymptompController
         (ISymptomService service) : ControllerBase
     {
-        [HttpGet("common")]
-        public async Task<List<Symptom>> GetListComm()
+        [HttpGet("type")]
+        public async Task<List<Symptom>> GetListComm( string? type)
         {
-            return await service.GetByType();
+            return await service.GetByType(type);
         }
 
         [HttpGet("predict")]
-        public async Task<List<Symptom>> DiseaseTypePredict(List<Symptom> symptoms      )
+        public async Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms      )
         {
             return await service.DiseaseTypePredict(symptoms);
         }

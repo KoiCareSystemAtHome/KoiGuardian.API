@@ -29,6 +29,5 @@ public enum SymptomType
 public enum SymptomUnit
 {
     check,
-    range,
     rate, // from 1 to 5 
 }

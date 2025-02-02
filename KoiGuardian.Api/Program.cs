@@ -49,6 +49,7 @@ builder.Services.AddScoped<IPondServices, PondServices>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<IParameterService, ParameterService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ISaltCalculatorService, SaltCalculatorService>();
 builder.Services.AddScoped<IFoodCalculatorService, FoodCalculatorService>();
 builder.Services.AddScoped<ISymptomService, SymptomService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));

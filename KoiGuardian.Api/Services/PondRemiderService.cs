@@ -2,12 +2,17 @@
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
     public interface IPondReminderService
     {
+        Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken);
+
+        Task<PondRemiderResponse> GetRemindersByidAsync (Guid id, CancellationToken cancellationToken);
         Task<double> CalculateAverageParameterIncreaseAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
         Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
         Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
@@ -143,6 +148,41 @@ namespace KoiGuardian.Api.Services
             {
                 throw new InvalidOperationException($"Failed to generate maintenance reminder: {ex.Message}");
             }
+        }
+
+        public async Task<PondRemiderResponse> GetRemindersByidAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var pondReminder = await _reminderRepository.GetAsync(
+            rp => rp.PondReminderId == id, cancellationToken: cancellationToken);
+
+            PondRemiderResponse pondRemiderResponse = new PondRemiderResponse
+            {
+                PondReminderId = pondReminder.PondReminderId,
+                PondId = pondReminder.PondId,
+                ReminderType = pondReminder.ReminderType.ToString(),
+                Title = pondReminder.Title,
+                Description = pondReminder.Description,
+                MaintainDate = pondReminder.MaintainDate,
+                SeenDate = pondReminder.SeenDate,
+            };
+            return pondRemiderResponse;
+        }
+
+        public async Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken)
+        {
+            var pondReminders = await _reminderRepository.FindAsync(
+        rp => rp.PondId == pondId, cancellationToken: cancellationToken);
+
+            return pondReminders.Select(pondReminder => new PondRemiderResponse
+            {
+                PondReminderId = pondReminder.PondReminderId,
+                PondId = pondReminder.PondId,
+                ReminderType = pondReminder.ReminderType.ToString(),
+                Title = pondReminder.Title,
+                Description = pondReminder.Description,
+                MaintainDate = pondReminder.MaintainDate,
+                SeenDate = pondReminder.SeenDate,
+            }).ToList();
         }
 
         // Lưu lịch bảo trì vào DB

@@ -17,6 +17,42 @@ namespace KoiGuardian.Api.Controllers
             _pondReminderService = pondReminderService;
         }
 
+        //get by remider id 
+        [HttpGet("get-by/{id}")]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var reminder = await _pondReminderService.GetRemindersByidAsync(id, cancellationToken);
+                return Ok(reminder);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching the reminder.", Error = ex.Message });
+            }
+        }
+
+        //getByPondId
+        [HttpGet("get-by-pond/{pondId}")]
+        public async Task<IActionResult> GetByPondId([FromRoute] Guid pondId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var reminders = await _pondReminderService.GetRemindersByPondIdAsync(pondId, cancellationToken);
+                return Ok(reminders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching reminders by pond ID.", Error = ex.Message });
+            }
+        }
+
+
+
         // Tính toán và trả về lịch bảo trì (không lưu)
         [HttpPost("calculate-maintenance")]
         public async Task<IActionResult> CalculateMaintenance([FromBody] MaintenanceRequest request, CancellationToken cancellationToken)

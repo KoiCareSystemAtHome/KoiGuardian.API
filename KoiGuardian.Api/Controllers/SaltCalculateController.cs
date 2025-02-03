@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using KoiGuardian.Models.Request;
+using KoiGuardian.Models.Response;
 using KoiGuardian.Api.Services;
+using System;
+using System.Threading.Tasks;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -16,26 +19,20 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("calculate")]
-        public IActionResult CalculateSalt([FromBody] CalculateSaltRequest request)
+        public async Task<IActionResult> CalculateSalt([FromBody] CalculateSaltRequest request)
         {
             try
             {
-                double totalSalt = _saltCalculatorService.CalculateSalt(request);
+                CalculateSaltResponse response = await _saltCalculatorService.CalculateSalt(request);
                 return Ok(new
                 {
                     Success = true,
-                    TotalSalt = totalSalt,
+                    PondId = response.PondId,
+                    TotalSalt = response.TotalSalt,
                     Message = "Tính toán thành công."
                 });
             }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = ex.Message
-                });
-            }
+          
             catch (Exception ex)
             {
                 return StatusCode(500, new

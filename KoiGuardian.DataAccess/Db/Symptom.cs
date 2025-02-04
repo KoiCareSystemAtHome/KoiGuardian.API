@@ -30,4 +30,5 @@ public enum SymptomUnit
 {
     check,
     rate, // from 1 to 5 
+    range
 }

@@ -23,5 +23,11 @@ namespace KoiGuardian.Api.Controllers
         {
             return await service.DiseaseTypePredict(symptoms);
         }
+
+        [HttpGet("examination")]
+        public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
+        {
+            return await service.Examination(symptoms);
+        }
     }
 }

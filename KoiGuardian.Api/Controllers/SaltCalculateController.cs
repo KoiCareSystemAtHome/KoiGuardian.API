@@ -12,7 +12,6 @@ namespace KoiGuardian.Api.Controllers
     public class SaltCalculateController : ControllerBase
     {
         private readonly ISaltCalculatorService _saltCalculatorService;
-
         public SaltCalculateController(ISaltCalculatorService saltCalculatorService)
         {
             _saltCalculatorService = saltCalculatorService;
@@ -21,6 +20,15 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("calculate")]
         public async Task<IActionResult> CalculateSalt([FromBody] CalculateSaltRequest request)
         {
+            if (request == null || request.PondId == Guid.Empty)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Invalid request parameters."
+                });
+            }
+
             try
             {
                 CalculateSaltResponse response = await _saltCalculatorService.CalculateSalt(request);
@@ -29,10 +37,10 @@ namespace KoiGuardian.Api.Controllers
                     Success = true,
                     PondId = response.PondId,
                     TotalSalt = response.TotalSalt,
-                    Message = "Tính toán thành công."
+                    Message = "Tính toán thành công.",
+                    AdditionalInstructions = response.AdditionalInstruction
                 });
             }
-          
             catch (Exception ex)
             {
                 return StatusCode(500, new

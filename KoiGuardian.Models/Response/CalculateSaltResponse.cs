@@ -11,7 +11,8 @@ namespace KoiGuardian.Models.Response
       
             public Guid PondId { get; set; }
             public double TotalSalt { get; set; }
-       
+
+            public List<string> AdditionalInstruction { get; set; }
 
     }
 }

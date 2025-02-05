@@ -14,6 +14,7 @@ public class Disease
     public string Description { get; set; }
     public DiseaseType Type { get; set; }
     public float FoodModifyPercent { get; set; }
+    public float SaltModifyPercent { get; set; }
 
 
     public virtual Variety? Variety { get; set; }   

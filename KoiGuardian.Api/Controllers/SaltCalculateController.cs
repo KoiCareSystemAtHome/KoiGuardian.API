@@ -3,7 +3,6 @@ using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using KoiGuardian.Api.Services;
 using System;
-using System.Threading.Tasks;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -12,6 +11,7 @@ namespace KoiGuardian.Api.Controllers
     public class SaltCalculateController : ControllerBase
     {
         private readonly ISaltCalculatorService _saltCalculatorService;
+
         public SaltCalculateController(ISaltCalculatorService saltCalculatorService)
         {
             _saltCalculatorService = saltCalculatorService;
@@ -20,36 +20,68 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("calculate")]
         public async Task<IActionResult> CalculateSalt([FromBody] CalculateSaltRequest request)
         {
-            if (request == null || request.PondId == Guid.Empty)
+           
+
+            var response = await _saltCalculatorService.CalculateSalt(request);
+            return Ok(new
+            {
+                Success = true,
+                PondId = response.PondId,
+                TotalSalt = response.TotalSalt,
+                Message = "Tính toán thành công.",
+                AdditionalInstructions = response.AdditionalInstruction
+            });
+        }
+
+        [HttpPost("validate")]
+        public ActionResult<AddSaltResponse> ValidateSaltAddition(AddSaltRequest request)
+        {
+            var response = _saltCalculatorService.ValidateAndCalculateSaltAddition(request);
+            return Ok(response);
+        }
+
+        [HttpPost("add")]
+        public ActionResult AddSalt(AddSaltRequest request)
+        {
+            var validation = _saltCalculatorService.ValidateAndCalculateSaltAddition(request);
+
+            if (!validation.CanAddSalt)
             {
                 return BadRequest(new
                 {
-                    Success = false,
-                    Message = "Invalid request parameters."
+                    Messages = validation.Messages,
+                    NextAllowedTime = validation.NextAllowedTime
                 });
             }
 
-            try
+            _saltCalculatorService.RecordSaltAddition(request.PondId, validation.AllowedSaltAmount);
+
+            return Ok(new
             {
-                CalculateSaltResponse response = await _saltCalculatorService.CalculateSalt(request);
-                return Ok(new
-                {
-                    Success = true,
-                    PondId = response.PondId,
-                    TotalSalt = response.TotalSalt,
-                    Message = "Tính toán thành công.",
-                    AdditionalInstructions = response.AdditionalInstruction
-                });
-            }
-            catch (Exception ex)
+                PondId = request.PondId,
+                AddedAmount = validation.AllowedSaltAmount,
+                CurrentSaltLevel = _saltCalculatorService.GetCurrentSaltLevel(request.PondId),
+                Messages = validation.Messages
+            });
+        }
+
+        [HttpGet("current/{pondId}")]
+        public ActionResult GetCurrentSaltLevel(Guid pondId)
+        {
+            var currentLevel = _saltCalculatorService.GetCurrentSaltLevel(pondId);
+            return Ok(new { PondId = pondId, CurrentSaltLevel = currentLevel });
+        }
+
+        [HttpGet("remaining-time/{pondId}/{saltAmountToAdd}")]
+        public ActionResult GetRemainingTimeToAddSalt(Guid pondId, double saltAmountToAdd)
+        {
+            var remainingTime = _saltCalculatorService.CalculateRemainingTimeToAddSalt(pondId, saltAmountToAdd);
+            return Ok(new
             {
-                return StatusCode(500, new
-                {
-                    Success = false,
-                    Message = "Đã xảy ra lỗi trong quá trình xử lý.",
-                    Details = ex.Message
-                });
-            }
+                Success = true,
+                PondId = pondId,
+                RemainingTime = remainingTime.ToString(@"d' days 'hh\:mm\:ss") // Return in hours:minutes:seconds format
+            });
         }
     }
 }

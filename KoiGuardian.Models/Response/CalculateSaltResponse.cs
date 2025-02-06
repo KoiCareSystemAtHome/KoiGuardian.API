@@ -15,4 +15,12 @@ namespace KoiGuardian.Models.Response
             public List<string> AdditionalInstruction { get; set; }
 
     }
+
+    public class AddSaltResponse
+    {
+        public bool CanAddSalt { get; set; }
+        public double AllowedSaltAmount { get; set; }
+        public DateTime? NextAllowedTime { get; set; }
+        public List<string> Messages { get; set; } = new();
+    }
 }

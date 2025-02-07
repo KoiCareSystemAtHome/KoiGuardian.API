@@ -111,7 +111,7 @@ namespace KoiGuardian.Api.Services
             // xử lý lưu value require từng dòng
             var validValues = fishRequest.RequirementFishParam.Where(u =>
                    requirementsParam.Select(u => u.HistoryID).Contains(u.ParameterHistoryId)
-                   ).ToList();
+                   );
 
             foreach (var validValue in validValues)
             {
@@ -148,8 +148,9 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellation)
         {
-            return (await _parameterRepository.FindAsync(
-               u => u.Type == ParameterType.Fish.ToString() && u.IsActive && u.ValidUntil == null))
+            var list = (await _parameterRepository.FindAsync(
+               u => u.Type.ToLower() == ParameterType.Fish.ToString().ToLower() 
+               && u.IsActive && u.ValidUntil == null))
                .Select(u => new FishRerquireParam()
                {
                    HistoryID = u.HistoryId,
@@ -162,6 +163,7 @@ namespace KoiGuardian.Api.Services
                    MeasurementInstruction = u.MeasurementInstruction,
 
                }).ToList();
+            return list;
         }
 
         public async Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)

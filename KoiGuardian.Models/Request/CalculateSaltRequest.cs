@@ -23,7 +23,7 @@ namespace KoiGuardian.Models.Request
     public class AddSaltRequest
     {
         public Guid PondId { get; set; }
-        public double TargetSaltLevel { get; set; }  
+        public double TargetSaltWeightKg { get; set; }
     }
 
 

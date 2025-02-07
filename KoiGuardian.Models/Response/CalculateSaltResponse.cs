@@ -19,7 +19,7 @@ namespace KoiGuardian.Models.Response
     public class AddSaltResponse
     {
         public bool CanAddSalt { get; set; }
-        public double AllowedSaltAmount { get; set; }
+        public double AllowedSaltWeightKg { get; set; }
         public DateTime? NextAllowedTime { get; set; }
         public List<string> Messages { get; set; } = new();
     }

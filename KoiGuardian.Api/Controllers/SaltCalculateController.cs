@@ -54,13 +54,13 @@ namespace KoiGuardian.Api.Controllers
                 });
             }
 
-            _saltCalculatorService.RecordSaltAddition(request.PondId, validation.AllowedSaltAmount);
+            _saltCalculatorService.RecordSaltAddition(request.PondId, validation.AllowedSaltWeightKg);
 
             return Ok(new
             {
                 PondId = request.PondId,
-                AddedAmount = validation.AllowedSaltAmount,
-                CurrentSaltLevel = _saltCalculatorService.GetCurrentSaltLevel(request.PondId),
+                AddedAmount = validation.AllowedSaltWeightKg,
+                CurrentSaltLevel = _saltCalculatorService.GetCurrentSaltWeightKg(request.PondId),
                 Messages = validation.Messages
             });
         }
@@ -68,7 +68,7 @@ namespace KoiGuardian.Api.Controllers
         [HttpGet("current/{pondId}")]
         public ActionResult GetCurrentSaltLevel(Guid pondId)
         {
-            var currentLevel = _saltCalculatorService.GetCurrentSaltLevel(pondId);
+            var currentLevel = _saltCalculatorService.GetCurrentSaltWeightKg(pondId);
             return Ok(new { PondId = pondId, CurrentSaltLevel = currentLevel });
         }
 

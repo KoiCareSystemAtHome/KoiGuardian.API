@@ -96,5 +96,11 @@ namespace KoiGuardian.Api.Controllers
 
             return await image.UploadImageAsync(baseUrl,"test", "123", filene);
         }
+
+        [HttpPost("UpdateAccount")]
+        public async Task<string> UpdateAccount(string email, Guid packageId)
+        {
+            return await service.UpdateAccountPackage(email,packageId);
+        }
     }
 }

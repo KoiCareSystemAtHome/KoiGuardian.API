@@ -13,11 +13,13 @@ namespace KoiGuardian.Api.Controllers
     {
         private readonly IVnpayService _vnpay;
         private readonly IConfiguration _configuration;
+        private readonly IAccountServices _userService;
 
-        public VnpayController(IVnpayService vnPayservice, IConfiguration configuration)
+        public VnpayController(IVnpayService vnPayservice, IConfiguration configuration, IAccountServices accountServices)
         {
             _vnpay = vnPayservice;
             _configuration = configuration;
+            _userService = accountServices;
 
             _vnpay.Initialize(_configuration["Vnpay:TmnCode"], _configuration["Vnpay:HashSecret"], _configuration["Vnpay:BaseUrl"]/*, _configuration["Vnpay:CallbackUrl"]*/);
         }
@@ -118,5 +120,42 @@ namespace KoiGuardian.Api.Controllers
 
             return NotFound("Không tìm thấy thông tin thanh toán.");
         }
+        //nạp tiền
+        [HttpGet("CallbackWithUserInfo")]
+        public async Task<ActionResult<string>> CallbackWithUserInfo()
+        {
+            if (Request.QueryString.HasValue)
+            {
+                try
+                {
+                    var paymentResult = _vnpay.GetPaymentResult(Request.Query);
+                    var resultDescription = $"{paymentResult.PaymentResponse.Description}. {paymentResult.TransactionStatus.Description}.";
+
+                    if (paymentResult.IsSuccess)
+                    {
+                        var email = Request.Query["email"].ToString();
+                        var amount = float.Parse(Request.Query["vnp_Amount"])/100;
+                        await _userService.UpdateAmount(email, amount);
+                        // Xử lý logic cập nhật đơn hàng dựa trên email và số tiền nạp vào
+                        return Ok(resultDescription);
+                    }
+
+                    return BadRequest(resultDescription);
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new
+                    {
+                        Message = "Lỗi xử lý thanh toán",
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return NotFound("Không tìm thấy thông tin thanh toán.");
+        }
+
+
+
     }
 }

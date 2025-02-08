@@ -38,6 +38,8 @@ public interface IAccountServices
 
     Task<string> ChangePassword(string email, string oldPass, string newPass);
     Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
+    Task<string> UpdateAmount(string email, float amount);
+    Task<string> UpdateAccountPackage(string email, Guid packageId);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -47,6 +49,8 @@ public class AccountService
 RoleManager<IdentityRole> _roleManager,
 IJwtTokenGenerator _jwtTokenGenerator,
 IRepository<User> userRepository,
+IRepository <Package> packageRepository,
+IRepository<AccountPackage> ACrepository,
 IMapper mapper,
 IUnitOfWork<KoiGuardianDbContext> uow,
 IImageUploadService imageUpload
@@ -399,4 +403,64 @@ IImageUploadService imageUpload
 
         return string.Empty;
     }
+
+    public async Task<string> UpdateAmount(string email, float amount)
+    {
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return "Account is not valid!";
+        }
+        user.Amount += amount;
+        userRepository.Update(user);
+        await uow.SaveChangesAsync();
+        return string.Empty;
+    }
+
+    public async Task<string> UpdateAccountPackage(string email, Guid packageId)
+    {
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+
+        //check xem là user có đang còn là thành viên ko
+        var checkUserExistPackage = await ACrepository.GetAsync(u => u.PackageId.Equals(user.PackageId), CancellationToken.None);
+
+        var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
+
+
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return "Account is not valid!";
+        }
+
+        if(checkUserExistPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
+        {
+            return "Your Account still on date";
+        }
+
+        if((decimal)user.Amount < package.PackagePrice)
+        {
+            return "Your Balance is not enough";
+        }
+
+        if(package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
+        {
+            return "Package is not valid!";
+        }
+
+        user.Amount -= (float)package.PackagePrice;
+        user.PackageId = packageId;
+        
+        ACrepository.Insert(new AccountPackage
+        {
+            AccountPackageid = Guid.NewGuid(),
+            AccountId = user.Id,
+            PackageId = packageId,
+            PurchaseDate = DateTime.UtcNow,
+        });
+        userRepository.Update(user);
+        await uow.SaveChangesAsync();
+        return "Success";
+    }
 }
+

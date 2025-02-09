@@ -10,7 +10,9 @@ namespace KoiGuardian.Models.Request
     {
         public Guid PondId { get; set; }
         public string StandardSaltLevel { get; set; }
-        public double WaterChangePercent { get; set; } // Giá trị phần trăm lượng nước thay đổi
+        public double WaterChangePercent { get; set; }
+        public double? CurrentSaltAmount { get; set; }  // New property for re-entry
+        public bool IsReducingSalt { get; set; }       // Flag to indicate salt reduction
     }
 
     public class SaltAdditionRecord

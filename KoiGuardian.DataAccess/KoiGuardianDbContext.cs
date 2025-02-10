@@ -13,6 +13,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
 
     // DbSet properties for collections
     public virtual DbSet<Package> Packages { get; set; } = null!;
+    public virtual DbSet<Article> Articles { get; set; } = null!;
     public virtual DbSet<AccountPackage> AccountPackage { get; set; } = null!;
     public virtual DbSet<Shop> Shops { get; set; } = null!;
     public virtual DbSet<Product> Products { get; set; } = null!;

@@ -21,5 +21,5 @@ public class RelKoiParameter
 
     public Fish? Fish { get; set; }
 
-    public virtual Parameter? Parameter { get; set; }
+    public virtual KoiStandardParam? Parameter { get; set; }
 }

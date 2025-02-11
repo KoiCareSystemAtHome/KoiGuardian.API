@@ -72,7 +72,7 @@ public class FoodCalculatorService
                 include: u => u.Include(u => u.Parameter));
 
             foodTotal = foodTotal + (koiPercent * koiweight?.Value ?? 0);
-            often.Add(normPercent.FeedingOften);
+            often.Add(normPercent.FeedingFrequency);
         }
 
         DesiredGrowthPercent.TryGetValue(req.DesiredGrowth, out var growth);

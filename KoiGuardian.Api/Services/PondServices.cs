@@ -24,7 +24,7 @@ namespace KoiGuardian.Api.Services
 
     public class PondServices(
         IRepository<Pond> pondRepository,
-        IRepository<Parameter> parameterRepository,
+        IRepository<KoiStandardParam> parameterRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
         KoiGuardianDbContext _dbContext,
         IImageUploadService imageUpload,
@@ -195,7 +195,7 @@ namespace KoiGuardian.Api.Services
                         OwnerId = pond.OwnerId,
                         PondParameters = pond.RelPondParameter.Select(rp => new PondParameterInfo
                         {
-                            ParameterUnitID = rp.Parameter.HistoryId,
+                            ParameterUnitID = rp.Parameter.ParameterID,
                             UnitName = rp.Parameter.UnitName,
                             WarningLowwer = rp.Parameter.WarningLowwer,
                             WarningUpper = rp.Parameter.WarningUpper,

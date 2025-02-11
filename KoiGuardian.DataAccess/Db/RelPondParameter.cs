@@ -21,7 +21,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public Pond? Pond { get; set; } 
 
-        public Parameter? Parameter { get; set; }
+        public PondStandardParam? Parameter { get; set; }
 
     }
 }

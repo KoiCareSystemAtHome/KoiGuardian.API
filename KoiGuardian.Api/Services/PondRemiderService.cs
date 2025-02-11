@@ -23,13 +23,13 @@ namespace KoiGuardian.Api.Services
     {
         private readonly IRepository<PondReminder> _reminderRepository;
         private readonly IRepository<RelPondParameter> _relPondParameter;
-        private readonly IRepository<Parameter> _parameterRepository;
+        private readonly IRepository<KoiStandardParam> _parameterRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public PondReminderService(
             IRepository<PondReminder> reminderRepository,
             IRepository<RelPondParameter> relPondParameter,
-            IRepository<Parameter> parameterRepository,
+            IRepository<KoiStandardParam> parameterRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _reminderRepository = reminderRepository;

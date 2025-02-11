@@ -14,6 +14,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     // DbSet properties for collections
     public virtual DbSet<Package> Packages { get; set; } = null!;
     public virtual DbSet<Article> Articles { get; set; } = null!;
+    public virtual DbSet<PondStandardParam> PondStandardParam { get; set; } = null!;
     public virtual DbSet<AccountPackage> AccountPackage { get; set; } = null!;
     public virtual DbSet<Shop> Shops { get; set; } = null!;
     public virtual DbSet<Product> Products { get; set; } = null!;
@@ -23,7 +24,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<NormFoodAmount> NormFoodAmount { get; set; } = null!;
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
-    public virtual DbSet<Parameter> Parameters { get; set; } = null!;
+    public virtual DbSet<KoiStandardParam> KoiStandardParams { get; set; } = null!;
     public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
     public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
     public virtual DbSet<Variety> Variety { get; set; } = null!;
@@ -203,7 +204,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
                       .WithMany(u => u.RelPondParameter)
                       .HasForeignKey(u => u.PondId);
         });
-        modelBuilder.Entity<Parameter>(entity =>
+        modelBuilder.Entity<KoiStandardParam>(entity =>
         {
             entity.ToTable("Parameter");
         });

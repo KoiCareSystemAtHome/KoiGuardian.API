@@ -1,12 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace KoiGuardian.DataAccess.Db;
 
-public class Parameter
+public class PondStandardParam
 {
     [Key]
-    public Guid HistoryId {  get; set; }
-    public Guid ParameterID {  get; set; }
+    public Guid ParameterID { get; set; }
 
     public string Name { get; set; }
 
@@ -22,20 +26,7 @@ public class Parameter
     public double? DangerUpper { get; set; }
     public bool IsActive { get; set; }
     public string MeasurementInstruction { get; set; }
-    public int AgeFrom { get; set; } // từ số tháng tuổi 
-    public int AgeTo { get; set; } // tới số tháng tuồi
     public int WarningAcceptantDay { get; set; } = 5;// số ngày cá có thể sống trong hồ nếu param vượt mức warning
     public int DangerAcceptantDay { get; set; } = 3;// số ngày cá có thể sống trong hồ nếu param vượt mức danger
     public DateTime? ValidUntil { get; set; }
-
-
 }
-
-public enum ParameterType
-{
-    Fish,
-    Pond, 
-    Disease,
-
-};
-

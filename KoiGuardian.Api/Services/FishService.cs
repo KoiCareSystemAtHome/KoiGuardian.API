@@ -26,7 +26,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Fish> _fishRepository;
         private readonly IRepository<Pond> _pondRepository;
         private readonly IRepository<Variety> _varietyRepository;
-        private readonly IRepository<Parameter> _parameterRepository;
+        private readonly IRepository<KoiStandardParam> _parameterRepository;
         private readonly IRepository<RelKoiParameter> _relKoiparameterRepository;
         private readonly IImageUploadService _imageUploadService;
 
@@ -36,7 +36,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Fish> fishRepository,
             IRepository<Pond> pondRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
-            IRepository<Parameter> parameterRepository,
+            IRepository<KoiStandardParam> parameterRepository,
             IRepository<RelKoiParameter> relKoiparameterRepository,
             IRepository<Variety> varietyRepository,
             IImageUploadService imageUpload)

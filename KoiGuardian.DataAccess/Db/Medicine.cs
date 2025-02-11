@@ -14,5 +14,7 @@ namespace KoiGuardian.DataAccess.Db
         public string Data { get; set; } // List ProductID in serialization
 
         public virtual Disease? Disease { get; set; }
+        public virtual IEnumerable<RelMedicineProduct> RelMedicineProducts { get; set; }
+
     }
 }

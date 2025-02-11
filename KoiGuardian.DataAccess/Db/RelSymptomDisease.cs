@@ -11,6 +11,6 @@ public class RelSymptomDisease
 
     public virtual Symptom? Symptom { get; set; }   
     public virtual Disease? Disease { get; set; }   
-    public virtual Parameter? Parameter { get; set; }
+    public virtual KoiStandardParam? Parameter { get; set; }
 }
 

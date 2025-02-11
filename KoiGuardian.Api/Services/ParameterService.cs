@@ -12,17 +12,17 @@ namespace KoiGuardian.Api.Services
     public interface IParameterService
     {
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
-        Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken);
+        Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken);
         Task<List<PondRerquireParam>> getAll(string parameterType, int age, CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
     {
-        private readonly IRepository<Parameter> _parameterRepository;
+        private readonly IRepository<KoiStandardParam> _parameterRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public ParameterService(
-            IRepository<Parameter> parameterRepository,
+            IRepository<KoiStandardParam> parameterRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _parameterRepository = parameterRepository;
@@ -83,7 +83,7 @@ namespace KoiGuardian.Api.Services
                     var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
                     if (parameter == null)
                     {
-                        parameter = new Parameter
+                        parameter = new KoiStandardParam
                         {
                             ParameterID = parameterId,
                             Name = parameterName,
@@ -132,7 +132,7 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<Parameter> getAll(Guid parameterId, CancellationToken cancellationToken)
+        public async Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken)
         {
             return await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
 

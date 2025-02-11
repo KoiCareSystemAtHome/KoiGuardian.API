@@ -12,7 +12,7 @@ namespace KoiGuardian.Api.Controllers
         IOrderService service) : ControllerBase
     {
         [HttpGet]
-        public async Task<List<OrderFilterResponse>> Filter( OrderFilterRequest request)
+        public async Task<List<OrderFilterResponse>> Filter([FromQuery]OrderFilterRequest request)
         {
             return await service.FilterOrder(request);
         }

@@ -70,6 +70,14 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
+            // Kiểm tra nếu tiêu đề không chứa từ "Koi" thì không thêm bài viết
+            if (!title.Contains("Koi", StringComparison.OrdinalIgnoreCase))
+            {
+                articleResponse.Status = "400";
+                articleResponse.Message = "Article title must contain the word 'Koi'.";
+                return articleResponse;
+            }
+
             var article = new Article
             {
                 Link = articleRequest.Link,

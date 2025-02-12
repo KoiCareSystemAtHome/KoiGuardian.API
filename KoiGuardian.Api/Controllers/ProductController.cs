@@ -25,7 +25,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPut("update-product")]
-        public async Task<ProductResponse> UpdateProduct( ProductRequest updateProduct, CancellationToken cancellationToken)
+        public async Task<ProductResponse> UpdateProduct( ProductUpdateRequest updateProduct, CancellationToken cancellationToken)
         {
             return await services.UpdateProductAsync(updateProduct, cancellationToken);
         }

@@ -15,7 +15,7 @@ namespace KoiGuardian.Api.Services
     public interface IProductService
     {
         Task<ProductResponse> CreateProductAsync(string baseUrl,ProductRequest productRequest, CancellationToken cancellationToken);
-        Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> UpdateProductAsync(ProductUpdateRequest productRequest, CancellationToken cancellationToken);
         Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
 
         Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
@@ -54,14 +54,7 @@ namespace KoiGuardian.Api.Services
         {
             var productResponse = new ProductResponse();
 
-            // Check if the product already exists
-            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == productRequest.ProductId, cancellationToken);
-            if (existingProduct != null)
-            {
-                productResponse.Status = "409";
-                productResponse.Message = "Product with the given ID already exists.";
-                return productResponse;
-            }
+          
 
             // Verify that the specified shop exists
             var shop = await _shopRepository.GetAsync(x => x.ShopId == productRequest.ShopId, cancellationToken);
@@ -107,7 +100,7 @@ namespace KoiGuardian.Api.Services
 
 
 
-        public async Task<ProductResponse> UpdateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> UpdateProductAsync(ProductUpdateRequest productRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 

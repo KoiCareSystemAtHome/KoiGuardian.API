@@ -53,6 +53,7 @@ builder.Services.AddScoped<ISaltCalculatorService, SaltCalculatorService>();
 builder.Services.AddScoped<IFoodCalculatorService, FoodCalculatorService>();
 builder.Services.AddScoped<ISymptomService, SymptomService>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
+builder.Services.AddScoped<IKoiDiseaseService, KoiDiseaseService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

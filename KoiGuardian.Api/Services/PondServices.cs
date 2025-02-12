@@ -24,7 +24,7 @@ namespace KoiGuardian.Api.Services
 
     public class PondServices(
         IRepository<Pond> pondRepository,
-        IRepository<KoiStandardParam> parameterRepository,
+        IRepository<PondStandardParam> pondStandardparameterRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
         KoiGuardianDbContext _dbContext,
         IImageUploadService imageUpload,
@@ -83,7 +83,7 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation)
         {
-            return (await parameterRepository.FindAsync(
+            return (await pondStandardparameterRepository.FindAsync(
                 u => u.Type == ParameterType.Pond.ToString()
                     && u.IsActive && u.ValidUntil == null,
                 cancellationToken: cancellation))

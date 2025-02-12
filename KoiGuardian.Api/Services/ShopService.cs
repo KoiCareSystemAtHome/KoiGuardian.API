@@ -99,7 +99,7 @@ namespace KoiGuardian.Api.Services
                     BizLicences = shop.BizLicences,
                     Products = shop.Products?.Select(p => new ProductRequest
                     {
-                        ProductId = p.ProductId,
+                       
                         ProductName = p.ProductName,
                         Price = p.Price,
                         Image = p.Image,

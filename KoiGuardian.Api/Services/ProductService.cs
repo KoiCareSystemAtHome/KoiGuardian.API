@@ -77,13 +77,13 @@ namespace KoiGuardian.Api.Services
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
-                Image = productRequest.Image,
+                
                 ShopId = productRequest.ShopId
             };
 
             // Upload the image
-           /* var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
-            product.Image = image;*/
+            var image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), productRequest.Image);
+            product.Image = image;
 
             // Set parameter impacts
             product.SetParameterImpacts(productRequest.ParameterImpacts);

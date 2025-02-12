@@ -18,7 +18,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("create-product")]
-        public async Task<ProductResponse> CreateProduct( ProductRequest createProduct, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateProduct([FromQuery] ProductRequest createProduct, CancellationToken cancellationToken)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
             return await services.CreateProductAsync(baseUrl,createProduct, cancellationToken);

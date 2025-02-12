@@ -97,7 +97,7 @@ namespace KoiGuardian.Api.Services
                     ShopAddress = shop.ShopAddress,
                     IsActivate = shop.IsActivate,
                     BizLicences = shop.BizLicences,
-                    Products = shop.Products?.Select(p => new ProductRequest
+                    Products = shop.Products?.Select(p => new ProductDetailsRequest
                     {
                        
                         ProductName = p.ProductName,

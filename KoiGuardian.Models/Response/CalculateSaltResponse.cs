@@ -10,8 +10,9 @@ namespace KoiGuardian.Models.Response
     {
         public Guid PondId { get; set; }
         public double TotalSalt { get; set; }
-        public double? ExcessSalt { get; set; }        // Amount of excess salt
-        public double? WaterNeeded { get; set; }       // Amount of water needed to dilute
+        public double CurrentSalt { get; set; }  // Added this property
+        public double SaltNeeded { get; set; }
+        public double? WaterNeeded { get; set; }
         public List<string> AdditionalInstruction { get; set; } = new List<string>();
     }
 

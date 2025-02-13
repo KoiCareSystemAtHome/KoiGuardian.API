@@ -17,18 +17,9 @@ namespace KoiGuardian.Api.Controllers
             _saltCalculatorService = saltCalculatorService;
         }
         [HttpPost("calculate")]
-        public async Task<IActionResult> CalculateSalt([FromBody] CalculateSaltRequest request)
+        public async Task<CalculateSaltResponse> CalculateSalt([FromBody] CalculateSaltRequest request)
         {
-            var response = await _saltCalculatorService.CalculateSalt(request);
-            return Ok(new
-            {
-                Success = true,
-                PondId = response.PondId,
-                TotalSalt = response.TotalSalt,
-                WaterNeeded = response.WaterNeeded, // Trả về lượng nước cần thêm
-                Message = "Tính toán thành công.",
-                AdditionalInstructions = response.AdditionalInstruction
-            });
+            return await _saltCalculatorService.CalculateSalt(request);
         }
 
 

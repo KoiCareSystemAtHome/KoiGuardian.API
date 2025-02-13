@@ -84,7 +84,7 @@ namespace KoiGuardian.Api.Services
         public async Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation)
         {
             return (await pondStandardparameterRepository.FindAsync(
-                u => u.Type == ParameterType.Pond.ToString()
+                u => u.Type.ToLower() == ParameterType.Pond.ToString().ToLower()
                     && u.IsActive && u.ValidUntil == null,
                 cancellationToken: cancellation))
                 .Select(u => new PondRerquireParam()

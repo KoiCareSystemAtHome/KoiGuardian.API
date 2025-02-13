@@ -11,5 +11,12 @@ namespace KoiGuardian.Models.Request
         public Guid PondId { get; set; }
         public Guid ParameterId { get; set; }
     }
+
+    public class RecurringMaintenance
+    {
+        public Guid PondId { get; set; }
+        public DateTime endDate { get; set; }
+        public int cycleDays { get; set; }
+    }
 }
 

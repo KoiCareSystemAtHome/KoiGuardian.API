@@ -18,14 +18,11 @@ namespace KoiGuardian.Models.Request
         public DateTime InPondSince { get; set; }
         public string Image { get; set; }
         public decimal Price { get; set; }
-        public required List<FishParam> RequirementFishParam { get; set; }
+        public float size { get; set; }
+        public float weight { get; set; }
     }
 
-    public class FishParam
-    {
-        public Guid ParameterHistoryId { get; set; }
-        public float Value { get; set; }
-    }
+  
 
     public class FishInfo
     {

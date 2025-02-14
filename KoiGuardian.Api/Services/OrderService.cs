@@ -18,6 +18,7 @@ public interface IOrderService
 
 public class OrderService(
     IRepository<Order> orderRepository,
+    IRepository<Member> memRepository,
     IUnitOfWork<KoiGuardianDbContext> uow,
     GhnService ghnService
     ) : IOrderService
@@ -70,12 +71,14 @@ public class OrderService(
             result = result.Where(u => u.Note.ToLower().Contains(request.RequestStatus.ToLower())).ToList();
         }
 
+        var mem = await memRepository.FindAsync( u => result.Select( u => u.AccountId ).Contains(u.UserId), CancellationToken.None);
+
         return result.Select( u => new OrderFilterResponse()
         {
             OrderId = u.OrderId,
             ShopName = u.Shop.ShopName,
             CustomerName = u.User.UserName,
-            CustomerAddress = u.User.Address,
+            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.AccountId).Address,
             CustomerPhoneNumber = u.User.PhoneNumber,
             ShipFee = u.ShipFee,
             oder_code = u.oder_code,
@@ -91,12 +94,13 @@ public class OrderService(
             include : u=> u.Include(u => u.OrderDetail));
 
         if (order == null) return new();
+        var mem = await memRepository.GetAsync(u => u.UserId == order.AccountId, CancellationToken.None);
 
         return new OrderDetailResponse() {
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = order.User.Address,
+            CustomerAddress = mem.Address,
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,

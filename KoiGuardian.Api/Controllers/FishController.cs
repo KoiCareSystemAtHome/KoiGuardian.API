@@ -22,11 +22,6 @@ namespace KoiGuardian.Api.Controllers
             return await fishService.GetFishByOwnerId(owner, cancellationToken);
         }
 
-        [HttpGet("pond-required-param")]
-        public async Task<List<FishRerquireParam>> RequireParam(CancellationToken cancellationToken)
-        {
-            return await fishService.RequireParam(cancellationToken);
-        }
 
         [HttpPost("create-fish")]
         public async Task<FishResponse> CreateFishAsync([FromBody] FishRequest fishRequest, CancellationToken cancellationToken)

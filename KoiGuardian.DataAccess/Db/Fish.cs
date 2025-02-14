@@ -18,6 +18,6 @@ namespace KoiGuardian.DataAccess.Db
 
         public virtual Pond? Pond { get; set; }
         public virtual Variety? Variety { get; set; }
-        public virtual IEnumerable<RelKoiParameter> RelKoiParameters { get; set; }
+        public virtual IEnumerable<KoiReport> RelKoiParameters { get; set; }
     }
 }

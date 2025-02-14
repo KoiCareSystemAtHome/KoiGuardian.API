@@ -25,7 +25,11 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
 
     public virtual DbSet<KoiStandardParam> KoiStandardParams { get; set; } = null!;
-    public virtual DbSet<RelKoiParameter> RelKoiParameters { get; set; } = null!;
+    public virtual DbSet<KoiReport> KoiReport { get; set; } = null!;
+    public virtual DbSet<Member> Member { get; set; } = null!;
+    public virtual DbSet<Wallet> Wallet { get; set; } = null!;
+    public virtual DbSet<Food> Food { get; set; } = null!;
+    public virtual DbSet<MedicinePondParameter> MedicinePondParameter { get; set; } = null!;
     public virtual DbSet<RelPondParameter> RelPondParameters { get; set; } = null!;
     public virtual DbSet<Variety> Variety { get; set; } = null!;
     public virtual DbSet<Category> Category { get; set; } = null!;
@@ -191,10 +195,10 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.HasIndex(p => p.OwnerId);
         });
 
-        modelBuilder.Entity<RelKoiParameter>(entity =>
+        modelBuilder.Entity<KoiReport>(entity =>
         {
             entity.ToTable("RelKoiParameter");
-            entity.HasKey( u => u.RelKoiParameterID);
+            entity.HasKey( u => u.KoiReportId);
         });
         modelBuilder.Entity<RelPondParameter>(entity =>
         {

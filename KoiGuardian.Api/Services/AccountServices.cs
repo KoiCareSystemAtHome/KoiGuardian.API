@@ -49,6 +49,7 @@ public class AccountService
 RoleManager<IdentityRole> _roleManager,
 IJwtTokenGenerator _jwtTokenGenerator,
 IRepository<User> userRepository,
+IRepository<Member> memberRepository,
 IRepository <Package> packageRepository,
 IRepository<AccountPackage> ACrepository,
 IMapper mapper,
@@ -143,6 +144,7 @@ IImageUploadService imageUpload
                 Token = string.Empty
             };
         }
+        var mem = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
         var roles = await _userManager.GetRolesAsync(user);
 
         var token = _jwtTokenGenerator.GenerateToken(user, roles);
@@ -152,10 +154,10 @@ IImageUploadService imageUpload
             ID = user.Id,
             Name = user.UserName ?? string.Empty,
             PackageID = user.PackageId,
-            Avatar = user.Avatar,
+            Avatar = mem.Avatar,
             Status = user.Status.ToString(),
-            Gender = user.Gender,
-            Address = user.Address,
+            Gender = mem.Gender,
+            Address = mem.Address,
         };
 
         LoginResponse loginResponse = new()
@@ -179,10 +181,9 @@ IImageUploadService imageUpload
             Code = SD.RandomCode(),
             CreatedDate = DateTime.UtcNow,
             ValidUntil = DateTime.UtcNow,
-            Gender = registrationRequestDto.Gender ?? "",
-            Address = registrationRequestDto.Address ?? ""
         };
-        user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
+
+        var avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
 
         try
         {
@@ -190,10 +191,24 @@ IImageUploadService imageUpload
 
             if (result.Succeeded)
             {
+
                 var assignRole = await AssingRole(user, ConstantValue.MemberRole, cancellationToken);
 
                 var userToReturn = await userRepository.GetAsync(u => u.Email == registrationRequestDto.Email,
                     cancellationToken);
+
+
+                memberRepository.Insert(new Member()
+                {
+                    UserId = userToReturn.Id,
+                    Address = registrationRequestDto.Address,
+                    Avatar = avatar, 
+                    Gender = registrationRequestDto.Gender, 
+                    
+                });
+
+                await uow.SaveChangesAsync();
+
                 UserDto userDto = new UserDto()
                 {
                     Email = userToReturn?.Email ?? string.Empty,
@@ -357,6 +372,8 @@ IImageUploadService imageUpload
                 Token = string.Empty
             };
         }
+        var mem = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
+
         var roles = await _userManager.GetRolesAsync(user);
 
         var token = _jwtTokenGenerator.GenerateToken(user, roles);
@@ -366,7 +383,7 @@ IImageUploadService imageUpload
             ID = user.Id,
             Name = user.UserName ?? string.Empty,
             PackageID = user.PackageId,
-            Avatar = user.Avatar,
+            Avatar = mem.Avatar,
             Status = user.Status.ToString(),
         };
 
@@ -382,21 +399,21 @@ IImageUploadService imageUpload
     public async Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request)
     {
         var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(request.Email.ToLower()), CancellationToken.None);
-
+        var member = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id), CancellationToken.None);
         if (user == null || user.Status != UserStatus.Active)
         {
             return "Account is not valid!";
         }
 
-        var address = JsonSerializer.Deserialize<List<string>>(user.Address);
+        var address = JsonSerializer.Deserialize<List<string>>(member.Address);
         if (address != null)
         {
             address.Add(request.Address);
         }
-        user.Address = JsonSerializer.Serialize(address);
         user.UserName = request.Name;
-        user.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, request.Avatar);
-        user.Gender = request.Gender;
+        member.Address = JsonSerializer.Serialize(address);
+        member.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, request.Avatar);
+        member.Gender = request.Gender;
         user.UserReminder = request.UserReminder;
 
         await uow.SaveChangesAsync();
@@ -406,60 +423,60 @@ IImageUploadService imageUpload
 
     public async Task<string> UpdateAmount(string email, float amount)
     {
-        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        //var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
-        if (user == null || user.Status != UserStatus.Active)
-        {
-            return "Account is not valid!";
-        }
-        user.Amount += amount;
-        userRepository.Update(user);
-        await uow.SaveChangesAsync();
+        //if (user == null || user.Status != UserStatus.Active)
+        //{
+        //    return "Account is not valid!";
+        //}
+        //user.Amount += amount;
+        //userRepository.Update(user);
+        //await uow.SaveChangesAsync();
         return string.Empty;
     }
 
     public async Task<string> UpdateAccountPackage(string email, Guid packageId)
     {
-        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        //var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
-        //check xem là user có đang còn là thành viên ko
-        var checkUserExistPackage = await ACrepository.GetAsync(u => u.PackageId.Equals(user.PackageId), CancellationToken.None);
+        ////check xem là user có đang còn là thành viên ko
+        //var checkUserExistPackage = await ACrepository.GetAsync(u => u.PackageId.Equals(user.PackageId), CancellationToken.None);
 
-        var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
+        //var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
 
 
-        if (user == null || user.Status != UserStatus.Active)
-        {
-            return "Account is not valid!";
-        }
+        //if (user == null || user.Status != UserStatus.Active)
+        //{
+        //    return "Account is not valid!";
+        //}
 
-        if(checkUserExistPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
-        {
-            return "Your Account still on date";
-        }
+        //if(checkUserExistPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
+        //{
+        //    return "Your Account still on date";
+        //}
 
-        if((decimal)user.Amount < package.PackagePrice)
-        {
-            return "Your Balance is not enough";
-        }
+        //if((decimal)user.Amount < package.PackagePrice)
+        //{
+        //    return "Your Balance is not enough";
+        //}
 
-        if(package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
-        {
-            return "Package is not valid!";
-        }
+        //if(package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
+        //{
+        //    return "Package is not valid!";
+        //}
 
-        user.Amount -= (float)package.PackagePrice;
-        user.PackageId = packageId;
+        //user.Amount -= (float)package.PackagePrice;
+        //user.PackageId = packageId;
         
-        ACrepository.Insert(new AccountPackage
-        {
-            AccountPackageid = Guid.NewGuid(),
-            AccountId = user.Id,
-            PackageId = packageId,
-            PurchaseDate = DateTime.UtcNow,
-        });
-        userRepository.Update(user);
-        await uow.SaveChangesAsync();
+        //ACrepository.Insert(new AccountPackage
+        //{
+        //    AccountPackageid = Guid.NewGuid(),
+        //    AccountId = user.Id,
+        //    PackageId = packageId,
+        //    PurchaseDate = DateTime.UtcNow,
+        //});
+        //userRepository.Update(user);
+        //await uow.SaveChangesAsync();
         return "Success";
     }
 }

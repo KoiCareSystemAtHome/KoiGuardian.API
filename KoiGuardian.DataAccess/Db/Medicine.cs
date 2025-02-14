@@ -9,12 +9,11 @@ namespace KoiGuardian.DataAccess.Db
     public class Medicine
     {
         public Guid MedicineId { get; set; }    
-        public Guid DiseaseId { get; set; }
-        public string Instruction { get; set; }
-        public string Data { get; set; } // List ProductID in serialization
+        public Guid ProductId { get; set; }
+        public string Medicinename { get; set; }
+        public string DosageForm { get; set; }
+        public string Symtomps { get; set; }
 
-        public virtual Disease? Disease { get; set; }
-        public virtual IEnumerable<RelMedicineProduct> RelMedicineProducts { get; set; }
-
+        public virtual Product? Product { get; set; }
     }
 }

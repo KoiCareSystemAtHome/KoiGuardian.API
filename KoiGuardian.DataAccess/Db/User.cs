@@ -9,12 +9,7 @@ public class User : IdentityUser
 
     public UserStatus Status { get; set; }
 
-    public string Avatar { get; set; } = string.Empty;
-    public string Gender { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-
     public int Code { get; set; } = 0;
-    public float Amount { get; set; } = 0;
 
     public DateTime? CreatedDate { get; set; } 
 

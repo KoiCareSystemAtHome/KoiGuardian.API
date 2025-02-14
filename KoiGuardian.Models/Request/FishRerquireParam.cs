@@ -10,14 +10,17 @@ namespace KoiGuardian.Models.Request
     public class FishRerquireParam
     {
         [Key]
-        public Guid HistoryID { get; set; }
         public Guid ParameterID { get; set; }
-        public string ParameterName { get; set; }
-        public string UnitName { get; set; }
-        public double? WarningUpper { get; set; }
-        public double? WarningLowwer { get; set; }
-        public double? DangerLower { get; set; }
-        public double? DangerUpper { get; set; }
+        public double? WeightWarningUpper { get; set; }
+        public double? WeightWarningLowwer { get; set; }
+        public double? WeightDangerLower { get; set; }
+        public double? WeightDangerUpper { get; set; }
+
+
+        public double? SizeWarningUpper { get; set; }
+        public double? SizeWarningLowwer { get; set; }
+        public double? SizeDangerLower { get; set; }
+        public double? SizeDangerUpper { get; set; }
         public string MeasurementInstruction { get; set; }
     }
 }

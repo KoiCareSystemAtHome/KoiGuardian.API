@@ -181,12 +181,6 @@ public class SymptomService(
             DiseaseId = predictDiseaseId ?? Guid.Empty,
             DiseaseName =  predictDisease.Name,
             Description = predictDisease.Description,
-            Medicine = predictDisease.Medicine?.Select( u => new MedicinePredict()
-            {
-                MedicineId = u.MedicineId,
-                Instruction = u.Instruction,
-                Data = u.Data
-            })
         };
     }
 

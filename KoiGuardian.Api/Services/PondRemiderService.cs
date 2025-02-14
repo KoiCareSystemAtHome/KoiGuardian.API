@@ -23,13 +23,13 @@ namespace KoiGuardian.Api.Services
     {
         private readonly IRepository<PondReminder> _reminderRepository;
         private readonly IRepository<RelPondParameter> _relPondParameter;
-        private readonly IRepository<KoiStandardParam> _parameterRepository;
+        private readonly IRepository<PondStandardParam> _parameterRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public PondReminderService(
             IRepository<PondReminder> reminderRepository,
             IRepository<RelPondParameter> relPondParameter,
-            IRepository<KoiStandardParam> parameterRepository,
+            IRepository<PondStandardParam> parameterRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _reminderRepository = reminderRepository;
@@ -74,7 +74,7 @@ namespace KoiGuardian.Api.Services
         public async Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken)
         {
             // Lấy tham số từ database để lấy ngưỡng cảnh báo và ngưỡng tối đa
-            var parameter = await _parameterRepository.GetAsync(rp => rp.HistoryId.Equals(parameterId), cancellationToken: cancellationToken);
+            var parameter = await _parameterRepository.GetAsync(rp => rp.ParameterID.Equals(parameterId), cancellationToken: cancellationToken);
             if (parameter == null)
             {
                 throw new InvalidOperationException($"Parameter with ID '{parameterId}' not found.");
@@ -127,7 +127,7 @@ namespace KoiGuardian.Api.Services
                 // Ensure that the maintenance date is in UTC
                 maintenanceDate = maintenanceDate.ToUniversalTime();
 
-                var parameter = await _parameterRepository.FindAsync(rp => rp.HistoryId == parameterId, cancellationToken: cancellationToken);
+                var parameter = await _parameterRepository.FindAsync(rp => rp.ParameterID == parameterId, cancellationToken: cancellationToken);
                 if (parameter == null)
                 {
                     throw new InvalidOperationException($"Parameter with ID '{parameterId}' not found.");

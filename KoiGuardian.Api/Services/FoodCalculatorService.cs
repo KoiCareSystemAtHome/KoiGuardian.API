@@ -16,7 +16,7 @@ public class FoodCalculatorService
         IRepository<NormFoodAmount> normFoodAmountRepository,
         IRepository<Pond> pondRepository,
         IRepository<KoiDiseaseProfile> koiProfileRepository,
-        IRepository<RelKoiParameter> koiParamRepository
+        IRepository<KoiReport> koiParamRepository
     )
     : IFoodCalculatorService
 {
@@ -50,8 +50,7 @@ public class FoodCalculatorService
             var koiPercent = 0f;
             var normPercent = await normFoodAmountRepository.GetAsync(
                 u => u.AgeFrom <= koi.Age && u.AgeTo >= koi.Age
-                && req.TemperatureLower >= u.TemperatureLower
-                && req.TemperatureUpper <= u.TemperatureUpper,
+                && req.TemperatureUpper == u.Temperature,
                 CancellationToken.None);
             koiPercent = koiPercent + normPercent.StandardAmount;
 
@@ -67,11 +66,10 @@ public class FoodCalculatorService
                 noteList.Add(koi.Name + " đang điều trị bệnh " + treatmentAmount.Disease.Name);
             }
 
-            var koiweight = await koiParamRepository.GetAsync(
-                u => u.Parameter.Name.ToLower() == "weight",
-                include: u => u.Include(u => u.Parameter));
+            var koiweight = await koiParamRepository.GetQueryable()
+                .OrderByDescending(u=> u.CalculatedDate).FirstOrDefaultAsync();
 
-            foodTotal = foodTotal + (koiPercent * koiweight?.Value ?? 0);
+            foodTotal = foodTotal + (koiPercent * koiweight?.Weight ?? 0);
             often.Add(normPercent.FeedingFrequency);
         }
 

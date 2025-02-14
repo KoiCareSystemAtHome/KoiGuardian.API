@@ -15,8 +15,8 @@ namespace KoiGuardian.DataAccess.Db
         public int AgeFrom { get; set; } // từ số tháng tuổi 
         public int AgeTo { get; set; } // tới số tháng tuồi
         public string WarningMessage { get; set; } = string.Empty;
-        public float TemperatureUpper { get; set; } // temperature in standard unit : Cencius
-        public float TemperatureLower { get; set; } // temperature in standard unit : Cencius
+        public string Desiregrowth{ get; set; } // temperature in standard unit : Cencius
+        public float Temperature { get; set; } // temperature in standard unit : Cencius
     }
 
     public enum DesiredGrouthType

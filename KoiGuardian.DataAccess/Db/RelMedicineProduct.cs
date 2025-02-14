@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace KoiGuardian.DataAccess.Db
 {
-    public class RelMedicineProduct
+    public class MedicineDisease
     {
-        public Guid RelMedicineProductId { get; set; }
+        public Guid MedicineDiseaseId {get; set; }
         public Guid MedinceId { get; set; }
-        public Guid ProductId { get; set; }
+        public Guid DiseaseId { get; set; }
 
-       public virtual Product Product { get; set; }
+       public virtual Disease Disease { get; set; }
        public virtual Medicine Medince { get; set; }
     }
 

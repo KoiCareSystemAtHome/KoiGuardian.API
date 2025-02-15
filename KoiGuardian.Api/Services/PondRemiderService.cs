@@ -16,6 +16,8 @@ namespace KoiGuardian.Api.Services
         Task<double> CalculateAverageParameterIncreaseAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
         Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
         Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
+        //bảo trì địng kì
+        Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken);
         Task SaveMaintenanceReminderAsync(PondReminder reminder, CancellationToken cancellationToken);
     }
 
@@ -184,6 +186,44 @@ namespace KoiGuardian.Api.Services
                 SeenDate = pondReminder.SeenDate,
             }).ToList();
         }
+
+        //Tạo LỊch Bảo trì đinh kì theo các khoảng time
+        public async Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken)
+        {
+            if (cycleDays <= 0)
+            {
+                throw new ArgumentException("Số ngày chu kỳ phải lớn hơn 0.");
+            }
+
+            List<PondReminder> reminders = new List<PondReminder>();
+            DateTime startDate = DateTime.UtcNow;
+
+            while (startDate <= endDate)
+            {
+                startDate = startDate.AddDays(cycleDays);
+                reminders.Add(new PondReminder
+                {
+                    PondReminderId = Guid.NewGuid(),
+                    PondId = pondId,
+                    ReminderType = ReminderType.Pond,
+                    Title = "Scheduled Maintenance",
+                    Description = "Routine maintenance scheduled for the pond.",
+                    MaintainDate = startDate,
+                    SeenDate = DateTime.MinValue.ToUniversalTime()
+                });
+
+                startDate = startDate.AddDays(cycleDays);
+            }
+
+            foreach (var reminder in reminders)
+            {
+                await SaveMaintenanceReminderAsync(reminder, cancellationToken);
+            }
+
+            return reminders;
+        }
+
+
 
         // Lưu lịch bảo trì vào DB
         public async Task SaveMaintenanceReminderAsync(PondReminder reminder, CancellationToken cancellationToken)

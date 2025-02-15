@@ -77,6 +77,30 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
+        [HttpPost("recurring-maintenance")]
+        public async Task<IActionResult> RecurringMaintenanceReminders([FromBody] RecurringMaintenance request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var reminder = await _pondReminderService.GenerateRecurringMaintenanceRemindersAsync(
+                    request.PondId,
+                    request.endDate,
+                    request.cycleDays,
+                    cancellationToken
+                );
+
+                return Ok(reminder);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error calculating maintenance reminder.",
+                    Error = ex.Message
+                });
+            }
+        }
+
         // Lưu lịch bảo trì vào DB
         [HttpPost("save-maintenance")]
         public async Task<IActionResult> SaveMaintenance([FromBody] PondReminder reminder, CancellationToken cancellationToken)

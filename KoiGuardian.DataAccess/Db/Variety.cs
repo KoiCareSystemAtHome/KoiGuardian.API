@@ -12,7 +12,7 @@ namespace KoiGuardian.DataAccess.Db
 
         public string VarietyName { get; set; }
         public string Description { get; set; }
-        public Guid AuthorId { get; set; }
+        public string AuthorId { get; set; }
 
 
         public virtual User? Author { get; set; }    

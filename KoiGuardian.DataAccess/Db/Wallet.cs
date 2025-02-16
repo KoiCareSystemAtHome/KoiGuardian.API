@@ -10,6 +10,7 @@ namespace KoiGuardian.DataAccess.Db
     public class Wallet
     {
         [Key]
+        public Guid WalletId { get; set; }
         public Guid UserId { get; set; }
         public DateTime PurchaseDate { get; set; }
         public float Amount { get; set; }

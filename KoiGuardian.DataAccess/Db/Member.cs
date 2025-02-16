@@ -10,6 +10,7 @@ namespace KoiGuardian.DataAccess.Db;
 public class Member
 {
     [Key]
+    public string MemberId { get; set; }
     public string UserId { get; set; }
 
     public string Avatar {  get; set; }

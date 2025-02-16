@@ -194,12 +194,13 @@ IImageUploadService imageUpload
 
                 var assignRole = await AssingRole(user, ConstantValue.MemberRole, cancellationToken);
 
-                var userToReturn = await userRepository.GetAsync(u => u.Email == registrationRequestDto.Email,
-                    cancellationToken);
+                var userToReturn = await userRepository.GetQueryable().AsNoTracking().Where(u => u.Email == registrationRequestDto.Email)
+                    .FirstOrDefaultAsync();
 
 
                 memberRepository.Insert(new Member()
                 {
+                    MemberId = Guid.NewGuid().ToString(),
                     UserId = userToReturn.Id,
                     Address = registrationRequestDto.Address,
                     Avatar = avatar, 
@@ -215,6 +216,7 @@ IImageUploadService imageUpload
                     ID = userToReturn?.Id ?? string.Empty,
                     Avatar = userToReturn?.PhoneNumber ?? string.Empty,
                     Name = userToReturn?.UserName ?? string.Empty,
+
                 };
 
                 string sendMail = SendMail.SendEmail(user.Email, "Code for register", EmailTemplate.Register(user.Code), "");

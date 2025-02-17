@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KoiGuardian.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,11 +17,7 @@ public class Disease
     public float SaltModifyPercent { get; set; }
 
 
-    public virtual IEnumerable<Medicine>? Medicine { get; set; }
+    public virtual IEnumerable<MedicineDisease>? MedicineDiseases { get; set; }
 }
 
-public enum DiseaseType
-{
-    Common,
-    Variety_only
-}
+

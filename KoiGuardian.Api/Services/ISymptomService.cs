@@ -171,16 +171,16 @@ public class SymptomService(
             return new();
         }
 
-        var predictDisease = await diseaseRepository.GetAsync(
+       /* var predictDisease = await diseaseRepository.GetAsync(
             u => u.DiseaseId == predictDiseaseId,
             include: u=> u.Include(u => u.Medicine));
-
+*/
         return new FinalDiseaseTypePredictResponse()
         {
             CauseGroupType = relations.First().Symptom.Type ,
             DiseaseId = predictDiseaseId ?? Guid.Empty,
-            DiseaseName =  predictDisease.Name,
-            Description = predictDisease.Description,
+           /* DiseaseName =  predictDisease.Name,
+            Description = predictDisease.Description,*/
         };
     }
 

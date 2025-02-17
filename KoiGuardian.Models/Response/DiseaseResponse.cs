@@ -1,4 +1,5 @@
-﻿using KoiGuardian.Models.Request;
+﻿using KoiGuardian.Models.Enums;
+using KoiGuardian.Models.Request;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,15 +19,15 @@ namespace KoiGuardian.Models.Response
         public DiseaseType Type { get; set; }
         public float FoodModifyPercent { get; set; }
         public float SaltModifyPercent { get; set; }
-        public List<MedicineResponse>? Medicines { get; set; }
+        public List<MedicineDTO>? Medicines { get; set; }
     }
 
    
 
-    public class MedicineResponse
+    public class MedicineDTO
     {
         public Guid MedicineId { get; set; }
         public string Name { get; set; }
-        public string Description { get; set; }
+       
     }
 }

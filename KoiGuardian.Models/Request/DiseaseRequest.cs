@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KoiGuardian.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,9 +28,5 @@ namespace KoiGuardian.Models.Request
         public List<Guid>? MedicineIds { get; set; }
     }
 
-    public enum DiseaseType
-    {
-        Common,
-        Variety_only
-    }
+  
 }

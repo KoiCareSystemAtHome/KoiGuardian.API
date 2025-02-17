@@ -16,5 +16,5 @@ public class User : IdentityUser
     public DateTime? ValidUntil { get; set; }
     public TimeOnly? UserReminder { get; set; }
 
-
+    public virtual Wallet Wallet { get; set; }
 }

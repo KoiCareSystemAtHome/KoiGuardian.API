@@ -6,7 +6,7 @@ namespace KoiGuardian.DataAccess.Db
     {
         [Key]
         public Guid OderDetailId { get; set; }
-        public Guid OderId { get; set; }
+        public Guid OrderId { get; set; }
         public Guid ProductId { get; set; }
 
         public virtual Product Product { get; set; }

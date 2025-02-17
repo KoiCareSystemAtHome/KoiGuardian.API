@@ -17,7 +17,6 @@ public class Disease
     public float SaltModifyPercent { get; set; }
 
 
-    public virtual IEnumerable<MedicineDisease>? MedicineDiseases { get; set; }
 }
 
 

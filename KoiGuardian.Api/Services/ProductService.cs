@@ -24,6 +24,10 @@ namespace KoiGuardian.Api.Services
 
         Task<ProductResponse> CreateMedicnieAsync(string baseUrl, MedicineRequest medicineRequest, CancellationToken cancellationToken);
 
+        Task<ProductResponse> UpdateMedicineAsync(MedicineUpdateRequest medicineRequest, CancellationToken cancellationToken);
+
+        Task<ProductResponse> UpdateFoodAsync(FoodUpdateRequest foodRequest, CancellationToken cancellationToken);
+
         Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
       string productName,
       string brand,
@@ -89,7 +93,7 @@ namespace KoiGuardian.Api.Services
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
-
+                Type = (ProductType)Convert.ToInt32(ProductType.Pond_Equipment),
                 ShopId = productRequest.ShopId
             };
 
@@ -162,6 +166,111 @@ namespace KoiGuardian.Api.Services
 
             return productResponse;
         }
+
+
+
+        public async Task<ProductResponse> UpdateFoodAsync(FoodUpdateRequest foodRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == foodRequest.ProductId, cancellationToken);
+            if (existingProduct == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Product with the given ID was not found.";
+                return productResponse;
+            }
+
+            if (existingProduct.Type != ProductType.Food)
+            {
+                productResponse.Status = "400";
+                productResponse.Message = "The specified product is not a Food.";
+                return productResponse;
+            }
+
+            var existingFood = await _foodRepository.GetAsync(x => x.ProductId == foodRequest.ProductId, cancellationToken);
+            if (existingFood == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Food details not found.";
+                return productResponse;
+            }
+
+            existingProduct.ProductName = foodRequest.ProductName;
+            existingProduct.Description = foodRequest.Description;
+            existingProduct.Price = foodRequest.Price;
+            existingProduct.StockQuantity = foodRequest.StockQuantity;
+            existingProduct.CategoryId = foodRequest.CategoryId;
+            existingProduct.Brand = foodRequest.Brand;
+            existingProduct.ManufactureDate = foodRequest.ManufactureDate;
+            existingProduct.ExpiryDate = foodRequest.ExpiryDate;
+            existingProduct.SetParameterImpacts(foodRequest.ParameterImpacts);
+
+            existingFood.Name = foodRequest.Name;
+            existingFood.AgeFrom = foodRequest.AgeFrom;
+            existingFood.AgeTo = foodRequest.AgeTo;
+
+            _productRepository.Update(existingProduct);
+            _foodRepository.Update(existingFood);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "200";
+            productResponse.Message = "Food updated successfully.";
+            return productResponse;
+        }
+
+        public async Task<ProductResponse> UpdateMedicineAsync(MedicineUpdateRequest medicineRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == medicineRequest.ProductId, cancellationToken);
+            if (existingProduct == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Product with the given ID was not found.";
+                return productResponse;
+            }
+
+            if (existingProduct.Type != ProductType.Medicine)
+            {
+                productResponse.Status = "400";
+                productResponse.Message = "The specified product is not a Medicine.";
+                return productResponse;
+            }
+
+            var existingMedicine = await _medicineRepository.GetAsync(x => x.ProductId == medicineRequest.ProductId, cancellationToken);
+            if (existingMedicine == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Medicine details not found.";
+                return productResponse;
+            }
+
+            existingProduct.ProductName = medicineRequest.ProductName;
+            existingProduct.Description = medicineRequest.Description;
+            existingProduct.Price = medicineRequest.Price;
+            existingProduct.StockQuantity = medicineRequest.StockQuantity;
+            existingProduct.CategoryId = medicineRequest.CategoryId;
+            existingProduct.Brand = medicineRequest.Brand;
+            existingProduct.ManufactureDate = medicineRequest.ManufactureDate;
+            existingProduct.ExpiryDate = medicineRequest.ExpiryDate;
+            existingProduct.SetParameterImpacts(medicineRequest.ParameterImpacts);
+
+            existingMedicine.Medicinename = medicineRequest.MedicineName;
+            existingMedicine.DosageForm = medicineRequest.DosageForm;
+            existingMedicine.Symtomps = medicineRequest.Symptoms;
+
+            _productRepository.Update(existingProduct);
+            _medicineRepository.Update(existingMedicine);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "200";
+            productResponse.Message = "Medicine updated successfully.";
+            return productResponse;
+        }
+
 
         public async Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
         {
@@ -299,7 +408,7 @@ namespace KoiGuardian.Api.Services
                 ManufactureDate = foodRequest.ManufactureDate,
                 ExpiryDate = foodRequest.ExpiryDate,
                 ShopId = foodRequest.ShopId,
-                Type = ProductType.Food // Đặt loại sản phẩm là Food
+                Type = (ProductType)Convert.ToInt32(ProductType.Food) // Đặt loại sản phẩm là Food
             };
 
             // Upload hình ảnh

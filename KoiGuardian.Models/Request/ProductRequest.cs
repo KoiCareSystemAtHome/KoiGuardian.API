@@ -108,16 +108,35 @@ namespace KoiGuardian.Models.Request
             Type = ProductType.Food; // Đặt mặc định là Food
         }
 
-        public class MedicineRequest : ProductRequest
-        {
-            public string MedicineName { get; set; }
-            public string DosageForm { get; set; }
-            public string Symptoms { get; set; }
+       
+    }
+    public class MedicineRequest : ProductRequest
+    {
+        public string MedicineName { get; set; }
+        public string DosageForm { get; set; }
+        public string Symptoms { get; set; }
 
-            public MedicineRequest()
-            {
-                Type = ProductType.Medicine; // Đặt mặc định là Medicine
-            }
+        public MedicineRequest()
+        {
+            Type = ProductType.Medicine; // Đặt mặc định là Medicine
         }
     }
+
+    public class FoodUpdateRequest : ProductUpdateRequest
+    {
+        public string Name { get; set; }
+        public int AgeFrom { get; set; }
+        public int AgeTo { get; set; }
+    }
+
+
+    public class MedicineUpdateRequest : ProductUpdateRequest
+    {
+        public string MedicineName { get; set; }
+        public string DosageForm { get; set; }
+        public string Symptoms { get; set; }
+    }
+
+
+
 }

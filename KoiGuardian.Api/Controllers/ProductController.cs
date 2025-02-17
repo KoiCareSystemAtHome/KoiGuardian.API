@@ -45,6 +45,19 @@ namespace KoiGuardian.Api.Controllers
             return await services.UpdateProductAsync(updateProduct, cancellationToken);
         }
 
+        [HttpPut("update-food")]
+        public async Task<ProductResponse> UpdateFood(FoodUpdateRequest updateFood, CancellationToken cancellationToken)
+        {
+            return await services.UpdateFoodAsync(updateFood, cancellationToken);
+        }
+
+        [HttpPut("update-medicine")]
+        public async Task<ProductResponse> UpdateMedicine(MedicineUpdateRequest updateMedicine, CancellationToken cancellationToken)
+        {
+            return await services.UpdateMedicineAsync(updateMedicine, cancellationToken);
+        }
+
+
         [HttpGet("{productId}")]
         public async Task<ProductDetailResponse> GetProductById(Guid productId, CancellationToken cancellationToken)
         {

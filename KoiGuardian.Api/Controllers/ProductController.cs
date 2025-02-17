@@ -3,6 +3,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
+using static KoiGuardian.Models.Request.FoodRequest;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -22,6 +23,20 @@ namespace KoiGuardian.Api.Controllers
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
             return await services.CreateProductAsync(baseUrl,createProduct, cancellationToken);
+        }
+
+        [HttpPost("create-productfood")]
+        public async Task<ProductResponse> CreateFood([FromQuery]FoodRequest createFood, CancellationToken cancellationToken)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateFoodAsync(baseUrl, createFood, cancellationToken);
+        }
+
+        [HttpPost("create-medicine")]
+        public async Task<ProductResponse> CreateMedince([FromQuery] MedicineRequest createMedicine, CancellationToken cancellationToken)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateMedicnieAsync(baseUrl,createMedicine, cancellationToken);
         }
 
         [HttpPut("update-product")]

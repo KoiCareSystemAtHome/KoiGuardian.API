@@ -50,11 +50,5 @@ namespace KoiGuardian.DataAccess.Db
         public virtual IEnumerable<Feedback> Feedbacks { get; set; }
     }
 
-    public enum ProductType
-    {
-        Food,
-        Pond_Equipment,
-        Medicine,
-        Funtional_Food
-    }
+ 
 }

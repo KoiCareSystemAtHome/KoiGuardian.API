@@ -3,6 +3,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
+using static KoiGuardian.Models.Request.FoodRequest;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -24,11 +25,38 @@ namespace KoiGuardian.Api.Controllers
             return await services.CreateProductAsync(baseUrl,createProduct, cancellationToken);
         }
 
+        [HttpPost("create-productfood")]
+        public async Task<ProductResponse> CreateFood([FromQuery]FoodRequest createFood, CancellationToken cancellationToken)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateFoodAsync(baseUrl, createFood, cancellationToken);
+        }
+
+        [HttpPost("create-medicine")]
+        public async Task<ProductResponse> CreateMedince([FromQuery] MedicineRequest createMedicine, CancellationToken cancellationToken)
+        {
+            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            return await services.CreateMedicnieAsync(baseUrl,createMedicine, cancellationToken);
+        }
+
         [HttpPut("update-product")]
         public async Task<ProductResponse> UpdateProduct( ProductUpdateRequest updateProduct, CancellationToken cancellationToken)
         {
             return await services.UpdateProductAsync(updateProduct, cancellationToken);
         }
+
+        [HttpPut("update-food")]
+        public async Task<ProductResponse> UpdateFood(FoodUpdateRequest updateFood, CancellationToken cancellationToken)
+        {
+            return await services.UpdateFoodAsync(updateFood, cancellationToken);
+        }
+
+        [HttpPut("update-medicine")]
+        public async Task<ProductResponse> UpdateMedicine(MedicineUpdateRequest updateMedicine, CancellationToken cancellationToken)
+        {
+            return await services.UpdateMedicineAsync(updateMedicine, cancellationToken);
+        }
+
 
         [HttpGet("{productId}")]
         public async Task<ProductDetailResponse> GetProductById(Guid productId, CancellationToken cancellationToken)

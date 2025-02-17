@@ -3,12 +3,14 @@ using KoiGuardian.Core.Repository;
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using static KoiGuardian.Models.Request.FoodRequest;
 
 namespace KoiGuardian.Api.Services
 {
@@ -17,6 +19,14 @@ namespace KoiGuardian.Api.Services
         Task<ProductResponse> CreateProductAsync(string baseUrl,ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductResponse> UpdateProductAsync(ProductUpdateRequest productRequest, CancellationToken cancellationToken);
         Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
+
+        Task<ProductResponse> CreateFoodAsync(string baseUrl, FoodRequest foodRequest, CancellationToken cancellationToken);
+
+        Task<ProductResponse> CreateMedicnieAsync(string baseUrl, MedicineRequest medicineRequest, CancellationToken cancellationToken);
+
+        Task<ProductResponse> UpdateMedicineAsync(MedicineUpdateRequest medicineRequest, CancellationToken cancellationToken);
+
+        Task<ProductResponse> UpdateFoodAsync(FoodUpdateRequest foodRequest, CancellationToken cancellationToken);
 
         Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
       string productName,
@@ -33,19 +43,25 @@ namespace KoiGuardian.Api.Services
     {
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Shop> _shopRepository;
+        private readonly IRepository<Food> _foodRepository;
+        private readonly IRepository<Medicine> _medicineRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
         private readonly IImageUploadService _imageUploadService;
 
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Shop> shopRepository,
+            IRepository<Food> foodRepository,
+            IRepository<Medicine> medicineRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
             IImageUploadService imageUpload
             )
-            
+
         {
             _productRepository = productRepository;
             _shopRepository = shopRepository;
+            _foodRepository = foodRepository;
+            _medicineRepository = medicineRepository;
             _unitOfWork = unitOfWork;
             _imageUploadService = imageUpload;
         }
@@ -54,7 +70,7 @@ namespace KoiGuardian.Api.Services
         {
             var productResponse = new ProductResponse();
 
-          
+
 
             // Verify that the specified shop exists
             var shop = await _shopRepository.GetAsync(x => x.ShopId == productRequest.ShopId, cancellationToken);
@@ -68,7 +84,7 @@ namespace KoiGuardian.Api.Services
             // Create the new product
             var product = new Product
             {
-                
+
                 ProductName = productRequest.ProductName,
                 Description = productRequest.Description,
                 Price = productRequest.Price,
@@ -77,7 +93,7 @@ namespace KoiGuardian.Api.Services
                 Brand = productRequest.Brand,
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
-                
+                Type = (ProductType)Convert.ToInt32(ProductType.Pond_Equipment),
                 ShopId = productRequest.ShopId
             };
 
@@ -151,6 +167,111 @@ namespace KoiGuardian.Api.Services
             return productResponse;
         }
 
+
+
+        public async Task<ProductResponse> UpdateFoodAsync(FoodUpdateRequest foodRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == foodRequest.ProductId, cancellationToken);
+            if (existingProduct == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Product with the given ID was not found.";
+                return productResponse;
+            }
+
+            if (existingProduct.Type != ProductType.Food)
+            {
+                productResponse.Status = "400";
+                productResponse.Message = "The specified product is not a Food.";
+                return productResponse;
+            }
+
+            var existingFood = await _foodRepository.GetAsync(x => x.ProductId == foodRequest.ProductId, cancellationToken);
+            if (existingFood == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Food details not found.";
+                return productResponse;
+            }
+
+            existingProduct.ProductName = foodRequest.ProductName;
+            existingProduct.Description = foodRequest.Description;
+            existingProduct.Price = foodRequest.Price;
+            existingProduct.StockQuantity = foodRequest.StockQuantity;
+            existingProduct.CategoryId = foodRequest.CategoryId;
+            existingProduct.Brand = foodRequest.Brand;
+            existingProduct.ManufactureDate = foodRequest.ManufactureDate;
+            existingProduct.ExpiryDate = foodRequest.ExpiryDate;
+            existingProduct.SetParameterImpacts(foodRequest.ParameterImpacts);
+
+            existingFood.Name = foodRequest.Name;
+            existingFood.AgeFrom = foodRequest.AgeFrom;
+            existingFood.AgeTo = foodRequest.AgeTo;
+
+            _productRepository.Update(existingProduct);
+            _foodRepository.Update(existingFood);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "200";
+            productResponse.Message = "Food updated successfully.";
+            return productResponse;
+        }
+
+        public async Task<ProductResponse> UpdateMedicineAsync(MedicineUpdateRequest medicineRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            var existingProduct = await _productRepository.GetAsync(x => x.ProductId == medicineRequest.ProductId, cancellationToken);
+            if (existingProduct == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Product with the given ID was not found.";
+                return productResponse;
+            }
+
+            if (existingProduct.Type != ProductType.Medicine)
+            {
+                productResponse.Status = "400";
+                productResponse.Message = "The specified product is not a Medicine.";
+                return productResponse;
+            }
+
+            var existingMedicine = await _medicineRepository.GetAsync(x => x.ProductId == medicineRequest.ProductId, cancellationToken);
+            if (existingMedicine == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Medicine details not found.";
+                return productResponse;
+            }
+
+            existingProduct.ProductName = medicineRequest.ProductName;
+            existingProduct.Description = medicineRequest.Description;
+            existingProduct.Price = medicineRequest.Price;
+            existingProduct.StockQuantity = medicineRequest.StockQuantity;
+            existingProduct.CategoryId = medicineRequest.CategoryId;
+            existingProduct.Brand = medicineRequest.Brand;
+            existingProduct.ManufactureDate = medicineRequest.ManufactureDate;
+            existingProduct.ExpiryDate = medicineRequest.ExpiryDate;
+            existingProduct.SetParameterImpacts(medicineRequest.ParameterImpacts);
+
+            existingMedicine.Medicinename = medicineRequest.MedicineName;
+            existingMedicine.DosageForm = medicineRequest.DosageForm;
+            existingMedicine.Symtomps = medicineRequest.Symptoms;
+
+            _productRepository.Update(existingProduct);
+            _medicineRepository.Update(existingMedicine);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "200";
+            productResponse.Message = "Medicine updated successfully.";
+            return productResponse;
+        }
+
+
         public async Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
         {
             var product = await _productRepository
@@ -158,7 +279,7 @@ namespace KoiGuardian.Api.Services
                 .Include(p => p.Category)
                 .Include(p => p.Shop)
                 .Include(p => p.Feedbacks)
-                   /* .ThenInclude(f => f.Member)*/
+                /* .ThenInclude(f => f.Member)*/
                 .FirstOrDefaultAsync(p => p.ProductId == productId, cancellationToken);
 
             if (product == null)
@@ -196,12 +317,12 @@ namespace KoiGuardian.Api.Services
             };
         }
 
-    public async Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
-     string productName,
-     string brand,
-     string parameterImpact,
-     string categoryName,
-     CancellationToken cancellationToken)
+        public async Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
+         string productName,
+         string brand,
+         string parameterImpact,
+         string categoryName,
+         CancellationToken cancellationToken)
         {
             var query = _productRepository.GetQueryable();
 
@@ -261,6 +382,120 @@ namespace KoiGuardian.Api.Services
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<ProductResponse> CreateFoodAsync(string baseUrl, FoodRequest foodRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            // Kiểm tra Shop có tồn tại không
+            var shop = await _shopRepository.GetAsync(x => x.ShopId == foodRequest.ShopId, cancellationToken);
+            if (shop == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Specified shop does not exist.";
+                return productResponse;
+            }
+
+            // Tạo Product
+            var product = new Product
+            {
+                ProductId = Guid.NewGuid(),
+                ProductName = foodRequest.ProductName,
+                Description = foodRequest.Description,
+                Price = foodRequest.Price,
+                StockQuantity = foodRequest.StockQuantity,
+                CategoryId = foodRequest.CategoryId,
+                Brand = foodRequest.Brand,
+                ManufactureDate = foodRequest.ManufactureDate,
+                ExpiryDate = foodRequest.ExpiryDate,
+                ShopId = foodRequest.ShopId,
+                Type = (ProductType)Convert.ToInt32(ProductType.Food) // Đặt loại sản phẩm là Food
+            };
+
+            // Upload hình ảnh
+            product.Image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), foodRequest.Image);
+
+            product.SetParameterImpacts(foodRequest.ParameterImpacts);
+            // Lưu Product vào database
+            _productRepository.Insert(product);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Tạo Food và liên kết với Product
+            var food = new Food
+            {
+                ProductId = product.ProductId,
+                Name = foodRequest.Name,
+                AgeFrom = foodRequest.AgeFrom,
+                AgeTo = foodRequest.AgeTo
+            };
+
+            // Lưu Food vào database
+            _foodRepository.Insert(food);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "201";
+            productResponse.Message = "Food created successfully.";
+
+            return productResponse;
+        }
+
+        public async Task<ProductResponse> CreateMedicnieAsync(string baseUrl, MedicineRequest medicineRequest, CancellationToken cancellationToken)
+        {
+            var productResponse = new ProductResponse();
+
+            // Kiểm tra Shop có tồn tại không
+            var shop = await _shopRepository.GetAsync(x => x.ShopId == medicineRequest.ShopId, cancellationToken);
+            if (shop == null)
+            {
+                productResponse.Status = "404";
+                productResponse.Message = "Specified shop does not exist.";
+                return productResponse;
+            }
+
+            // Tạo Product
+            var product = new Product
+            {
+                ProductId = Guid.NewGuid(),
+                ProductName = medicineRequest.ProductName,
+                Description = medicineRequest.Description,
+                Price = medicineRequest.Price,
+                StockQuantity = medicineRequest.StockQuantity,
+                CategoryId = medicineRequest.CategoryId,
+                Brand = medicineRequest.Brand,
+                ManufactureDate = medicineRequest.ManufactureDate,
+                ExpiryDate = medicineRequest.ExpiryDate,
+                ShopId = medicineRequest.ShopId,
+                Type = (ProductType)Convert.ToInt32(ProductType.Medicine) // Đặt loại sản phẩm là Medicine
+            };
+
+            // Upload hình ảnh
+            product.Image = await _imageUploadService.UploadImageAsync(baseUrl, "Product", product.ProductId.ToString(), medicineRequest.Image);
+
+            product.SetParameterImpacts(medicineRequest.ParameterImpacts);
+            // Lưu Product vào database
+            _productRepository.Insert(product);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Tạo Food và liên kết với Product
+            var medicine = new Medicine
+            {
+                ProductId = product.ProductId,
+                Medicinename = medicineRequest.MedicineName,
+                DosageForm = medicineRequest.DosageForm,
+                Symtomps = medicineRequest.Symptoms,
+            };
+
+            // Lưu Food vào database
+            _medicineRepository.Insert(medicine);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            productResponse.Status = "201";
+            productResponse.Message = "Medicine created successfully.";
+
+            return productResponse;
+        }
     }
-}
+
+
+
+    }
 

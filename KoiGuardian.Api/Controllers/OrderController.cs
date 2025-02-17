@@ -23,5 +23,18 @@ namespace KoiGuardian.Api.Controllers
         {
             return await service.GetDetail(orderId);
         }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
+        {
+            var response = await service.CreateOrderAsync(request);
+
+            if (response.Status == "error")
+            {
+                return BadRequest(response);
+            }
+
+            return Ok(response);
+        }
     }
 }

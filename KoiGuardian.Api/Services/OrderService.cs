@@ -14,15 +14,73 @@ public interface IOrderService
 {
     Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request);
     Task<OrderDetailResponse> GetDetail(Guid orderId);
+    Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request);
 }
 
 public class OrderService(
     IRepository<Order> orderRepository,
+    IRepository<OrderDetail> orderDetailRepository,
     IRepository<Member> memRepository,
     IUnitOfWork<KoiGuardianDbContext> uow,
     GhnService ghnService
     ) : IOrderService
 {
+    public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
+    {
+        try
+        {
+            if (request == null || request.OrderDetails == null || !request.OrderDetails.Any())
+            {
+                return OrderResponse.Error("Invalid request data");
+            }
+
+            // Chuyển địa chỉ thành chuỗi Note
+            string addressNote = $"{request.Address.ProvinceName},{request.Address.ProvinceId}, " +
+                $"{request.Address.DistrictName},{request.Address.DistrictId}, " +
+                $"{request.Address.WardName}, {request.Address.WardId}";
+
+            // Tạo Order mới
+            var order = new Order
+            {
+                OrderId = Guid.NewGuid(),
+                ShopId = request.ShopId,
+                AccountId = request.AccountId,
+                ShipType = request.ShipType,
+                oder_code = $"ORD-{DateTime.UtcNow.Ticks}", // Sinh mã đơn hàng
+                Status = request.Status,
+                ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
+                Note = addressNote,
+                OrderDetail = new List<OrderDetail>()
+            };
+
+            orderRepository.Insert(order);
+
+            // Thêm chi tiết đơn hàng
+           /* foreach (var detail in request.OrderDetails)
+            {
+                var orderDetail = new OrderDetail
+                {
+                    OderDetailId = Guid.NewGuid(),
+                    OderId = order.OrderId,
+                    ProductId = detail.ProductId,
+                };
+
+                orderDetailRepository.Insert(orderDetail); // Sửa lỗi thiếu tham số
+            }*/
+
+            // Lưu thay đổi vào database
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success($"Order created successfully with ID: {order.OrderId}");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to create order: {ex.Message}");
+        }
+
+
+    }
+
     public async Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request)
     {
         var result = new List<Order>();

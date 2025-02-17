@@ -1,6 +1,18 @@
 ﻿
 namespace KoiGuardian.Models.Response;
 
+public class OrderResponse
+{
+    public string Status { get; set; }
+    public string Message { get; set; }
+
+    public static OrderResponse Success(string message) =>
+      new OrderResponse { Status = "success", Message = message };
+
+    public static OrderResponse Error(string message) =>
+        new OrderResponse { Status = "error", Message = message };
+}
+
 public class OrderFilterResponse
 {
     public Guid OrderId { get; set; }

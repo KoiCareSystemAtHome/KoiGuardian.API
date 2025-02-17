@@ -12,7 +12,7 @@ namespace KoiGuardian.DataAccess.Db
     {
         [Key]
         public Guid AccountPackageId { get; set; }
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
         public Guid PackageId { get; set; } 
         public int Code { get; set; }   
         public string Status { get; set; }

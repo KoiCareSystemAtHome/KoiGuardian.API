@@ -101,12 +101,12 @@ namespace KoiGuardian.Api.Services
 
                 _diseaseRepository.Update(diseaseExist);
 
-            var diseaseMedicineExist = diseaseExist.MedicineDiseases?.ToList() ?? new List<MedicineDisease>();
+            //var diseaseMedicineExist = diseaseExist.MedicineDiseases?.ToList() ?? new List<MedicineDisease>();
 
-            foreach (var diseaseMedicineExists in diseaseMedicineExist)
-            {
-                _medicineDiseaseRepository.Delete(diseaseMedicineExists);
-            }
+            //foreach (var diseaseMedicineExists in diseaseMedicineExist)
+            //{
+            //    _medicineDiseaseRepository.Delete(diseaseMedicineExists);
+            //}
             if (request.MedicineIds?.Any() == true)
             {
                 foreach (var medicineId in request.MedicineIds)
@@ -171,7 +171,7 @@ namespace KoiGuardian.Api.Services
         public async Task<List<DiseaseResponse>> GetAllDiseases(CancellationToken cancellationToken = default)
         {
             var diseases = await _diseaseRepository.GetQueryable()
-                .Include(d => d.MedicineDiseases)
+                .Include(d => d.MedicineDisease)
                     .ThenInclude(md => md.Medince) // Load dữ liệu từ bảng Medicine
                 .ToListAsync(cancellationToken);
 
@@ -183,7 +183,7 @@ namespace KoiGuardian.Api.Services
                 Type = disease.Type,
                 FoodModifyPercent = disease.FoodModifyPercent,
                 SaltModifyPercent = disease.SaltModifyPercent,
-                Medicines = disease.MedicineDiseases?.Select(md => new MedicineDTO
+                Medicines = disease.MedicineDisease?.Select(md => new MedicineDTO
                 {
                     MedicineId = md.Medince.MedicineId,
                     Name = md.Medince.Medicinename, // Đảm bảo lấy đúng tên thuốc
@@ -198,8 +198,6 @@ namespace KoiGuardian.Api.Services
         {
             var disease = await _diseaseRepository
                 .GetQueryable()
-                .Include(d => d.MedicineDiseases)
-                    .ThenInclude(md => md.Medince) // Load dữ liệu từ bảng Medicine
                 .FirstOrDefaultAsync(d => d.DiseaseId == diseaseId, cancellationToken);
 
             if (disease == null)
@@ -219,11 +217,6 @@ namespace KoiGuardian.Api.Services
                 Type = disease.Type,
                 FoodModifyPercent = disease.FoodModifyPercent,
                 SaltModifyPercent = disease.SaltModifyPercent,
-                Medicines = disease.MedicineDiseases?.Select(md => new MedicineDTO
-                {
-                    MedicineId = md.Medince.MedicineId,
-                    Name = md.Medince.Medicinename, 
-                }).ToList() ?? new List<MedicineDTO>(), 
                 Status = "200",
                 Message = "Disease retrieved successfully"
             };

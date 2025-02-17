@@ -15,5 +15,6 @@ namespace KoiGuardian.DataAccess.Db
         public string Symtomps { get; set; }
 
         public virtual Product? Product { get; set; }
+        public virtual IEnumerable<MedicineDisease>? MedicineDisease { get; set; }
     }
 }

@@ -18,11 +18,6 @@ namespace KoiGuardian.Api.Controllers
             return await test.GetDataFromMongo();
         }
 
-        [HttpGet]
-        public async Task<object> getTest()
-        {
-            return await context.Symptoms.ToListAsync();
-
-        }
+        
     }
 }

@@ -13,7 +13,6 @@ namespace KoiGuardian.Models.Request
         public string Sex { get; set; }
         public string Breeder { get; set; }
         public int Age { get; set; } // số tháng tuổi
-        public decimal Weight { get; set; } 
         public string VarietyName { get; set; }
         public DateTime InPondSince { get; set; }
         public string Image { get; set; }

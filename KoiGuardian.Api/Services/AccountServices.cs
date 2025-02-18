@@ -50,7 +50,9 @@ RoleManager<IdentityRole> _roleManager,
 IJwtTokenGenerator _jwtTokenGenerator,
 IRepository<User> userRepository,
 IRepository<Member> memberRepository,
+IRepository<Shop> shopRepository,
 IRepository <Package> packageRepository,
+IRepository <Wallet> walletRepository,
 IRepository<AccountPackage> ACrepository,
 IMapper mapper,
 IUnitOfWork<KoiGuardianDbContext> uow,
@@ -197,15 +199,41 @@ IImageUploadService imageUpload
                 var userToReturn = await userRepository.GetQueryable().AsNoTracking().Where(u => u.Email == registrationRequestDto.Email)
                     .FirstOrDefaultAsync();
 
-
-                memberRepository.Insert(new Member()
+                if(registrationRequestDto.Role.ToLower() == "member")
                 {
-                    MemberId = Guid.NewGuid().ToString(),
-                    UserId = userToReturn.Id,
-                    Address = registrationRequestDto.Address,
-                    Avatar = avatar, 
-                    Gender = registrationRequestDto.Gender, 
+                    memberRepository.Insert(new Member()
+                    {
+                        MemberId = Guid.NewGuid().ToString(),
+                        UserId = userToReturn.Id,
+                        Address = registrationRequestDto.Address,
+                        Avatar = avatar, 
+                        Gender = registrationRequestDto.Gender, 
                     
+                    });
+                }
+
+                if (registrationRequestDto.Role.ToLower() == "shop")
+                {
+                    shopRepository.Insert(new Shop()
+                    {
+                       ShopId = Guid.NewGuid(),
+                       ShopName = registrationRequestDto.Name,
+                       ShopRate = 0,
+                       ShopDescription = " ",
+                       ShopAddress = registrationRequestDto.Address,
+                       IsActivate = false,
+                       BizLicences = " ",
+
+                    });
+                }
+
+                walletRepository.Insert( new Wallet()
+                {
+                    WalletId = Guid.NewGuid(),
+                    UserId = userToReturn.Id,
+                    PurchaseDate = DateTime.Now,
+                    Amount = 0,
+                    Status = WalletStatus.avai.ToString()
                 });
 
                 await uow.SaveChangesAsync();

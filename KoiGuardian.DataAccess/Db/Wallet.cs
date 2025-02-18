@@ -20,3 +20,9 @@ namespace KoiGuardian.DataAccess.Db
 
     }
 }
+
+public enum WalletStatus
+{
+    avai,
+    block
+}

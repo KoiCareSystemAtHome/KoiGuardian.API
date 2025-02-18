@@ -14,79 +14,111 @@ public interface IOrderService
 {
     Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request);
     Task<OrderDetailResponse> GetDetail(Guid orderId);
-    Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request);
+    Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request);
 }
 
 public class OrderService(
     IRepository<Order> orderRepository,
     IRepository<OrderDetail> orderDetailRepository,
+    IRepository<Product> productRepository,
     IRepository<Member> memRepository,
     IUnitOfWork<KoiGuardianDbContext> uow,
     GhnService ghnService
     ) : IOrderService
 {
-    public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request)
     {
         try
         {
             if (request == null || request.OrderDetails == null || !request.OrderDetails.Any())
             {
-                return OrderResponse.Error("Invalid request data");
+                return new List<OrderResponse> { OrderResponse.Error("Invalid request data") };
             }
 
-            // Chuyển địa chỉ thành chuỗi Note
-            string addressNote = $"{request.Address.ProvinceName},{request.Address.ProvinceId}, " +
-                $"{request.Address.DistrictName},{request.Address.DistrictId}, " +
-                $"{request.Address.WardName}, {request.Address.WardId}";
-
-            // Tạo Order mới
-            var order = new Order
+            string addressNote = JsonSerializer.Serialize(new
             {
-                OrderId = Guid.NewGuid(),
-                ShopId = request.ShopId,
-                AccountId = request.AccountId,
-                ShipType = request.ShipType,
-                oder_code = $"ORD-{DateTime.UtcNow.Ticks}", // Sinh mã đơn hàng
-                Status = request.Status,
-                ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
-                Note = addressNote,
-                OrderDetail = new List<OrderDetail>()
-            };
+                ProvinceName = request.Address.ProvinceName,
+                ProvinceId = request.Address.ProvinceId,
+                DistrictName = request.Address.DistrictName,
+                DistrictId = request.Address.DistrictId,
+                WardName = request.Address.WardName,
+                WardId = request.Address.WardId
+            });
 
-            orderRepository.Insert(order);
+            // ✅ Lấy danh sách Product trước (tránh gọi DB nhiều lần)
+            var productIds = request.OrderDetails.Select(d => d.ProductId).ToList();
+            var products = await productRepository.FindAsync(x => productIds.Contains(x.ProductId));
 
-            // Thêm chi tiết đơn hàng
-           /* foreach (var detail in request.OrderDetails)
+            // ✅ Nhóm sản phẩm theo ShopId
+            var groupedOrderDetails = request.OrderDetails
+                .GroupBy(d => products.FirstOrDefault(p => p.ProductId == d.ProductId)?.ShopId ?? Guid.Empty)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            List<OrderResponse> responses = new List<OrderResponse>();
+
+            foreach (var group in groupedOrderDetails)
             {
-                var orderDetail = new OrderDetail
+                Guid shopId = group.Key;
+                var orderDetails = group.Value;
+
+                // Tính tổng giá trị đơn hàng cho từng ShopId
+                decimal total = 0;
+                foreach (var detail in orderDetails)
                 {
-                    OderDetailId = Guid.NewGuid(),
-                    OderId = order.OrderId,
-                    ProductId = detail.ProductId,
+                    var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
+                    if (product != null)
+                    {
+                        total += product.Price * detail.Quantity; // Tính tổng giá trị sản phẩm
+                    }
+                }
+
+                var order = new Order
+                {
+                    OrderId = Guid.NewGuid(),
+                    ShopId = shopId,
+                    UserId = request.AccountId,
+                    ShipType = request.ShipType,
+                    oder_code = $"ORD-{DateTime.UtcNow.Ticks}", // Sinh mã đơn hàng
+                    Status = request.Status,
+                    ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
+                    Total = (float)total, // Gán tổng giá trị
+                    Note = addressNote,
+                    OrderDetail = new List<OrderDetail>()
                 };
 
-                orderDetailRepository.Insert(orderDetail); // Sửa lỗi thiếu tham số
-            }*/
+                orderRepository.Insert(order);
 
-            // Lưu thay đổi vào database
+                foreach (var detail in orderDetails)
+                {
+                    var orderDetail = new OrderDetail
+                    {
+                        OderDetailId = Guid.NewGuid(),
+                        OrderId = order.OrderId,
+                        ProductId = detail.ProductId,
+                        Quantity = detail.Quantity
+                    };
+
+                    orderDetailRepository.Insert(orderDetail);
+                }
+
+                responses.Add(OrderResponse.Success($"Order created successfully with ID: {order.OrderId}"));
+            }
+
             await uow.SaveChangesAsync();
 
-            return OrderResponse.Success($"Order created successfully with ID: {order.OrderId}");
+            return responses;
         }
         catch (Exception ex)
         {
-            return OrderResponse.Error($"Failed to create order: {ex.Message}");
+            return new List<OrderResponse> { OrderResponse.Error($"Failed to create order: {ex.Message}") };
         }
-
-
     }
-
     public async Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request)
     {
         var result = new List<Order>();
         if ( request.AccountId != null)
         {
-            result = (await orderRepository.FindAsync( u => u.AccountId == request.AccountId, 
+            result = (await orderRepository.FindAsync( u => u.UserId == request.AccountId, 
                 include : u=> u.Include( u => u.Shop).Include(u=> u.User)
                 , CancellationToken.None)).ToList();
         }
@@ -129,14 +161,14 @@ public class OrderService(
             result = result.Where(u => u.Note.ToLower().Contains(request.RequestStatus.ToLower())).ToList();
         }
 
-        var mem = await memRepository.FindAsync( u => result.Select( u => u.AccountId ).Contains(u.UserId), CancellationToken.None);
+        var mem = await memRepository.FindAsync( u => result.Select( u => u.UserId ).Contains(u.UserId), CancellationToken.None);
 
         return result.Select( u => new OrderFilterResponse()
         {
             OrderId = u.OrderId,
             ShopName = u.Shop.ShopName,
             CustomerName = u.User.UserName,
-            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.AccountId).Address,
+            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.UserId).Address,
             CustomerPhoneNumber = u.User.PhoneNumber,
             ShipFee = u.ShipFee,
             oder_code = u.oder_code,
@@ -152,7 +184,7 @@ public class OrderService(
             include : u=> u.Include(u => u.OrderDetail));
 
         if (order == null) return new();
-        var mem = await memRepository.GetAsync(u => u.UserId == order.AccountId, CancellationToken.None);
+        var mem = await memRepository.GetAsync(u => u.UserId == order.UserId, CancellationToken.None);
 
         return new OrderDetailResponse() {
             OrderId = order.OrderId,

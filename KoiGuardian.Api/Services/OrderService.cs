@@ -180,8 +180,10 @@ public class OrderService(
 
     public async Task<OrderDetailResponse> GetDetail(Guid orderId)
     {
-        var order = await orderRepository.GetAsync(u => u.OrderId == orderId, 
-            include : u=> u.Include(u => u.OrderDetail));
+        var order = await orderRepository.GetAsync(u => u.OrderId == orderId,
+      include: u => u.Include(u => u.OrderDetail)
+                    .Include(u => u.Shop)
+                    .Include(u => u.User));
 
         if (order == null) return new();
         var mem = await memRepository.GetAsync(u => u.UserId == order.UserId, CancellationToken.None);
@@ -190,7 +192,7 @@ public class OrderService(
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = mem.Address,
+            CustomerAddress = JsonSerializer.Deserialize<AddressDto>(order.Note)?.ToString() ?? "No address info",
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,

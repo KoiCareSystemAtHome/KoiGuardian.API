@@ -231,7 +231,7 @@ IImageUploadService imageUpload
                 {
                     WalletId = Guid.NewGuid(),
                     UserId = userToReturn.Id,
-                    PurchaseDate = DateTime.Now,
+                    PurchaseDate = DateTime.UtcNow,
                     Amount = 0,
                     Status = WalletStatus.avai.ToString()
                 });

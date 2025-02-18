@@ -38,7 +38,7 @@ public interface IAccountServices
 
     Task<string> ChangePassword(string email, string oldPass, string newPass);
     Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
-    Task<string> UpdateAmount(string email, float amount);
+    Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId);
     Task<string> UpdateAccountPackage(string email, Guid packageId);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
@@ -50,6 +50,7 @@ RoleManager<IdentityRole> _roleManager,
 IJwtTokenGenerator _jwtTokenGenerator,
 IRepository<User> userRepository,
 IRepository<Member> memberRepository,
+IRepository<Transaction> tranctionRepository,
 IRepository<Shop> shopRepository,
 IRepository <Package> packageRepository,
 IRepository <Wallet> walletRepository,
@@ -451,63 +452,100 @@ IImageUploadService imageUpload
         return string.Empty;
     }
 
-    public async Task<string> UpdateAmount(string email, float amount)
+    public async Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId)
     {
-        //var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
-        //if (user == null || user.Status != UserStatus.Active)
-        //{
-        //    return "Account is not valid!";
-        //}
-        //user.Amount += amount;
-        //userRepository.Update(user);
-        //await uow.SaveChangesAsync();
+        var wallet = await walletRepository.GetAsync(u => u.UserId.Equals(user.Id), CancellationToken.None);
+        if (user == null || user.Status != UserStatus.Active)
+        {
+           return "Account is not valid!";
+        }
+        if (wallet == null)
+        {
+            return "Wallet is not valid!";
+        }
+        wallet.Amount += amount;
+        walletRepository.Update(wallet);
+        tranctionRepository.Insert(new Transaction
+        {
+            TransactionId = Guid.NewGuid(),
+            TransactionDate = DateTime.UtcNow,
+            TransactionType = "deposit money",
+            VnPayTransactionid = VnPayTransactionId,
+            UserId = user.Id,
+            DocNo = Guid.Parse(user.Id)
+        });
+        
+        await uow.SaveChangesAsync();
         return string.Empty;
     }
 
     public async Task<string> UpdateAccountPackage(string email, Guid packageId)
     {
-        //var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
-        ////check xem là user có đang còn là thành viên ko
-        //var checkUserExistPackage = await ACrepository.GetAsync(u => u.PackageId.Equals(user.PackageId), CancellationToken.None);
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return "Account is not valid!";
+        }
 
-        //var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
+        var wallet = await walletRepository.GetAsync(u => u.UserId.Equals(user.Id), CancellationToken.None);
+        if (wallet == null)
+        {
+            return "Wallet is not valid!";
+        }
 
+        // Kiểm tra gói hiện tại của user
+        var currentPackage = await ACrepository.GetAsync(u => u.AccountId.Equals(user.Id), CancellationToken.None);
+        var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
 
-        //if (user == null || user.Status != UserStatus.Active)
-        //{
-        //    return "Account is not valid!";
-        //}
+        if (currentPackage != null && currentPackage.PackageId == packageId)
+        {
+            if (currentPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
+            {
+                return "Your Account still has an active package.";
+            }
+        }
 
-        //if(checkUserExistPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
-        //{
-        //    return "Your Account still on date";
-        //}
+        if (package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
+        {
+            return "Package is not valid!";
+        }
 
-        //if((decimal)user.Amount < package.PackagePrice)
-        //{
-        //    return "Your Balance is not enough";
-        //}
+        if ((decimal)wallet.Amount < package.PackagePrice)
+        {
+            return "Your Balance is not enough";
+        }
 
-        //if(package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
-        //{
-        //    return "Package is not valid!";
-        //}
+        wallet.Amount -= (float)package.PackagePrice;
+        user.PackageId = packageId;
 
-        //user.Amount -= (float)package.PackagePrice;
-        //user.PackageId = packageId;
-        
-        //ACrepository.Insert(new AccountPackage
-        //{
-        //    AccountPackageid = Guid.NewGuid(),
-        //    AccountId = user.Id,
-        //    PackageId = packageId,
-        //    PurchaseDate = DateTime.UtcNow,
-        //});
-        //userRepository.Update(user);
-        //await uow.SaveChangesAsync();
+        ACrepository.Insert(new AccountPackage
+        {
+            AccountPackageid = Guid.NewGuid(),
+            AccountId = user.Id,
+            PackageId = packageId,
+            PurchaseDate = DateTime.UtcNow,
+        });
+
+        // Ghi nhận giao dịch
+        tranctionRepository.Insert(new Transaction
+        {
+            TransactionId = Guid.NewGuid(),
+            TransactionDate = DateTime.UtcNow,
+            TransactionType = "Payment for membership packages",
+            VnPayTransactionid = "Pay By Wallet",
+            UserId = user.Id,
+            DocNo = package.PackageId
+        });
+
+        // Cập nhật lại ví
+        walletRepository.Update(wallet);
+
+        await uow.SaveChangesAsync();
         return "Success";
     }
+
 }
 

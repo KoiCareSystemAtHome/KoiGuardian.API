@@ -135,7 +135,8 @@ namespace KoiGuardian.Api.Controllers
                     {
                         var email = Request.Query["email"].ToString();
                         var amount = float.Parse(Request.Query["vnp_Amount"])/100;
-                        await _userService.UpdateAmount(email, amount);
+                        var VnPayTransactionId =Request.Query["vnp_BankTranNo"].ToString();
+                        await _userService.UpdateAmount(email, amount, VnPayTransactionId);
                         // Xử lý logic cập nhật đơn hàng dựa trên email và số tiền nạp vào
                         return Ok(resultDescription);
                     }

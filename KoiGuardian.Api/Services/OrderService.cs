@@ -44,7 +44,7 @@ public class OrderService(
             {
                 OrderId = Guid.NewGuid(),
                 ShopId = request.ShopId,
-                AccountId = request.AccountId,
+                UserId = request.AccountId,
                 ShipType = request.ShipType,
                 oder_code = $"ORD-{DateTime.UtcNow.Ticks}", // Sinh mã đơn hàng
                 Status = request.Status,
@@ -86,7 +86,7 @@ public class OrderService(
         var result = new List<Order>();
         if ( request.AccountId != null)
         {
-            result = (await orderRepository.FindAsync( u => u.AccountId == request.AccountId, 
+            result = (await orderRepository.FindAsync( u => u.UserId == request.AccountId, 
                 include : u=> u.Include( u => u.Shop).Include(u=> u.User)
                 , CancellationToken.None)).ToList();
         }
@@ -129,14 +129,14 @@ public class OrderService(
             result = result.Where(u => u.Note.ToLower().Contains(request.RequestStatus.ToLower())).ToList();
         }
 
-        var mem = await memRepository.FindAsync( u => result.Select( u => u.AccountId ).Contains(u.UserId), CancellationToken.None);
+        var mem = await memRepository.FindAsync( u => result.Select( u => u.UserId ).Contains(u.UserId), CancellationToken.None);
 
         return result.Select( u => new OrderFilterResponse()
         {
             OrderId = u.OrderId,
             ShopName = u.Shop.ShopName,
             CustomerName = u.User.UserName,
-            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.AccountId).Address,
+            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.UserId).Address,
             CustomerPhoneNumber = u.User.PhoneNumber,
             ShipFee = u.ShipFee,
             oder_code = u.oder_code,
@@ -152,7 +152,7 @@ public class OrderService(
             include : u=> u.Include(u => u.OrderDetail));
 
         if (order == null) return new();
-        var mem = await memRepository.GetAsync(u => u.UserId == order.AccountId, CancellationToken.None);
+        var mem = await memRepository.GetAsync(u => u.UserId == order.UserId, CancellationToken.None);
 
         return new OrderDetailResponse() {
             OrderId = order.OrderId,

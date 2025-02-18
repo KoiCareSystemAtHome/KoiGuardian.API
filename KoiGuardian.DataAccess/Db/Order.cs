@@ -6,7 +6,7 @@ namespace KoiGuardian.DataAccess.Db
     {
         public Guid OrderId { get; set; }
         public Guid ShopId { get; set; }
-        public string AccountId { get; set; }
+        public string UserId { get; set; }
         public string ShipType { get; set; }
         public string oder_code { get; set; }
         public string Status { get; set; }

@@ -29,11 +29,6 @@ namespace KoiGuardian.Api.Controllers
         {
             var response = await service.CreateOrderAsync(request);
 
-            if (response.Status == "error")
-            {
-                return BadRequest(response);
-            }
-
             return Ok(response);
         }
     }

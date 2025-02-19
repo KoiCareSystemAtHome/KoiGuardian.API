@@ -172,7 +172,7 @@ namespace KoiGuardian.Api.Services
         {
             var diseases = await _diseaseRepository.GetQueryable()
                 .Include(d => d.MedicineDisease)
-                    .ThenInclude(md => md.Medince) // Load dữ liệu từ bảng Medicine
+                    .ThenInclude(md => md.Medince) // Đảm bảo truy xuất đầy đủ thông tin thuốc
                 .ToListAsync(cancellationToken);
 
             return diseases.Select(disease => new DiseaseResponse
@@ -186,11 +186,11 @@ namespace KoiGuardian.Api.Services
                 Medicines = disease.MedicineDisease?.Select(md => new MedicineDTO
                 {
                     MedicineId = md.Medince.MedicineId,
-                    Name = md.Medince.Medicinename, // Đảm bảo lấy đúng tên thuốc
-                   
-                }).ToList() ?? new List<MedicineDTO>() // Đảm bảo danh sách không bị null
+                    Name = md.Medince.Medicinename,  // Đảm bảo lấy đúng tên thuốc
+                }).ToList() ?? new List<MedicineDTO>() // Tránh giá trị null
             }).ToList();
         }
+
 
 
 

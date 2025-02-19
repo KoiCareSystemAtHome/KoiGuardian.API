@@ -23,6 +23,15 @@ namespace KoiGuardian.Api.Controllers
             return await _services.GetDisease(fishId);
         }
 
-
+        [HttpPost("create")]
+        public async Task<string> CreateKoiDiseaseProfile (DiseaseProfileRequest request)
+        {
+            return await _services.CreateProfile(request);
+        }
+        [HttpGet("recomment")]
+        public async Task<ActionResult<RecommendResponse>> GetMedicineRecommendations([FromQuery] Guid fishId)
+        {
+           return await _services.GetMedicineRecommendationsForFish(fishId);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Api.Services;
+using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Http;
@@ -46,5 +47,22 @@ namespace KoiGuardian.Api.Controllers
             return await _service.GetDiseaseById(id, cancellationToken);
         }
 
+        [HttpGet("predict")]
+        public async Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms)
+        {
+            return await _service.DiseaseTypePredict(symptoms);
+        }
+
+        [HttpGet("examination")]
+        public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
+        {
+            return await _service.Examination(symptoms);
+        }
+
+        [HttpGet("symtomps-predict")]
+        public async Task<List<Symptom>> GetListComm(string? type)
+        {
+            return await _service.GetByType(type);
+        }
     }
 }

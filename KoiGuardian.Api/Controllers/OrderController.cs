@@ -31,5 +31,13 @@ namespace KoiGuardian.Api.Controllers
 
             return Ok(response);
         }
+
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateOrder([FromBody] UpdateOrderRequest request)
+        {
+            var response = await service.UpdateOrderAsync(request);
+
+            return Ok(response);
+        }
     }
 }

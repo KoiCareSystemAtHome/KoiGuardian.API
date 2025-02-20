@@ -15,6 +15,7 @@ public interface IOrderService
     Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request);
     Task<OrderDetailResponse> GetDetail(Guid orderId);
     Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request);
+    Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
 }
 
 public class OrderService(
@@ -113,24 +114,126 @@ public class OrderService(
             return new List<OrderResponse> { OrderResponse.Error($"Failed to create order: {ex.Message}") };
         }
     }
+
+    public async Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request)
+    {
+        try
+        {
+            // Validate request
+            if (request == null || request.OrderDetails == null || !request.OrderDetails.Any())
+            {
+                return OrderResponse.Error("Invalid request data");
+            }
+
+            // Find the existing order
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId,CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+
+            // Update address note (JSON string)
+            order.Note = JsonSerializer.Serialize(new
+            {
+                ProvinceName = request.Address.ProvinceName,
+                ProvinceId = request.Address.ProvinceId,
+                DistrictName = request.Address.DistrictName,
+                DistrictId = request.Address.DistrictId,
+                WardName = request.Address.WardName,
+                WardId = request.Address.WardId
+            });
+
+            // Update order properties
+            order.ShipType = request.ShipType;
+            order.Status = request.Status;
+            order.ShipFee = request.ShipFee.ToString("C");
+
+            // Calculate total price
+            var productIds = request.OrderDetails.Select(d => d.ProductId).ToList();
+            var products = await productRepository.FindAsync(x => productIds.Contains(x.ProductId));
+
+            decimal total = 0;
+            foreach (var detail in request.OrderDetails)
+            {
+                var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
+                if (product != null)
+                {
+                    total += product.Price * detail.Quantity;
+                }
+            }
+            order.Total = (float)total;
+
+            orderRepository.Update(order);
+
+            // Update order details
+            var existingOrderDetails = await orderDetailRepository.FindAsync(od => od.OrderId == request.OrderId);
+
+            // Delete removed order details
+            var detailsToDelete = existingOrderDetails.Where(od => !request.OrderDetails.Any(d => d.ProductId == od.ProductId)).ToList();
+            foreach (var detail in detailsToDelete)
+            {
+                orderDetailRepository.Delete(detail);
+            }
+
+            // Add or update existing order details
+            foreach (var detail in request.OrderDetails)
+            {
+                var existingDetail = existingOrderDetails.FirstOrDefault(od => od.ProductId == detail.ProductId);
+                if (existingDetail != null)
+                {
+                    existingDetail.Quantity = detail.Quantity;
+                    orderDetailRepository.Update(existingDetail);
+                }
+                else
+                {
+                    var newOrderDetail = new OrderDetail
+                    {
+                        OderDetailId = Guid.NewGuid(),
+                        OrderId = request.OrderId,
+                        ProductId = detail.ProductId,
+                        Quantity = detail.Quantity
+                    };
+                    orderDetailRepository.Insert(newOrderDetail);
+                }
+            }
+
+            // Check if the order still has any OrderDetails
+            var remainingOrderDetails = await orderDetailRepository.FindAsync(od => od.OrderId == request.OrderId);
+            if (!remainingOrderDetails.Any())
+            {
+                orderRepository.Delete(order);
+            }
+
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success("Order updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
+    }
+
+
     public async Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request)
     {
         var result = new List<Order>();
-        if ( request.AccountId != null)
+
+        if (request.AccountId != null)
         {
-            result = (await orderRepository.FindAsync( u => u.UserId == request.AccountId, 
-                include : u=> u.Include( u => u.Shop).Include(u=> u.User)
-                , CancellationToken.None)).ToList();
+            result = (await orderRepository.FindAsync(u => u.UserId == request.AccountId,
+                include: u => u.Include(u => u.Shop).Include(u => u.User).Include(u => u.OrderDetail),
+                CancellationToken.None)).ToList();
         }
 
-        var processingOrder = result.Where( u=> 
+        var processingOrder = result.Where(u =>
             u.Status != OrderStatus.Complete.ToString() &&
             u.Status != OrderStatus.Pending.ToString() &&
             u.Status != OrderStatus.Confirm.ToString()
         );
+
         if (processingOrder.Any())
         {
-            JsonDocument doc = null ;
             foreach (var order in processingOrder)
             {
                 var tracking = new TrackingGHNRequest()
@@ -138,68 +241,82 @@ public class OrderService(
                     order_code = order.oder_code
                 };
 
-                doc = JsonDocument.Parse(await ghnService.TrackingShippingOrder(tracking));
+                var trackingResponse = await ghnService.TrackingShippingOrder(tracking);
+                if (!string.IsNullOrEmpty(trackingResponse))
+                {
+                    var doc = JsonDocument.Parse(trackingResponse);
+                    string? status = doc.RootElement
+                        .GetProperty("data")
+                        .GetProperty("status")
+                        .GetString();
 
-                string? status = doc.RootElement
-                                    .GetProperty("data")
-                                    .GetProperty("status")
-                                    .GetString();
-
-                order.Status = status ?? OrderStatus.Inprogress.ToString();
-
-                orderRepository.Update(order);
+                    order.Status = status ?? OrderStatus.Inprogress.ToString();
+                    orderRepository.Update(order);
+                }
             }
             await uow.SaveChangesAsync();
         }
-        if (string.IsNullOrEmpty(request.RequestStatus))
+
+        if (!string.IsNullOrEmpty(request.RequestStatus))
         {
-            result = result.Where( u => u.Status.ToLower() == request.RequestStatus.ToLower()).ToList();
+            result = result.Where(u => u.Status.Equals(request.RequestStatus, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        if (string.IsNullOrEmpty(request.SearchKey))
+        if (!string.IsNullOrEmpty(request.SearchKey))
         {
-            result = result.Where(u => u.Note.ToLower().Contains(request.RequestStatus.ToLower())).ToList();
+            result = result.Where(u => u.Note.ToLower().Contains(request.SearchKey.ToLower())).ToList();
         }
 
-        var mem = await memRepository.FindAsync( u => result.Select( u => u.UserId ).Contains(u.UserId), CancellationToken.None);
+        var mem = await memRepository.FindAsync(u => result.Select(u => u.UserId).Contains(u.UserId), CancellationToken.None);
 
-        return result.Select( u => new OrderFilterResponse()
+        return result.Select(u =>
         {
-            OrderId = u.OrderId,
-            ShopName = u.Shop.ShopName,
-            CustomerName = u.User.UserName,
-            CustomerAddress = mem.FirstOrDefault( a => a.UserId ==  u.UserId).Address,
-            CustomerPhoneNumber = u.User.PhoneNumber,
-            ShipFee = u.ShipFee,
-            oder_code = u.oder_code,
-            Status = u.Status,
-            ShipType = u.ShipType,
-            Note = u.Note
+            var address = JsonSerializer.Deserialize<AddressDto>(u.Note);
+            return new OrderFilterResponse()
+            {
+                OrderId = u.OrderId,
+                ShopName = u.Shop.ShopName,
+                CustomerName = u.User.UserName,
+                CustomerAddress = address?.ToString() ?? "No address info",
+                CustomerPhoneNumber = u.User.PhoneNumber,
+                ShipFee = u.ShipFee,
+                oder_code = u.oder_code,
+                Status = u.Status,
+                ShipType = u.ShipType,
+                Note = u.Note
+            };
         }).ToList();
     }
 
     public async Task<OrderDetailResponse> GetDetail(Guid orderId)
     {
         var order = await orderRepository.GetAsync(u => u.OrderId == orderId,
-      include: u => u.Include(u => u.OrderDetail)
-                    .Include(u => u.Shop)
-                    .Include(u => u.User));
+            include: u => u.Include(u => u.OrderDetail)
+                            .Include(u => u.Shop)
+                            .Include(u => u.User));
 
         if (order == null) return new();
-        var mem = await memRepository.GetAsync(u => u.UserId == order.UserId, CancellationToken.None);
 
-        return new OrderDetailResponse() {
+        var address = JsonSerializer.Deserialize<AddressDto>(order.Note);
+
+        return new OrderDetailResponse()
+        {
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = JsonSerializer.Deserialize<AddressDto>(order.Note)?.ToString() ?? "No address info",
+            CustomerAddress = address?.ToString() ?? "No address info",
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,
             Status = order.Status,
             ShipType = order.ShipType,
             Note = order.Note,
-            Details = order.OrderDetail
+            Details = order.OrderDetail.Select(d => new OrderDetailDto
+            {
+                ProductId = d.ProductId,
+                Quantity = d.Quantity
+            }).ToList()
         };
     }
+
 }

@@ -14,7 +14,6 @@ public class FinalDiseaseTypePredictResponse
     public string DiseaseName { get; set; }
     public string Description { get; set; }
 
-    public IEnumerable<MedicinePredict>? Medicine { get; set; }
 }
 
 

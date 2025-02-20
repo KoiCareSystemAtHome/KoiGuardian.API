@@ -118,7 +118,8 @@ public class KoiDiseaseService
                         Symtomps = medicine.Symtomps,
                         Price = medicine.Product.Price,
                         StockQuantity = medicine.Product.StockQuantity,
-                        FeedbackCount = feedbackCount
+                        FeedbackCount = feedbackCount,
+                        AverageRating = avgRating
                     };
 
                     recommendations.Add(medicineResponse);
@@ -129,9 +130,10 @@ public class KoiDiseaseService
             return new RecommendResponse
             {
                 Medicines = recommendations
-                    .GroupBy(r => r.MedicineId)
-                    .Select(g => g.First())
-                    .ToList()
+                .GroupBy(r => r.MedicineId)
+                .Select(g => g.First())
+                .OrderByDescending(m => m.AverageRating) // Sắp xếp theo rating trung bình
+                .ToList()
             };
         }
         catch (Exception ex)

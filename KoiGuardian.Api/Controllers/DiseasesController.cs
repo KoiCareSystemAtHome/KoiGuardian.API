@@ -59,10 +59,10 @@ namespace KoiGuardian.Api.Controllers
             return await _service.Examination(symptoms);
         }
 
-        [HttpGet("symtomps-predict")]
+      /*  [HttpGet("symtomps-predict")]
         public async Task<List<Symptom>> GetListComm(string? type)
         {
             return await _service.GetByType(type);
-        }
+        }*/
     }
 }

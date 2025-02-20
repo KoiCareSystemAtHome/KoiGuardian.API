@@ -15,6 +15,8 @@ namespace KoiGuardian.Models.Response
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public double FeedbackCount { get; set; }
+
+        public double AverageRating { get; set; }
     }
 
     public class RecommendResponse

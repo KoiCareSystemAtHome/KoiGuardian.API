@@ -45,6 +45,8 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Shop> _shopRepository;
         private readonly IRepository<Food> _foodRepository;
         private readonly IRepository<Medicine> _medicineRepository;
+        private readonly IRepository<MedicinePondParameter> _medicinePondParameterRepository;
+        private readonly IRepository<PondStandardParam> _pondStandardParamRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
         private readonly IImageUploadService _imageUploadService;
 
@@ -53,6 +55,8 @@ namespace KoiGuardian.Api.Services
             IRepository<Shop> shopRepository,
             IRepository<Food> foodRepository,
             IRepository<Medicine> medicineRepository,
+            IRepository<MedicinePondParameter> medicinePondParameterRepository,
+            IRepository<PondStandardParam> pondStandardParamRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
             IImageUploadService imageUpload
             )
@@ -62,6 +66,8 @@ namespace KoiGuardian.Api.Services
             _shopRepository = shopRepository;
             _foodRepository = foodRepository;
             _medicineRepository = medicineRepository;
+            _medicinePondParameterRepository = medicinePondParameterRepository;
+            _pondStandardParamRepository = pondStandardParamRepository;
             _unitOfWork = unitOfWork;
             _imageUploadService = imageUpload;
         }
@@ -475,7 +481,7 @@ namespace KoiGuardian.Api.Services
             _productRepository.Insert(product);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Tạo Food và liên kết với Product
+            
             var medicine = new Medicine
             {
                 ProductId = product.ProductId,
@@ -484,9 +490,34 @@ namespace KoiGuardian.Api.Services
                 Symtomps = medicineRequest.Symptoms,
             };
 
-            // Lưu Food vào database
+            
             _medicineRepository.Insert(medicine);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            if (medicineRequest.PondParamId.HasValue)
+            {
+                // Kiểm tra xem PondParamId có tồn tại trong bảng PondStandardParam không
+                var pondParam = await _pondStandardParamRepository.GetAsync(x => x.ParameterID == medicineRequest.PondParamId.Value, cancellationToken);
+
+                if (pondParam != null) // Nếu PondParamId hợp lệ
+                {
+                    var medicinePondParam = new MedicinePondParameter
+                    {
+                        MedicinePondParameterId = Guid.NewGuid(),
+                        MedicineId = medicine.MedicineId,
+                        PondParamId = medicineRequest.PondParamId.Value
+                    };
+
+                    _medicinePondParameterRepository.Insert(medicinePondParam);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+                else
+                {
+                    productResponse.Status = "400";
+                    productResponse.Message = "Invalid PondParamId. It must match an existing PondStandardParam.ParameterID.";
+                    return productResponse;
+                }
+            }
 
             productResponse.Status = "201";
             productResponse.Message = "Medicine created successfully.";

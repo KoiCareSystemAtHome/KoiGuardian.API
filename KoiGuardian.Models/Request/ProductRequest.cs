@@ -116,6 +116,8 @@ namespace KoiGuardian.Models.Request
         public string DosageForm { get; set; }
         public string Symptoms { get; set; }
 
+        public Guid? PondParamId { get; set; }
+
         public MedicineRequest()
         {
             Type = ProductType.Medicine; // Đặt mặc định là Medicine

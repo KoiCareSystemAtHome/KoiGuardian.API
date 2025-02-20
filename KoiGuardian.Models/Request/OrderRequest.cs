@@ -13,6 +13,16 @@ public class OrderFilterRequest
     public string SearchKey { get; set; }
 }
 
+public class UpdateOrderRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    public AddressDto Address { get; set; }  // Địa chỉ giao hàng (được lưu dưới dạng JSON string)
+    public string ShipType { get; set; }  // Loại vận chuyển
+    public string Status { get; set; }  // Trạng thái đơn hàng
+    public decimal ShipFee { get; set; }  // Phí vận chuyển
+    public List<OrderDetailDto> OrderDetails { get; set; }  // Danh sách sản phẩm trong đơn hàng
+}
+
 public class CreateOrderRequest
 {
     public Guid ShopId { get; set; }

@@ -97,10 +97,24 @@ namespace KoiGuardian.Api.Controllers
             return await image.UploadImageAsync(baseUrl,"test", "123", filene);
         }
 
-        [HttpPost("UpdateAccount")]
-        public async Task<string> UpdateAccount(string email, Guid packageId)
+        [HttpPost("pay-package")]
+        public async Task<string> UpdateAccountPackage(string email, Guid packageId)
         {
             return await service.UpdateAccountPackage(email,packageId);
         }
+
+        [HttpPost("pay-orders")]
+        public async Task<string> UpdateAccountOrder(UpdateOrderAccountRequest request)
+        {
+            return await service.UpdateAccountOrder(request.email, request.orderIds);
+        }
+
+
+        [HttpPost("process-pending-transactions")]
+        public async Task<string> ProcessPendingTransactions([FromBody] DateTime requestDate)
+        {
+            return await service.UpdateShopWallet(requestDate);
+        }
+
     }
 }

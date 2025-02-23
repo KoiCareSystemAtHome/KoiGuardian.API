@@ -11,3 +11,9 @@ public class AccountFilterRequest
     public DateTime? StartDate { get; set; } = DateTime.Now.AddMonths(-1);
     public DateTime? EndDate { get; set; } = DateTime.Now;
 }
+
+public class UpdateOrderAccountRequest
+{
+    public string email { get; set; }
+    public List<Guid> orderIds { get; set; }
+}

@@ -8,6 +8,7 @@ using KoiGuardian.Core.Repository;
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Identity;
@@ -40,6 +41,8 @@ public interface IAccountServices
     Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
     Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId);
     Task<string> UpdateAccountPackage(string email, Guid packageId);
+    Task<string> UpdateAccountOrder(string email, List<Guid> orderIds);
+    Task<string> UpdateShopWallet(DateTime inputDate);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -54,6 +57,7 @@ IRepository<Transaction> tranctionRepository,
 IRepository<Shop> shopRepository,
 IRepository <Package> packageRepository,
 IRepository <Wallet> walletRepository,
+IRepository<Order> orderRepository,
 IRepository<AccountPackage> ACrepository,
 IMapper mapper,
 IUnitOfWork<KoiGuardianDbContext> uow,
@@ -471,7 +475,7 @@ IImageUploadService imageUpload
         {
             TransactionId = Guid.NewGuid(),
             TransactionDate = DateTime.UtcNow,
-            TransactionType = "deposit money",
+            TransactionType = TransactionType.Success.ToString(),
             VnPayTransactionid = VnPayTransactionId,
             UserId = user.Id,
             DocNo = Guid.Parse(user.Id)
@@ -534,7 +538,7 @@ IImageUploadService imageUpload
         {
             TransactionId = Guid.NewGuid(),
             TransactionDate = DateTime.UtcNow,
-            TransactionType = "Payment for membership packages",
+            TransactionType = TransactionType.Success.ToString(),
             VnPayTransactionid = "Pay By Wallet",
             UserId = user.Id,
             DocNo = package.PackageId
@@ -543,6 +547,90 @@ IImageUploadService imageUpload
         // Cập nhật lại ví
         walletRepository.Update(wallet);
 
+        await uow.SaveChangesAsync();
+        return "Success";
+    }
+
+    public async Task<string> UpdateAccountOrder(string email, List<Guid> orderIds)
+    {
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+
+        if (user == null || user.Status != UserStatus.Active)
+        {
+            return "Account is not valid!";
+        }
+
+        var wallet = await walletRepository.GetAsync(u => u.UserId.Equals(user.Id), CancellationToken.None);
+        if (wallet == null)
+        {
+            return "Wallet is not valid!";
+        }
+
+        var orders = await orderRepository
+           .FindAsync(o => orderIds.Contains(o.OrderId) && o.UserId == user.Id && o.Status != "Paid");
+          
+
+        if (!orders.Any()) return "No valid orders found";
+        float totalAmount = orders.Sum(o => o.Total);
+
+        if (wallet.Amount < totalAmount)
+        {
+            return "Your Balance is not enough";
+        }
+        wallet.Amount -= totalAmount;
+        foreach (var order in orders)
+        {
+            order.Status = "Paid";
+            var transaction = new Transaction
+            {
+                TransactionId = Guid.NewGuid(),
+                TransactionDate = DateTime.UtcNow,
+                TransactionType = TransactionType.Pending.ToString(),
+                VnPayTransactionid = "Order Paid", // Giả lập mã giao dịch
+                UserId = user.Id,
+                DocNo = order.OrderId, // Chỉ lưu một mã đơn hàng đại diện
+            };
+
+           orderRepository.Update(order);
+           tranctionRepository.Insert(transaction);
+
+        }
+        await uow.SaveChangesAsync();
+        return "Success";
+
+    }
+
+    public async Task<string> UpdateShopWallet(DateTime inputDate)
+    {
+        var pendingTransactions = await tranctionRepository
+            .FindAsync(t => t.TransactionType.ToLower() == TransactionType.Pending.ToString().ToLower());
+
+        // Lọc điều kiện DateDiffDay trên C#
+        pendingTransactions = pendingTransactions
+            .Where(t => (inputDate - t.TransactionDate).TotalDays >= 3)
+            .ToList();
+
+        if (!pendingTransactions.Any()) return "Don't have any pending transactions!!";
+
+        foreach (var transaction in pendingTransactions)
+        {
+            transaction.TransactionType = TransactionType.Success.ToString();
+            tranctionRepository.Update(transaction);
+
+            // Lấy đơn hàng liên quan đến giao dịch
+            var order = await orderRepository.GetAsync(o => o.OrderId == transaction.DocNo, CancellationToken.None);
+            if (order == null) continue;
+
+            var shop = await shopRepository.GetAsync(u => u.ShopId.Equals(order.ShopId), CancellationToken.None);
+            if (shop == null) return "Shop don't exist";
+
+            //
+            /*var shopWallet = await walletRepository.GetAsync(u => u.UserId.Equals(shop.User.Id), CancellationToken.None);
+            if (shopWallet == null) return "Shop Wallet is not valid!";
+
+            shopWallet.Amount += order.Total;
+            walletRepository.Update(shopWallet);*/
+        }
         await uow.SaveChangesAsync();
         return "Success";
     }

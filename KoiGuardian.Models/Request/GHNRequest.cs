@@ -52,4 +52,22 @@ namespace KoiGuardian.Models.Request
         public List<string> OrderCodes { get; set; }
     }
 
+    public class GHNShopRequest
+    {
+        [JsonProperty("district_id")]
+        public int DistrictId { get; set; }
+
+        [JsonProperty("ward_code")]
+        public string WardCode { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("phone")]
+        public string Phone { get; set; }
+
+        [JsonProperty("address")]
+        public string Address { get; set; }
+    }
+
 }

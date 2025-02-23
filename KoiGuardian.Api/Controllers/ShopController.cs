@@ -17,55 +17,34 @@ namespace KoiGuardian.Api.Controllers
             _shopService = shopService;
         }
 
-        [HttpPost]
-        [Route("create")]
-        public async Task<IActionResult> CreateShop([FromBody] ShopRequest shopRequest, CancellationToken cancellationToken)
+        [HttpPost("create")]
+        public async Task<ShopResponse> CreateShop([FromBody] ShopRequest shopRequest, CancellationToken cancellationToken)
         {
-            var response = await _shopService.CreateShop(shopRequest, cancellationToken);
+            return await _shopService.CreateShop(shopRequest, cancellationToken);
+        }
 
-            if (response.Status == "201")
-                return Created("", response);
-
-            if (response.Status == "409")
-                return Conflict(response);
-
-            return BadRequest(response);
+        [HttpGet("{shopId}")]
+        public async Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellationToken)
+        {
+            return await _shopService.GetShopById(shopId, cancellationToken);
         }
 
         [HttpGet]
-        [Route("{shopId}")]
-        public async Task<IActionResult> GetShopById(Guid shopId, CancellationToken cancellationToken)
-        {
-            var response = await _shopService.GetShopById(shopId, cancellationToken);
-
-            if (response.Status == "200")
-                return Ok(response);
-
-            if (response.Status == "404")
-                return NotFound(response);
-
-            return BadRequest(response);
-        }
-
-        [HttpGet("all-shop")]
-        public async Task<IList<Shop>> GetAllCategoriesAsync(CancellationToken cancellationToken)
+        public async Task<IList<Shop>> GetAllShops(CancellationToken cancellationToken)
         {
             return await _shopService.GetAllShopAsync(cancellationToken);
         }
 
-        [HttpDelete]
-        [Route("{shopId}")]
-        public async Task<IActionResult> DeleteShop(Guid shopId, CancellationToken cancellationToken)
+        [HttpDelete("{shopId}")]
+        public async Task<ShopResponse> DeleteShop(Guid shopId, CancellationToken cancellationToken)
         {
-            var response = await _shopService.DeleteShop(shopId, cancellationToken);
+            return await _shopService.DeleteShop(shopId, cancellationToken);
+        }
 
-            if (response.Status == "200")
-                return Ok(response);
-
-            if (response.Status == "404")
-                return NotFound(response);
-
-            return BadRequest(response);
+        [HttpPut("{shopId}")]
+        public async Task<ShopResponse> UpdateShop(Guid shopId, [FromBody] ShopRequest shopRequest, CancellationToken cancellationToken)
+        {
+            return await _shopService.UpdateShop(shopId, shopRequest, cancellationToken);
         }
     }
 }

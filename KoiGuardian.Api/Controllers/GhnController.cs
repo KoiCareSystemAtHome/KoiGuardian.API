@@ -171,5 +171,27 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
+        [HttpPost("create-shop")]
+        public async Task<IActionResult> CreateShop([FromBody] GHNShopRequest shopRequest)
+        {
+            try
+            {
+                var result = await _ghnService.CreateGHNShop(shopRequest);
+
+                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
+
+                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                return Content(prettyJson, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
     }
 }

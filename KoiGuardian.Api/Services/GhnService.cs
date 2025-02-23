@@ -203,6 +203,32 @@ namespace KoiGuardian.Api.Services
             }
         }
 
+        public async Task<string> CreateGHNShop(GHNShopRequest shopRequest)
+        {
+            var requestUrl = $"{_baseUrl}/v2/shop/register";
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("Token", _token);
+
+            var content = new StringContent(
+                JsonConvert.SerializeObject(shopRequest),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await _httpClient.PostAsync(requestUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to create GHN shop. Status: {response.StatusCode}. Error: {errorContent}");
+            }
+        }
+
     }
 
 

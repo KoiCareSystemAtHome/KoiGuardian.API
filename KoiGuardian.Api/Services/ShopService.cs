@@ -15,6 +15,8 @@ namespace KoiGuardian.Api.Services
         Task<ShopResponse> DeleteShop(Guid shopId, CancellationToken cancellation);
         Task<Shop> GetShopByIdAsync(Guid shopId, CancellationToken cancellationToken);
 
+        Task<ShopResponse> UpdateShop(Guid shopId, ShopRequest shopRequest, CancellationToken cancellation);
+
         Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken);
     }
 
@@ -77,6 +79,55 @@ namespace KoiGuardian.Api.Services
 
             return shopResponse;
         }
+
+        public async Task<ShopResponse> UpdateShop(Guid shopId, ShopRequest shopRequest, CancellationToken cancellation)
+        {
+            var shopResponse = new ShopResponse();
+            var shop = await _shopRepository
+                .GetAsync(x => x.ShopId == shopId, cancellation);
+
+            if (shop is not null)
+            {
+                // Chỉ cập nhật thông tin cơ bản của shop
+                shop.ShopName = shopRequest.ShopName;
+                shop.ShopRate = shopRequest.ShopRate;
+                shop.ShopDescription = shopRequest.ShopDescription;
+                shop.ShopAddress = shopRequest.ShopAddress;
+                shop.BizLicences = shopRequest.BizLicences;
+
+                _shopRepository.Update(shop);
+
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellation);
+                    shopResponse.Status = "200";
+                    shopResponse.Message = "Update Shop Success";
+                    shopResponse.Shop = new ShopRequestDetails
+                    {
+                        ShopId = shop.ShopId,
+                        ShopName = shop.ShopName,
+                        ShopRate = shop.ShopRate,
+                        ShopDescription = shop.ShopDescription,
+                        ShopAddress = shop.ShopAddress,
+                        IsActivate = shop.IsActivate,
+                        BizLicences = shop.BizLicences
+                    };
+                }
+                catch (Exception ex)
+                {
+                    shopResponse.Status = "500";
+                    shopResponse.Message = "Error updating shop: " + ex.Message;
+                }
+            }
+            else
+            {
+                shopResponse.Status = "404";
+                shopResponse.Message = "Shop Not Found";
+            }
+
+            return shopResponse;
+        }
+
 
         public async Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellation)
         {

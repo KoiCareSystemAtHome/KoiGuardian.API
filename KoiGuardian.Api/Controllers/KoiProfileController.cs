@@ -33,5 +33,17 @@ namespace KoiGuardian.Api.Controllers
         {
            return await _services.GetMedicineRecommendationsForFish(fishId);
         }
+
+        [HttpGet("active")]
+        public async Task<List<KoiDiseaseProfile>> GetActiveProfiles()
+        {
+            return await _services.GetActiveDiseaseProfiles();
+        }
+
+        [HttpPut("update/{profileId}")]
+        public async Task<string> UpdateProfile(Guid profileId, [FromBody] UpdateDiseaseProfileRequest request, CancellationToken cancellationToken)
+        {
+            return await _services.UpdateProfile(profileId, request, cancellationToken);
+        }
     }
 }

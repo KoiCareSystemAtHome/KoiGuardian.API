@@ -44,7 +44,9 @@ namespace KoiGuardian.Api.Services
                 Description = request.Description,
                 Type = request.Type,  // Direct enum assignment
                 FoodModifyPercent = request.FoodModifyPercent,
-                SaltModifyPercent = request.SaltModifyPercent
+                SaltModifyPercent = request.SaltModifyPercent,
+                Image = request.Image
+
             };
 
             _diseaseRepository.Insert(disease);
@@ -91,6 +93,7 @@ namespace KoiGuardian.Api.Services
                 diseaseExist.Type = request.Type;
                 diseaseExist.FoodModifyPercent = request.FoodModifyPercent;
                 diseaseExist.SaltModifyPercent = request.SaltModifyPercent;
+            diseaseExist.Image = request.Image;
 
                 _diseaseRepository.Update(diseaseExist);
 

@@ -15,6 +15,7 @@ public class Disease
     public DiseaseType Type { get; set; }
     public float FoodModifyPercent { get; set; }
     public float SaltModifyPercent { get; set; }
+    public string? Image { get; set; }
 
     public virtual IEnumerable<MedicineDisease> MedicineDisease {  get; set; }
 }

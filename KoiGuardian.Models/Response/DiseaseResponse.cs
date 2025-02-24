@@ -19,6 +19,7 @@ namespace KoiGuardian.Models.Response
         public DiseaseType Type { get; set; }
         public float FoodModifyPercent { get; set; }
         public float SaltModifyPercent { get; set; }
+        public string Image {  get; set; }
         public List<MedicineDTO>? Medicines { get; set; }
     }
 

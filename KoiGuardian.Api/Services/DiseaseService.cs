@@ -179,6 +179,7 @@ namespace KoiGuardian.Api.Services
                 Type = disease.Type,
                 FoodModifyPercent = disease.FoodModifyPercent,
                 SaltModifyPercent = disease.SaltModifyPercent,
+                Image = disease.Image,
                 Medicines = disease.MedicineDisease?.Select(md => new MedicineDTO
                 {
                     MedicineId = md.Medince.MedicineId,
@@ -212,6 +213,7 @@ namespace KoiGuardian.Api.Services
                 Description = disease.Description,
                 Type = disease.Type,
                 FoodModifyPercent = disease.FoodModifyPercent,
+                Image = disease.Image,
                 SaltModifyPercent = disease.SaltModifyPercent,
                 Status = "200",
                 Message = "Disease retrieved successfully"

@@ -602,38 +602,54 @@ IImageUploadService imageUpload
 
     public async Task<string> UpdateShopWallet(DateTime inputDate)
     {
+        // Lấy danh sách giao dịch Pending quá 3 ngày
         var pendingTransactions = await tranctionRepository
             .FindAsync(t => t.TransactionType.ToLower() == TransactionType.Pending.ToString().ToLower());
 
-        // Lọc điều kiện DateDiffDay trên C#
         pendingTransactions = pendingTransactions
             .Where(t => (inputDate - t.TransactionDate).TotalDays >= 3)
             .ToList();
 
         if (!pendingTransactions.Any()) return "Don't have any pending transactions!!";
 
+        var orderIds = pendingTransactions.Select(t => t.DocNo).ToList();
+        var orders = await orderRepository.FindAsync(o => orderIds.Contains(o.OrderId));
+
+        // Nhóm các đơn hàng theo ShopId và tính tổng tiền
+        var shopTransactions = orders
+            .GroupBy(o => o.ShopId)
+            .Select(group => new
+            {
+                ShopId = group.Key,
+                TotalAmount = group.Sum(o => o.Total) 
+            })
+            .ToList();
+
+        var shopIds = shopTransactions.Select(s => s.ShopId).ToList();
+        var shops = await shopRepository.FindAsync(s => shopIds.Contains(s.ShopId));
+        var shopWallets = await walletRepository.FindAsync(w => shops.Select(s => s.UserId).Contains(w.UserId));
+        foreach (var shopTran in shopTransactions)
+        {
+            var shop = shops.FirstOrDefault(s => s.ShopId == shopTran.ShopId);
+            if (shop == null) continue;
+
+            var shopWallet = shopWallets.FirstOrDefault(w => w.UserId == shop.UserId);
+            if (shopWallet == null) return "Shop Wallet is not valid!";
+            shopWallet.Amount += shopTran.TotalAmount;
+            walletRepository.Update(shopWallet);
+        }
+
+        // Cập nhật trạng thái giao dịch thành Success
         foreach (var transaction in pendingTransactions)
         {
             transaction.TransactionType = TransactionType.Success.ToString();
             tranctionRepository.Update(transaction);
-
-            // Lấy đơn hàng liên quan đến giao dịch
-            var order = await orderRepository.GetAsync(o => o.OrderId == transaction.DocNo, CancellationToken.None);
-            if (order == null) continue;
-
-            var shop = await shopRepository.GetAsync(u => u.ShopId.Equals(order.ShopId), CancellationToken.None);
-            if (shop == null) return "Shop don't exist";
-
-            //
-            /*var shopWallet = await walletRepository.GetAsync(u => u.UserId.Equals(shop.User.Id), CancellationToken.None);
-            if (shopWallet == null) return "Shop Wallet is not valid!";
-
-            shopWallet.Amount += order.Total;
-            walletRepository.Update(shopWallet);*/
         }
+
         await uow.SaveChangesAsync();
         return "Success";
     }
+
 
 }
 

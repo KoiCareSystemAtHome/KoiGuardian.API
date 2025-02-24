@@ -13,7 +13,7 @@ namespace KoiGuardian.Api.Controllers
         (ISymptomService service) : ControllerBase
     {
         [HttpGet("type")]
-        public async Task<List<Symptom>> GetListComm( string? type)
+        public async Task<List<PredictSymptoms>> GetListComm( string? type)
         {
             return await service.GetByType(type);
         }

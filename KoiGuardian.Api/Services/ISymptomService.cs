@@ -10,11 +10,11 @@ public interface ISymptomService
 {
     Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms);
     Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms);
-    Task<List<Symptom>> GetByType(string? type);
+    Task<List<PredictSymptoms>> GetByType(string? type);
 }
 
 public class SymptomService( 
-    IRepository<Symptom> symptomRepository,
+    IRepository<PredictSymptoms> symptomRepository,
     IRepository<Disease> diseaseRepository,
     IRepository<RelSymptomDisease> relSymptomDiseaseRepository
 
@@ -183,7 +183,7 @@ public class SymptomService(
         };
     }
 
-    public async Task<List<Symptom>> GetByType(string? type)
+    public async Task<List<PredictSymptoms>> GetByType(string? type)
     {
         type = type ?? SymptomType.Common.ToString();
         if (type.ToLower() == SymptomType.Common.ToString().ToLower())

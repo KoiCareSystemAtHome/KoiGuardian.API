@@ -81,6 +81,7 @@ namespace KoiGuardian.Api.Services
                     VarietyId = Guid.NewGuid(),
                     VarietyName = fishRequest.VarietyName,
                     Description = "",
+                    AuthorId = " "
                 };
                 _varietyRepository.Insert(variety);
             }

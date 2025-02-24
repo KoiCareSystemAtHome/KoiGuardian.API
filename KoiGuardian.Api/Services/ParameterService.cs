@@ -142,7 +142,7 @@ namespace KoiGuardian.Api.Services
 
         }
 
-        public async Task<List<PondRerquireParam>> getAll(string parameterType, int age, CancellationToken cancellationToken)
+        public async Task<List<PondRerquireParam>> getAll(string parameterType, CancellationToken cancellationToken)
         {
 
 

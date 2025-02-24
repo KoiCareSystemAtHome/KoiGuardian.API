@@ -51,7 +51,7 @@ namespace KoiGuardian.Api.Services
                 pondRepository.Insert(pond);
 
                 var validValues = request.RequirementPondParam.Where(u =>
-                    requirementsParam.Select(u => u.HistoryId).Contains(u.HistoryId)
+                    requirementsParam.Select(u => u.ParameterId).Contains(u.HistoryId)
                     );
 
                 foreach (var validValue in validValues)
@@ -89,7 +89,7 @@ namespace KoiGuardian.Api.Services
                 cancellationToken: cancellation))
                 .Select(u => new PondRerquireParam()
                 {
-                    HistoryId = u.ParameterID,
+                    ParameterId = u.ParameterID,
                     ParameterName = u.Name,
                     UnitName = u.UnitName,
                     WarningLowwer = u.WarningLowwer,
@@ -113,7 +113,7 @@ namespace KoiGuardian.Api.Services
                 pond.Image = request.Image;
 
                 var validValues = request.RequirementPondParam.Where(u =>
-                    requirementsParam.Select(u => u.HistoryId).Contains(u.HistoryId)
+                    requirementsParam.Select(u => u.ParameterId).Contains(u.HistoryId)
                     );
 
                 foreach (var validValue in validValues)

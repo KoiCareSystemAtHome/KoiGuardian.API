@@ -13,20 +13,23 @@ namespace KoiGuardian.Api.Services
     {
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken);
-        Task<List<PondRerquireParam>> getAll(string parameterType, int age, CancellationToken cancellationToken);
+        Task<List<PondRerquireParam>> getAll(string parameterType,CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
     {
         private readonly IRepository<KoiStandardParam> _parameterRepository;
+        private readonly IRepository<PondStandardParam> _pondParameterRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public ParameterService(
             IRepository<KoiStandardParam> parameterRepository,
+            IRepository<PondStandardParam> pparameterRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _parameterRepository = parameterRepository;
             _unitOfWork = unitOfWork;
+            _pondParameterRepository = pparameterRepository;
         }
 
         public async Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken)
@@ -141,43 +144,23 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<PondRerquireParam>> getAll(string parameterType, int age, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-            //if (age < 1)
-            //{
-            //    return (await _parameterRepository.FindAsync(
-            //        u => u.Type.ToLower() == parameterType.ToLower()
-            //            && u.IsActive && u.ValidUntil == null,
-            //        cancellationToken: cancellationToken))
-            //        .Select(u => new PondRerquireParam()
-            //        {
-            //            HistoryId = u.HistoryId,
-            //            ParameterName = u.Name,
-            //            UnitName = u.UnitName,
-            //            WarningLowwer = u.WarningLowwer,
-            //            WarningUpper = u.WarningUpper,
-            //            DangerLower = u.DangerLower,
-            //            DangerUpper = u.DangerUpper,
-            //            MeasurementInstruction = u.MeasurementInstruction,
 
-            //        }).ToList();
-            //}
 
-            //return (await _parameterRepository.FindAsync(
-            //        u =>  u.IsActive && u.Age == age
-            //            ,
-            //        cancellationToken: cancellationToken))
-            //        .Select(u => new PondRerquireParam()
-            //        {
-            //            HistoryId = u.HistoryId,
-            //            ParameterName = u.Name,
-            //            UnitName = u.UnitName,
-            //            WarningLowwer = u.WarningLowwer,
-            //            WarningUpper = u.WarningUpper,
-            //            DangerLower = u.DangerLower,
-            //            DangerUpper = u.DangerUpper,
-            //            MeasurementInstruction = u.MeasurementInstruction,
-
-            //        }).ToList();
+            return (await _pondParameterRepository.FindAsync(
+                    u => u.IsActive 
+                        ,
+                    cancellationToken: cancellationToken))
+                    .Select(u => new PondRerquireParam()
+                    {
+                        ParameterName = u.Name,
+                        UnitName = u.UnitName,
+                        WarningLowwer = u.WarningLowwer,
+                        WarningUpper = u.WarningUpper,
+                        DangerLower = u.DangerLower,
+                        DangerUpper = u.DangerUpper,
+                        MeasurementInstruction = u.MeasurementInstruction,
+                        ParameterId = u.ParameterID
+                    }).ToList();
         }
     }
 }

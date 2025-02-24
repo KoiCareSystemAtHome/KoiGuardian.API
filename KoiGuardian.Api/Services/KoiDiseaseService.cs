@@ -19,6 +19,12 @@ public interface IKoiDiseaseService
 
     Task<RecommendResponse> GetMedicineRecommendationsForFish(Guid fishId);
 
+    Task<List<KoiDiseaseProfile>> GetActiveDiseaseProfiles();
+    Task<string> UpdateProfile(Guid profileId, UpdateDiseaseProfileRequest request, CancellationToken cancellationToken);
+
+
+
+
 }
 
 public class KoiDiseaseService
@@ -143,6 +149,75 @@ public class KoiDiseaseService
             return new RecommendResponse();
         }
     }
+    public async Task<List<KoiDiseaseProfile>> GetActiveDiseaseProfiles()
+    {
+        try
+        {
+            
+            var activeProfiles = await profileRepo.GetQueryable()
+                .Where(p => p.Status == ProfileStatus.Pending)
+                .OrderByDescending(p => p.Createddate)
+                .ToListAsync();
+
+            return activeProfiles;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GetActiveDiseaseProfiles: {ex.Message}");
+            return new List<KoiDiseaseProfile>();
+        }
+    }
+
+    public async Task<string> UpdateProfile(Guid profileId, UpdateDiseaseProfileRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await profileRepo.GetAsync(x => x.KoiDiseaseProfileId == profileId, cancellationToken);
+            if (profile == null)
+                return "Profile not found";
+
+            // Cập nhật trạng thái nếu có
+            if (!string.IsNullOrEmpty(request.Status) && Enum.TryParse<ProfileStatus>(request.Status, out ProfileStatus status))
+            {
+                profile.Status = status;
+                profile.EndDate = status == ProfileStatus.Buyed ? DateTime.UtcNow : profile.EndDate;
+            }
+
+            // Cập nhật thuốc nếu có
+            if (request.MedicineId.HasValue)
+            {
+                profile.MedicineId = request.MedicineId.Value;
+            }
+            if (request.DiseaseID.HasValue)
+            {
+                profile.DiseaseID = request.DiseaseID.Value;
+            }
+
+            // Cập nhật ghi chú nếu có
+            if (!string.IsNullOrEmpty(request.Note))
+            {
+                profile.Note = request.Note;
+            }
+
+            // Cập nhật triệu chứng nếu có
+            if (request.Symptoms != null && request.Symptoms.Any())
+            {
+                profile.Symptoms = JsonSerializer.Serialize(request.Symptoms);
+            }
+
+            profileRepo.Update(profile);
+            await unitOfWork.SaveChangesAsync();
+
+            return "Profile updated successfully!";
+        }
+        catch (Exception ex)
+        {
+            return "Update failed: " + ex.Message;
+        }
+    }
+
+
+
 
 
 

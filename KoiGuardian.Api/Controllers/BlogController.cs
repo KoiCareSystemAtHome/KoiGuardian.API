@@ -61,6 +61,9 @@ namespace KoiGuardian.Api.Controllers
             return await _services.GetAllBlogsAsync(cancellationToken);
         }
 
+     
+
+
         [HttpGet("search")]
         public async Task<ActionResult<IList<BlogDto>>> SearchBlogs(
     [FromQuery] DateTime? startDate,
@@ -94,6 +97,22 @@ namespace KoiGuardian.Api.Controllers
 
             return Ok(response);
         }
+
+        [HttpGet("tag/{tag}")]
+        public async Task<ActionResult<IList<Blog>>> GetBlogsByTag(string tag, CancellationToken cancellationToken)
+        {
+            var blogs = await _services.GetBlogsByTagAsync(tag, cancellationToken);
+            return blogs.Any() ? Ok(blogs) : Ok(new { Message = "No blogs found with this tag." });
+        }
+
+        [HttpPut("{blogId}/approve")]
+        public async Task<IActionResult> ApproveOrRejectBlog(Guid blogId, [FromBody] bool isApproved, CancellationToken cancellationToken)
+        {
+            var response = await _services.ApproveOrRejectBlogAsync(blogId, isApproved, cancellationToken);
+            return response != null ? Ok(response) : NotFound(new { Message = "Blog not found" });
+        }
+
+
 
     }
 

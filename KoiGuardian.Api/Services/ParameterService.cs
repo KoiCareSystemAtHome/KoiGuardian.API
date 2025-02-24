@@ -13,7 +13,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken);
-        Task<List<PondRerquireParam>> getAll(string parameterType,CancellationToken cancellationToken);
+        Task<List<object>> getAll(string parameterType,CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
@@ -142,12 +142,12 @@ namespace KoiGuardian.Api.Services
 
         }
 
-        public async Task<List<PondRerquireParam>> getAll(string parameterType, CancellationToken cancellationToken)
+        public async Task<List<object>> getAll(string parameterType, CancellationToken cancellationToken)
         {
-
-
-            return (await _pondParameterRepository.FindAsync(
-                    u => u.IsActive 
+            if (parameterType.ToLower() == "pond")
+            {
+                return (await _pondParameterRepository.FindAsync(
+                    u => u.IsActive
                         ,
                     cancellationToken: cancellationToken))
                     .Select(u => new PondRerquireParam()
@@ -160,7 +160,16 @@ namespace KoiGuardian.Api.Services
                         DangerUpper = u.DangerUpper,
                         MeasurementInstruction = u.MeasurementInstruction,
                         ParameterId = u.ParameterID
-                    }).ToList();
+                    }).ToList<object>();
+            }else
+            {
+                return (await _parameterRepository.FindAsync(
+                    u => u.IsActive,
+                    cancellationToken: cancellationToken)).ToList<object>();
+            }
+
+
+            
         }
     }
 }

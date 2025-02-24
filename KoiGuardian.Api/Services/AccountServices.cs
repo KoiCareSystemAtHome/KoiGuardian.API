@@ -161,10 +161,10 @@ IImageUploadService imageUpload
             ID = user.Id,
             Name = user.UserName ?? string.Empty,
             PackageID = user.PackageId,
-            Avatar = mem.Avatar,
+            Avatar = mem?.Avatar ?? "",
             Status = user.Status.ToString(),
-            Gender = mem.Gender,
-            Address = mem.Address,
+            Gender = mem?.Gender ?? "",
+            Address = mem?.Address ?? "",
         };
 
         LoginResponse loginResponse = new()

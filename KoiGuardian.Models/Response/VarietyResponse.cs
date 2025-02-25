@@ -16,6 +16,6 @@ namespace KoiGuardian.Models.Response
         public Guid VarietyId { get; set; }
         public string VarietyName { get; set; }
         public string Description { get; set; }
-        public Guid AuthorId { get; set; }
+        public string AuthorId { get; set; }
     }
 }

@@ -10,6 +10,7 @@ namespace KoiGuardian.Models.Response
     {
         public string Status { get; set; }
         public string Message { get; set; }
+         public FishDto? Fish { get; set; }
     }
 
     public class FishDto
@@ -20,7 +21,8 @@ namespace KoiGuardian.Models.Response
         public decimal Price { get; set; }
         public string Sex { get; set; }
         public int Age { get; set; }
-        public PondDto Pond { get; set; }
-        public VarietyDto Variety { get; set; }
+        public object? Pond { get; set; }
+        public object? Variety { get; set; }
+        public object? DiseaseTracking { get; set; }
     }
 }

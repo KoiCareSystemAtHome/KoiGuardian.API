@@ -254,7 +254,7 @@ namespace KoiGuardian.Api.Services
                         VarietyId = f.Variety.VarietyId,
                         VarietyName = f.Variety.VarietyName,
                         Description = f.Variety.Description,
-                        AuthorId = Guid.Parse(f.Variety.AuthorId)
+                        AuthorId = f.Variety.AuthorId
                     }
                 }).ToList()
             }).ToList();

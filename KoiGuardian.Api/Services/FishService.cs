@@ -238,7 +238,7 @@ namespace KoiGuardian.Api.Services
         public async Task<List<FishDto>> GetFishByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
         {
             var fishEntities = await _fishRepository.FindAsync(
-                predicate: x => x.Pond.OwnerId.Equals(ownerId.ToString()),
+                predicate: x => (x.Pond.OwnerId ?? "") == ownerId.ToString(),
                 include: query => query
                     .Include(f => f.Variety)
                     .Include(f => f.Pond),
@@ -255,7 +255,7 @@ namespace KoiGuardian.Api.Services
                 Price = f.Price,
                 Sex = f.Sex,
                 Age = f.Age,
-                Pond = f.Pond == null ? null : new PondDto
+                Pond =  new PondDto
                 {
                     PondID = f.Pond.PondID,
                     Name = f.Pond.Name,
@@ -263,12 +263,12 @@ namespace KoiGuardian.Api.Services
                     CreateDate = f.Pond.CreateDate,
                     Image = f.Pond.Image
                 },
-                Variety = f.Variety == null ? null : new VarietyDto
+                Variety = new VarietyDto
                 {
                     VarietyId = f.Variety.VarietyId,
                     VarietyName = f.Variety.VarietyName,
                     Description = f.Variety.Description,
-                    AuthorId = Guid.Parse( f.Variety.AuthorId)
+                    AuthorId = f.Variety.AuthorId
                 }
             }).ToList();
 

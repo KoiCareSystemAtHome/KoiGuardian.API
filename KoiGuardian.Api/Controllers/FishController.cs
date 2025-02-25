@@ -8,7 +8,9 @@ namespace KoiGuardian.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FishController(IFishService fishService) : ControllerBase
+    public class FishController(
+        IFishService fishService,
+        IKoiDiseaseService _services) : ControllerBase
     {
         [HttpGet]
         public async Task<List<Fish>> GetAllFishAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
@@ -52,7 +54,18 @@ namespace KoiGuardian.Api.Controllers
             {
                 Status = "200",
                 Message = "Fish retrieved successfully.",
-               
+               Fish = new FishDto()
+               {
+                   KoiID  = fish.KoiID,
+                   Age = fish.Age,
+                   Image = fish.Image,  
+                   Name = fish.Name,
+                   Price = fish.Price,
+                   Sex = fish.Sex,
+                   Pond = fish.Pond,
+                   Variety = fish.Variety,
+                   DiseaseTracking = await _services.GetDisease(koiId),
+               }
             };
         }
     }

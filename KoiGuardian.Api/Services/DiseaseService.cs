@@ -29,6 +29,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Medicine> _medicineRepository,
             IRepository<MedicineDisease> _medicineDiseaseRepository,
             IRepository<PredictSymptoms> _predictSymtopmsRepository,
+            IRepository<RelPredictSymptomDisease> _predictdeseaseSymtopmsRepository,
             IRepository<RelPredictSymptomDisease> _relpredictSymtopmsDiseaseRepository,
             IUnitOfWork<KoiGuardianDbContext> _unitOfWork) : IDiseaseService
     {
@@ -184,7 +185,7 @@ namespace KoiGuardian.Api.Services
                 {
                     MedicineId = md.Medince.MedicineId,
                     Name = md.Medince.Medicinename,  // Đảm bảo lấy đúng tên thuốc
-                }).ToList() ?? new List<MedicineDTO>() // Tránh giá trị null
+                }).ToList<object>() ?? new List<object>() // Tránh giá trị null
             }).ToList();
         }
 
@@ -205,6 +206,8 @@ namespace KoiGuardian.Api.Services
                     Message = "Disease not found"
                 };
             }
+            var predictSymtoms = await _predictdeseaseSymtopmsRepository.FindAsync(
+                    u => u.DiseaseId == disease.DiseaseId);
 
             return new DiseaseResponse
             {
@@ -216,7 +219,10 @@ namespace KoiGuardian.Api.Services
                 Image = disease.Image,
                 SaltModifyPercent = disease.SaltModifyPercent,
                 Status = "200",
-                Message = "Disease retrieved successfully"
+                Message = "Disease retrieved successfully",
+                Medicines = disease.MedicineDisease.ToList<object>(),
+                SickSymtomps = predictSymtoms.ToList<object>(),
+
             };
         }
 

@@ -21,9 +21,9 @@ public class Symptom
 public enum SymptomType
 {
     Common,
-    Food,
-    Enviroment,
-    Disease
+    Common_Food,
+    Common_Enviroment,
+    Common_DiseaseF
 }
 
 public enum SymptomUnit

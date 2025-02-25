@@ -74,7 +74,7 @@ public class SymptomService(
             }
         }
         var typeFinal = groupDatas.OrderByDescending(u => u.Value).FirstOrDefault();
-        var causeGroupType = typeFinal.Key.Split('-').Last().ToLower();
+        var causeGroupType = typeFinal.Key.Split('_').Last().ToLower();
 
         var symptompReturn = await symptomRepository.FindAsync(u => u.Type.ToLower() == causeGroupType);
         return new DiseaseTypePredictResponse()

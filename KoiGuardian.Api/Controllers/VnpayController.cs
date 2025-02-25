@@ -31,29 +31,30 @@ namespace KoiGuardian.Api.Controllers
         /// <param name="description">Mô tả giao dịch</param>
         /// <returns></returns>
         [HttpGet("CreatePaymentUrl")]
-        public ActionResult<string> CreatePaymentUrl(double money, string description,string returnUrl)
+        public ActionResult<string> CreatePaymentUrl(double money, string description, string returnUrl)
         {
             try
             {
-                var ipAddress = NetworkHelper.GetIpAddress(HttpContext); // Lấy địa chỉ IP của thiết bị thực hiện giao dịch
-
+                var ipAddress = NetworkHelper.GetIpAddress(HttpContext);
                 var request = new PaymentRequest
                 {
                     PaymentId = DateTime.Now.Ticks,
                     Money = money,
                     Description = description,
                     IpAddress = ipAddress,
-                    BankCode = BankCode.ANY, // Tùy chọn. Mặc định là tất cả phương thức giao dịch
-                    CreatedDate = DateTime.Now, // Tùy chọn. Mặc định là thời điểm hiện tại
-                    Currency = Currency.VND, // Tùy chọn. Mặc định là VND (Việt Nam đồng)
-                    Language = DisplayLanguage.Vietnamese, // Tùy chọn. Mặc định là tiếng Việt
+                    BankCode = BankCode.ANY,
+                    CreatedDate = DateTime.Now,
+                    Currency = Currency.VND,
+                    Language = DisplayLanguage.Vietnamese,
                     CallBackUrl = returnUrl
-
                 };
 
                 var paymentUrl = _vnpay.GetPaymentUrl(request);
 
-                return Created(paymentUrl, paymentUrl);
+                // Trả về URL của server có chứa paymentUrl
+                var serverUrl = $"{Request.Scheme}://{Request.Host}/payment/redirect?url={Uri.EscapeDataString(paymentUrl)}";
+
+                return Created(serverUrl, serverUrl);
             }
             catch (Exception ex)
             {

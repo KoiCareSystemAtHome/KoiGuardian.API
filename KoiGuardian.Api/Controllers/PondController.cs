@@ -12,7 +12,7 @@ namespace KoiGuardian.Api.Controllers
     public class PondController(IPondServices services) : ControllerBase
     {
         [HttpGet("get-all")]
-        public async Task<List<Pond>> GetAllPondhAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
+        public async Task<List<PondDto>> GetAllPondhAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
         {
             return await services.GetAllPondhAsync(name,cancellationToken);
         }

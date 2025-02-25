@@ -44,10 +44,13 @@ namespace KoiGuardian.Api.Services
 
         public SaltCalculatorService(
             IRepository<Pond> pondRepository,
+            IRepository<KoiDiseaseProfile> koiDiseaseProfile,
             IRepository<RelPondParameter> pondParamRepository)
+            
         {
             _pondRepository = pondRepository;
             _pondParamRepository = pondParamRepository;
+            _koiDiseaseProfileRepository = koiDiseaseProfile;
         }
         public AddSaltResponse ValidateAndCalculateSaltAddition(AddSaltRequest request)
         {
@@ -174,10 +177,10 @@ namespace KoiGuardian.Api.Services
 
         public async Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request)
         {
-            var pond = await _pondRepository.GetAsync(
-                u => u.PondID == request.PondId,
-                include: u => u.Include(p => p.Fish)
-            );
+            // Fetch pond with fish included
+            var pondQuery = _pondRepository.GetQueryable(p => p.PondID == request.PondId)
+                .Include(p => p.Fish); // Apply Include directly on IQueryable
+            var pond = await pondQuery.FirstOrDefaultAsync();
 
             if (pond == null)
             {
@@ -189,11 +192,10 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Lấy thông tin tham số muối
-            var saltParameter = await _pondParamRepository.GetAsync(
-                p => p.Parameter.Name.ToLower() == "salt",
-                include: p => p.Include(p => p.Parameter)
-            );
+            // Fetch salt parameter
+            var saltParamQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
+                .Include(p => p.Parameter); // Apply Include directly on IQueryable
+            var saltParameter = await saltParamQuery.FirstOrDefaultAsync();
 
             if (saltParameter?.Parameter == null)
             {
@@ -205,18 +207,22 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Lấy giá trị muối hiện tại trong ao
-            var currentSaltValue = await _pondParamRepository.GetAsync(
-                p => p.PondId == request.PondId &&
-                     p.Parameter.ParameterID == saltParameter.Parameter.ParameterID,
-                include: u => u.Include(p => p.Parameter)
-            );
+            // Get current salt value for the pond
+            var currentSaltQuery = _pondParamRepository.GetQueryable(
+                p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
+                .Include(p => p.Parameter); // Apply Include directly on IQueryable
+            var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
 
             double currentVolume = request.WaterChangePercent > 0
                 ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
                 : pond.MaxVolume;
 
             double currentSaltConcentration = currentSaltValue?.Value ?? 0;
+
+            if (request.AddedSalt > 0)
+            {
+                currentSaltConcentration += request.AddedSalt;
+            }
 
             if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel, out double standardSalt))
             {
@@ -230,73 +236,92 @@ namespace KoiGuardian.Api.Services
 
             var additionalNotes = new List<string>();
 
-            // Kiểm tra bệnh cá và điều chỉnh lượng muối
-            float saltModifyPercent = 0.01f;
-            bool hasSickFish = false;
-            foreach (var koi in pond.Fish)
+            // Check fish diseases and adjust salt percentage
+            double saltModifyPercent = 0;
+
+            // Ensure Fish collection is not null
+            var fishList = pond.Fish?.ToList() ?? new List<Fish>();
+            if (fishList.Any())
             {
-                try
+                foreach (var fish in fishList)
                 {
-                    var treatmentAmount = await _koiDiseaseProfileRepository.GetAsync(
-                        u => koi.KoiID == koi.KoiID && u.EndDate <= DateTime.Now && u.Disease != null,
-                        include: u => u.Include(d => d.Disease)
-                    );
-                    if (treatmentAmount?.Disease != null)
+                    // Fetch disease profiles for the current fish
+                    var diseaseProfilesQuery = _koiDiseaseProfileRepository.GetQueryable(d => d.FishId == fish.KoiID)
+                        .Include(d => d.Disease); // Apply Include directly on IQueryable
+                    var diseaseProfiles = await diseaseProfilesQuery.ToListAsync();
+
+                    foreach (var diseaseProfile in diseaseProfiles)
                     {
-                        hasSickFish = true;
-                        additionalNotes.Add($"{koi.Name} đang điều trị bệnh {treatmentAmount.Disease.Name}");
-                        saltModifyPercent = Math.Max(saltModifyPercent, treatmentAmount.Disease.SaltModifyPercent);
+                        if (diseaseProfile.Status == ProfileStatus.Accept || diseaseProfile.Status == ProfileStatus.Pending)
+                        {
+                            if (diseaseProfile.Disease != null)
+                            {
+                                saltModifyPercent += diseaseProfile.Disease.SaltModifyPercent;
+                                additionalNotes.Add($"Fish {fish.Name} has disease '{diseaseProfile.Disease.Name}' affecting salt by {diseaseProfile.Disease.SaltModifyPercent}%.");
+                            }
+                        }
                     }
                 }
-                catch
-                {
-                    continue;
-                }
+            }
+            else
+            {
+                additionalNotes.Add("No fish found in the pond.");
             }
 
-            // Tính toán lượng muối với điều chỉnh theo bệnh
+            // Calculate required salt with disease adjustment
             double requiredSaltPercent = standardSalt + saltModifyPercent;
-            double totalSaltWeightKg = currentVolume * (requiredSaltPercent / 100);
-            double additionalSaltNeeded = totalSaltWeightKg - currentSaltConcentration;
-            double totalSaltWeightMg = totalSaltWeightKg * 1000;
-            double saltConcentrationMgPerL = totalSaltWeightMg / currentVolume;
+            double targetSaltWeightKg = currentVolume * (requiredSaltPercent / 100);
+            double additionalSaltNeeded = targetSaltWeightKg - currentSaltConcentration;
+            double saltConcentrationMgPerL = (currentSaltConcentration * 1000) / currentVolume;
 
             if (additionalSaltNeeded < 0)
             {
-                additionalNotes.Add($"Current salt level ({currentSaltConcentration:F2} kg) is higher than standard ({totalSaltWeightKg:F2} kg).");
-                additionalNotes.Add("Consider water change to reduce salt concentration.");
+                additionalNotes.Add($"Current salt ({currentSaltConcentration:F2} kg) exceeds target ({targetSaltWeightKg:F2} kg).");
 
-                double excessSalt = Math.Abs(additionalSaltNeeded);
-                double waterNeeded = excessSalt / (requiredSaltPercent / 100);
+                double currentSaltConcentrationPercent = currentSaltConcentration / currentVolume * 100;
+                double newTotalVolume = (currentVolume * currentSaltConcentrationPercent) / requiredSaltPercent;
+                double additionalWaterNeeded = newTotalVolume - currentVolume;
+
+                additionalNotes.Add($"Need to add {additionalWaterNeeded:F2} m³ water to reduce salt concentration to target level.");
+
+                if (newTotalVolume > pond.MaxVolume)
+                {
+                    double excessVolume = newTotalVolume - pond.MaxVolume;
+                    additionalNotes.Add($"Warning: Adding {additionalWaterNeeded:F2} m³ water exceeds pond capacity by {excessVolume:F2} m³.");
+                }
+
                 return new CalculateSaltResponse
                 {
                     PondId = pond.PondID,
-                    TotalSalt = totalSaltWeightKg,
-                    WaterNeeded = waterNeeded,
+                    TotalSalt = targetSaltWeightKg,
+                    CurrentSalt = currentSaltConcentration,
+                    SaltNeeded = additionalSaltNeeded,
+                    WaterNeeded = additionalWaterNeeded,
                     AdditionalInstruction = additionalNotes
                 };
             }
             else if (additionalSaltNeeded > 0)
             {
-                additionalNotes.Add($"Additional salt needed: {additionalSaltNeeded:F2} kg.");
+                additionalNotes.Add($"Need to add: {additionalSaltNeeded:F2} kg salt.");
                 additionalNotes.Add($"Current salt: {currentSaltConcentration:F2} kg.");
-                additionalNotes.Add($"Target salt: {totalSaltWeightKg:F2} kg.");
+                additionalNotes.Add($"Target salt: {targetSaltWeightKg:F2} kg.");
             }
 
+            // Add warnings based on salt concentration thresholds
             if (saltConcentrationMgPerL < saltParameter.Parameter.WarningLowwer)
-                additionalNotes.Add("Lượng muối dưới mức cảnh báo.");
+                additionalNotes.Add("Salt level below warning threshold.");
             if (saltConcentrationMgPerL > saltParameter.Parameter.WarningUpper)
-                additionalNotes.Add("Salt level exceeds the warning threshold.");
+                additionalNotes.Add("Salt level above warning threshold.");
 
             if (saltConcentrationMgPerL < saltParameter.Parameter.DangerLower)
-                additionalNotes.Add("Salt level is below the danger threshold. Fish may be at risk.");
+                additionalNotes.Add("Salt level below danger threshold. Fish may be at risk.");
             if (saltConcentrationMgPerL > (saltParameter.Parameter.DangerUpper ?? double.MaxValue))
-                additionalNotes.Add("Salt level exceeds the danger threshold. Fish may be at risk.");
+                additionalNotes.Add("Salt level above danger threshold. Fish may be at risk.");
 
             return new CalculateSaltResponse
             {
                 PondId = pond.PondID,
-                TotalSalt = totalSaltWeightKg,
+                TotalSalt = targetSaltWeightKg,
                 CurrentSalt = currentSaltConcentration,
                 SaltNeeded = additionalSaltNeeded,
                 AdditionalInstruction = additionalNotes

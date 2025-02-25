@@ -105,6 +105,9 @@ namespace KoiGuardian.Api.Services
                 package.StartDate = packageRequest.StartDate;   
                 package.EndDate = packageRequest.EndDate;
 
+                packakeResponse.status = "200";
+                packakeResponse.message = "Package update success";
+
                 packageRepository.Update(package);
                 await _dbContext.SaveChangesAsync();
             }

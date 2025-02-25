@@ -28,6 +28,12 @@ namespace KoiGuardian.Api.Services
 
         Task<ProductResponse> UpdateFoodAsync(FoodUpdateRequest foodRequest, CancellationToken cancellationToken);
 
+        Task<IEnumerable<ProductSearchResponse>> GetProductsByTypeAsync(
+        ProductType productType,
+        CancellationToken cancellationToken,
+       
+        bool sortDescending = false);
+
         Task<IEnumerable<ProductSearchResponse>> SearchProductsAsync(
       string productName,
       string brand,
@@ -302,6 +308,7 @@ namespace KoiGuardian.Api.Services
                 Brand = product.Brand,
                 ManufactureDate = product.ManufactureDate,
                 ExpiryDate = product.ExpiryDate,
+                Type = product.Type,
                 ParameterImpactment = product.ParameterImpactment,
                 Category = new CategoryInfo
                 {
@@ -366,6 +373,7 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     ManufactureDate = p.ManufactureDate,
                     ExpiryDate = p.ExpiryDate,
+                    Type = p.Type,
                     ParameterImpactment = p.ParameterImpactment,
                     Image = p.Image,
                     Category = new CategoryInfo
@@ -523,6 +531,43 @@ namespace KoiGuardian.Api.Services
             productResponse.Message = "Medicine created successfully.";
 
             return productResponse;
+        }
+
+        public async Task<IEnumerable<ProductSearchResponse>> GetProductsByTypeAsync(
+        ProductType productType,
+        CancellationToken cancellationToken,
+        
+        bool sortDescending = false
+        )
+        {
+            var query = _productRepository.GetQueryable()
+                .Where(p => p.Type == productType)
+                .Include(p => p.Category);
+
+            var results = await query
+                .Select(p => new ProductSearchResponse
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    Brand = p.Brand,
+                    ManufactureDate = p.ManufactureDate,
+                    ExpiryDate = p.ExpiryDate,
+                    Type = p.Type,
+                    ParameterImpactment = p.ParameterImpactment,
+                    Image = p.Image,
+                    Category = new CategoryInfo
+                    {
+                        CategoryId = p.Category.CategoryId,
+                        Name = p.Category.Name
+                    }
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return results;
         }
     }
 

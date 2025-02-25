@@ -24,7 +24,7 @@ namespace KoiGuardian.Api.Controllers
             return await services.GetAllPackageAsync(cancellationToken);
         }
 
-        [HttpPost("update-package")]
+        [HttpPut("update-package")]
         public async Task<PackageResponse> Update([FromBody] UpdatePackageRequest createPackage, CancellationToken cancellationToken)
         {
             return await services.UpdatePackage(createPackage, cancellationToken);

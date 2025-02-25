@@ -1,5 +1,6 @@
 ﻿using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -94,5 +95,34 @@ namespace KoiGuardian.Api.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+        [HttpGet("by-type/{productType}")]
+        public async Task<ActionResult<IEnumerable<ProductSearchResponse>>> GetProductsByType(
+            ProductType productType,
+            CancellationToken cancellationToken,
+           
+            [FromQuery] bool sortDescending = false)
+        {
+            try
+            {
+                var results = await services.GetProductsByTypeAsync(
+                    productType,
+                    cancellationToken,
+                   
+                    sortDescending
+                   );
+
+                if (!results.Any())
+                {
+                    return NotFound($"No products found for type {productType}");
+                }
+
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
     }
 }

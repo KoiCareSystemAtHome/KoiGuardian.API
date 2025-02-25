@@ -6,6 +6,7 @@ using KoiGuardian.Models.Response;
 using Azure.Core;
 using Azure;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace KoiGuardian.Api.Services
 {
@@ -15,7 +16,7 @@ namespace KoiGuardian.Api.Services
         Task<PondResponse> UpdatePond(UpdatePondRequest Request, CancellationToken cancellation);
         Task<List<PondRerquireParam>> RequireParam(CancellationToken cancellation);
 
-        Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default);
+        Task<List<PondDto>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default);
         Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
         Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default);
 
@@ -62,6 +63,7 @@ namespace KoiGuardian.Api.Services
                         PondId = pond.PondID,
                         ParameterHistoryId = validValue.HistoryId,
                         CalculatedDate = DateTime.UtcNow,
+                        ParameterID = validValue.HistoryId,
                         Value = validValue.Value
                     });
                 }
@@ -123,6 +125,7 @@ namespace KoiGuardian.Api.Services
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
                         ParameterHistoryId = validValue.HistoryId,
+                        ParameterID = validValue.HistoryId, 
                         CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
@@ -148,25 +151,43 @@ namespace KoiGuardian.Api.Services
             }
             return response;
         }
-
-        public async Task<List<Pond>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default)
+        public async Task<List<PondDto>> GetAllPondhAsync(string? name = null, CancellationToken cancellationToken = default)
         {
+            // Nếu name có giá trị, thực hiện tìm kiếm, nếu không thì lấy tất cả
+            Expression<Func<Pond, bool>> predicate = p => true;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                string lowerName = name.ToLower();
+                predicate = f => f.Name.ToLower().Contains(lowerName);
+            }
+
             // Gọi FindAsync với predicate và các tham số khác
-            var result = await pondRepository.FindAsync(
-                predicate: !string.IsNullOrWhiteSpace(name)
-                    ? f => f.Name.ToLower().Contains(name.ToLower())
-                    : null, // Không lọc nếu name là null hoặc rỗng
+            var pondEntities = await pondRepository.FindAsync(
+                predicate: predicate,
                 include: query => query
                     .Include(p => p.RelPondParameter)
-                            .ThenInclude(pu => pu.Parameter)
-                    .Include(p => p.Fish), // Thêm quan hệ liên quan nếu cần
+                        .ThenInclude(pu => pu.Parameter)
+                    .Include(p => p.Fish)
+                        .ThenInclude(f => f.Variety), // Load thông tin Variety của Fish
                 orderBy: query => query.OrderBy(f => f.Name), // Sắp xếp theo Name
                 cancellationToken: cancellationToken
             );
 
-            // Chuyển đổi kết quả thành danh sách
-            return result.ToList();
+            // Chuyển đổi kết quả thành danh sách DTO
+            var pondDtos = pondEntities.Select(p => new PondDto
+            {
+                PondID = p.PondID,
+                Name = p.Name,
+                OwnerId = p.OwnerId,
+                CreateDate = p.CreateDate,
+                Image = p.Image,
+            }).ToList();
+
+            return pondDtos;
         }
+
+
+
 
 
 
@@ -232,6 +253,7 @@ namespace KoiGuardian.Api.Services
                 orderBy: query => query.OrderBy(p => p.Name),
                 cancellationToken: cancellationToken
             );
+            pondEntities.ToList();
 
             // Ánh xạ sang DTO
             var pondDtos = pondEntities.Select(p => new PondDto
@@ -241,7 +263,7 @@ namespace KoiGuardian.Api.Services
                 OwnerId = p.OwnerId,
                 CreateDate = p.CreateDate,
                 Image = p.Image,
-                Fish = p.Fish?.Select(f => new FishDto
+                Fish = p.Fish.Select(f => new FishDto
                 {
                     KoiID = f.KoiID,
                     Name = f.Name,
@@ -249,13 +271,6 @@ namespace KoiGuardian.Api.Services
                     Price = f.Price,
                     Sex = f.Sex,
                     Age = f.Age,
-                    Variety = f.Variety == null ? null : new VarietyDto
-                    {
-                        VarietyId = f.Variety.VarietyId,
-                        VarietyName = f.Variety.VarietyName,
-                        Description = f.Variety.Description,
-                        AuthorId = f.Variety.AuthorId
-                    }
                 }).ToList()
             }).ToList();
 

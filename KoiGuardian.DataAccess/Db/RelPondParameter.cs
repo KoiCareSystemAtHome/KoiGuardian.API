@@ -19,6 +19,9 @@ namespace KoiGuardian.DataAccess.Db
 
         public float Value { get; set; }
 
+        public Guid ParameterID { get; set; }
+
+
         public Pond? Pond { get; set; } 
 
         public PondStandardParam? Parameter { get; set; }

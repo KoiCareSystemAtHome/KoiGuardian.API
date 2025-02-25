@@ -20,8 +20,8 @@ namespace KoiGuardian.Models.Response
         public float FoodModifyPercent { get; set; }
         public float SaltModifyPercent { get; set; }
         public string Image {  get; set; }
-        public List<object> Medicines { get; set; }
-        public List<object>? SickSymtomps { get; set; }
+        public object? Medicines { get; set; }
+        public object? SickSymtomps { get; set; }
     }
 
    

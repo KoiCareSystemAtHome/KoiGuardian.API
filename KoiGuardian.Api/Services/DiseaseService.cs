@@ -216,12 +216,12 @@ namespace KoiGuardian.Api.Services
                 Description = disease.Description,
                 Type = disease.Type,
                 FoodModifyPercent = disease.FoodModifyPercent,
-                Image = disease.Image,
-                SaltModifyPercent = disease.SaltModifyPercent,
+                Image = disease?.Image ?? "",
+                SaltModifyPercent = disease?.SaltModifyPercent ?? 0,
                 Status = "200",
                 Message = "Disease retrieved successfully",
-                Medicines = disease.MedicineDisease.ToList<object>(),
-                SickSymtomps = predictSymtoms.ToList<object>(),
+                Medicines = disease?.MedicineDisease,
+                SickSymtomps = predictSymtoms,
 
             };
         }

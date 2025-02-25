@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using KoiGuardian.Models.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace KoiGuardian.Models.Response
         public CategoryInfo Category { get; set; }
         public ShopInfo Shop { get; set; }
         public List<FeedbackInfo> Feedbacks { get; set; }
+
+        public ProductType Type { get; set; }
     }
 
     public class CategoryInfo
@@ -64,5 +67,7 @@ namespace KoiGuardian.Models.Response
         public string Image { get; set; }
         // Include only necessary Category information
         public CategoryInfo Category { get; set; }
+
+        public ProductType Type { get; set; }
     }
 }

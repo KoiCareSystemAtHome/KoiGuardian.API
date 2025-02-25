@@ -29,6 +29,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Medicine> _medicineRepository,
             IRepository<MedicineDisease> _medicineDiseaseRepository,
             IRepository<PredictSymptoms> _predictSymtopmsRepository,
+            IRepository<Symptom> _symtopmsRepository,
             IRepository<RelPredictSymptomDisease> _predictdeseaseSymtopmsRepository,
             IRepository<RelPredictSymptomDisease> _relpredictSymtopmsDiseaseRepository,
             IUnitOfWork<KoiGuardianDbContext> _unitOfWork) : IDiseaseService
@@ -209,6 +210,7 @@ namespace KoiGuardian.Api.Services
             var predictSymtoms = await _predictdeseaseSymtopmsRepository.FindAsync(
                     u => u.DiseaseId == disease.DiseaseId);
 
+
             return new DiseaseResponse
             {
                 DiseaseId = disease.DiseaseId,
@@ -221,7 +223,8 @@ namespace KoiGuardian.Api.Services
                 Status = "200",
                 Message = "Disease retrieved successfully",
                 Medicines = disease?.MedicineDisease,
-                SickSymtomps = predictSymtoms,
+                SickSymtomps = await _predictSymtopmsRepository
+                    .FindAsync(u => predictSymtoms.Select( u => u.SymtompId).Contains( u.SymtompId)),
 
             };
         }

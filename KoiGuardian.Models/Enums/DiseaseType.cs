@@ -9,6 +9,10 @@ namespace KoiGuardian.Models.Enums
     public enum DiseaseType
     {
         Common,
+        environment,
+        food, 
+        virus,
+        bact,
         Variety_only
     }
 }

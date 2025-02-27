@@ -19,6 +19,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Article> Articles { get; set; } = null!;
     public virtual DbSet<PondStandardParam> PondStandardParam { get; set; } = null!;
     public virtual DbSet<AccountPackage> AccountPackage { get; set; } = null!;
+    public virtual DbSet<Report> Report { get; set; } = null!;
     public virtual DbSet<Shop> Shops { get; set; } = null!;
     public virtual DbSet<Product> Products { get; set; } = null!;
     public virtual DbSet<Blog> Blogs { get; set; } = null!;

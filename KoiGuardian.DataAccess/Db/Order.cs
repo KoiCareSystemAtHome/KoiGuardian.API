@@ -17,6 +17,8 @@ namespace KoiGuardian.DataAccess.Db
         public virtual ICollection<OrderDetail> OrderDetail { get; set; }
         public virtual Shop Shop { get; set; }
         public virtual User User { get; set; }
+
+        public virtual Report Report { get; set; }
     }
 
     public enum OrderStatus

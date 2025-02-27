@@ -6,11 +6,10 @@ using System.Threading.Tasks;
 
 namespace KoiGuardian.Models.Enums
 {
-    public enum TransactionType
+    public enum ReportStatus
     {
         Pending,
-        Success,
-        Cancel,
-        Report
+        Reject,
+        Approve,
     }
 }

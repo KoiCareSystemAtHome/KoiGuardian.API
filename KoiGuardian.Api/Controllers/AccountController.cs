@@ -113,7 +113,7 @@ namespace KoiGuardian.Api.Controllers
         [HttpPost("process-pending-transactions")]
         public async Task<string> ProcessPendingTransactions([FromBody] DateTime requestDate)
         {
-            return await service.UpdateShopWallet(requestDate);
+            return await service.ProcessPendingTransactions(requestDate);
         }
 
     }

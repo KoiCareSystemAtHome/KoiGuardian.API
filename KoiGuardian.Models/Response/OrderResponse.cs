@@ -1,4 +1,6 @@
 ﻿
+using KoiGuardian.Models.Request;
+
 namespace KoiGuardian.Models.Response;
 
 public class OrderResponse
@@ -32,7 +34,7 @@ public class OrderDetailResponse
     public Guid OrderId { get; set; }
     public string ShopName { get; set; }
     public string CustomerName { get; set; }
-    public string CustomerAddress { get; set; }
+    public AddressDto CustomerAddress { get; set; }
     public string CustomerPhoneNumber { get; set; }
     public string ShipType { get; set; }
     public string oder_code { get; set; }

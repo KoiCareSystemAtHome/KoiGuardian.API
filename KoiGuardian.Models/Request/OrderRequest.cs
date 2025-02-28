@@ -25,7 +25,7 @@ public class UpdateOrderRequest
 
 public class CreateOrderRequest
 {
-    public Guid ShopId { get; set; }
+   // public Guid ShopId { get; set; }
     public string AccountId { get; set; }
     public string ShipType { get; set; }
     public string Status { get; set; }
@@ -42,4 +42,16 @@ public class AddressDto
     public string DistrictName { get; set; }
     public string WardId { get; set; }
     public string WardName { get; set; }
+}
+
+public class UpdateOrderStatusRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    public string Status { get; set; }  // Trạng thái đơn hàng
+}
+
+public class UpdateOrderCodeRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    public string order_code { get; set; }  // Trạng thái đơn hàng
 }

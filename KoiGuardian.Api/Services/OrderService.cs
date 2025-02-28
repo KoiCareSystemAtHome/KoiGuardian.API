@@ -2,6 +2,7 @@
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,13 @@ public interface IOrderService
     Task<OrderDetailResponse> GetDetail(Guid orderId);
     Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request);
     Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
+    Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request);
+    Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request);
 }
 
 public class OrderService(
     IRepository<Order> orderRepository,
+    IRepository<Transaction> transactionRepository,
     IRepository<OrderDetail> orderDetailRepository,
     IRepository<Product> productRepository,
     IRepository<Member> memRepository,
@@ -84,6 +88,8 @@ public class OrderService(
                     ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
                     Total = (float)total, // Gán tổng giá trị
                     Note = addressNote,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedDate = DateTime.MaxValue,
                     OrderDetail = new List<OrderDetail>()
                 };
 
@@ -304,7 +310,15 @@ public class OrderService(
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = address?.ToString() ?? "No address info",
+            CustomerAddress = new AddressDto
+            {
+                DistrictName = address.DistrictName,
+                DistrictId = address.DistrictId,
+                ProvinceName = address.ProvinceName, 
+                ProvinceId = address.ProvinceId,
+                WardName = address.WardName,
+                WardId = address.WardId,
+            },
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,
@@ -319,4 +333,65 @@ public class OrderService(
         };
     }
 
+    public async Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request)
+    {
+        try
+        {
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+
+            if (OrderStatus.Complete.ToString().ToLower().Equals(request.Status))
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = request.Status;
+                transactionRepository.Insert(new Transaction
+                {
+                    TransactionId = Guid.NewGuid(),
+                    TransactionDate = DateTime.UtcNow,
+                    TransactionType = TransactionType.Pending.ToString(),
+                    VnPayTransactionid = "Order Paid (COD)",
+                    UserId = order.UserId,
+                    DocNo = order.OrderId,
+                });
+
+            }
+            else
+            {
+                order.Status = request.Status;
+            }
+            orderRepository.Update(order);
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success("Order updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
+    }
+
+    public async Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request)
+    {
+        try
+        {
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+            order.oder_code = request.order_code;
+            orderRepository.Update(order);
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success("Order updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
+        throw new NotImplementedException();
+    }
 }

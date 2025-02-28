@@ -42,7 +42,7 @@ public interface IAccountServices
     Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId);
     Task<string> UpdateAccountPackage(string email, Guid packageId);
     Task<string> UpdateAccountOrder(string email, List<Guid> orderIds);
-    Task<string> UpdateShopWallet(DateTime inputDate);
+    Task<string> ProcessPendingTransactions(DateTime inputDate);
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -587,9 +587,9 @@ IImageUploadService imageUpload
                 TransactionId = Guid.NewGuid(),
                 TransactionDate = DateTime.UtcNow,
                 TransactionType = TransactionType.Pending.ToString(),
-                VnPayTransactionid = "Order Paid", // Giả lập mã giao dịch
+                VnPayTransactionid = "Order Paid By Wallet", 
                 UserId = user.Id,
-                DocNo = order.OrderId, // Chỉ lưu một mã đơn hàng đại diện
+                DocNo = order.OrderId, 
             };
 
            orderRepository.Update(order);
@@ -601,34 +601,40 @@ IImageUploadService imageUpload
 
     }
 
-    public async Task<string> UpdateShopWallet(DateTime inputDate)
+    public async Task<string> ProcessPendingTransactions(DateTime inputDate)
     {
-        // Lấy danh sách giao dịch Pending quá 3 ngày
+        // Lấy danh sách giao dịch Pending
         var pendingTransactions = await tranctionRepository
             .FindAsync(t => t.TransactionType.ToLower() == TransactionType.Pending.ToString().ToLower());
 
-        pendingTransactions = pendingTransactions
-            .Where(t => (inputDate - t.TransactionDate).TotalDays >= 3)
-            .ToList();
-
-        if (!pendingTransactions.Any()) return "Don't have any pending transactions!!";
+        if (!pendingTransactions.Any()) return "No pending transactions found!";
 
         var orderIds = pendingTransactions.Select(t => t.DocNo).ToList();
-        var orders = await orderRepository.FindAsync(o => orderIds.Contains(o.OrderId));
+
+        // Lọc các đơn hàng có ShipType là Complete, OrderStatus là Complete và UpdateDate quá 3 ngày
+        var eligibleOrders = await orderRepository.FindAsync(o =>
+            orderIds.Contains(o.OrderId) &&
+            // o.ShipType.ToLower() == ShipType.Complete.ToString().ToLower() &&
+            o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower() &&
+            (inputDate - o.UpdatedDate).TotalDays >= 3
+        );
+
+        if (!eligibleOrders.Any()) return "No eligible orders found!";
 
         // Nhóm các đơn hàng theo ShopId và tính tổng tiền
-        var shopTransactions = orders
+        var shopTransactions = eligibleOrders
             .GroupBy(o => o.ShopId)
             .Select(group => new
             {
                 ShopId = group.Key,
-                TotalAmount = group.Sum(o => o.Total) 
+                TotalAmount = group.Sum(o => o.Total)
             })
             .ToList();
 
         var shopIds = shopTransactions.Select(s => s.ShopId).ToList();
         var shops = await shopRepository.FindAsync(s => shopIds.Contains(s.ShopId));
         var shopWallets = await walletRepository.FindAsync(w => shops.Select(s => s.UserId).Contains(w.UserId));
+
         foreach (var shopTran in shopTransactions)
         {
             var shop = shops.FirstOrDefault(s => s.ShopId == shopTran.ShopId);
@@ -636,20 +642,27 @@ IImageUploadService imageUpload
 
             var shopWallet = shopWallets.FirstOrDefault(w => w.UserId == shop.UserId);
             if (shopWallet == null) return "Shop Wallet is not valid!";
+
+            // Cộng tiền vào ví của shop
             shopWallet.Amount += shopTran.TotalAmount;
             walletRepository.Update(shopWallet);
         }
 
-        // Cập nhật trạng thái giao dịch thành Success
+        // Cập nhật trạng thái giao dịch thành Success nếu đơn hàng hợp lệ
         foreach (var transaction in pendingTransactions)
         {
-            transaction.TransactionType = TransactionType.Success.ToString();
-            tranctionRepository.Update(transaction);
+            if (eligibleOrders.Any(o => o.OrderId == transaction.DocNo))
+            {
+                transaction.TransactionType = TransactionType.Success.ToString();
+                tranctionRepository.Update(transaction);
+            }
         }
 
         await uow.SaveChangesAsync();
-        return "Success";
+        return "Wallet update successful!";
     }
+
+
 
 
 }

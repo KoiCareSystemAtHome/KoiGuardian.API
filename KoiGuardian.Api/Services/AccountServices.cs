@@ -199,7 +199,7 @@ IImageUploadService imageUpload
             if (result.Succeeded)
             {
 
-                var assignRole = await AssingRole(user, ConstantValue.MemberRole, cancellationToken);
+                var assignRole = await AssingRole(user, registrationRequestDto.Role, cancellationToken);
 
                 var userToReturn = await userRepository.GetQueryable().AsNoTracking().Where(u => u.Email == registrationRequestDto.Email)
                     .FirstOrDefaultAsync();

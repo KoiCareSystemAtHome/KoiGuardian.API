@@ -13,6 +13,8 @@ namespace KoiGuardian.DataAccess.Db
         public string ShipFee { get; set; } // include currencies
         public string Note { get; set; }
         public float Total { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
 
         public virtual ICollection<OrderDetail> OrderDetail { get; set; }
         public virtual Shop Shop { get; set; }

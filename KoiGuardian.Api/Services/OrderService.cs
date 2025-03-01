@@ -338,12 +338,13 @@ public class OrderService(
         try
         {
             var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            var trasanction = await transactionRepository.FindAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()),CancellationToken.None);
             if (order == null)
             {
                 return OrderResponse.Error("Order not found");
             }
 
-            if (OrderStatus.Complete.ToString().ToLower().Equals(request.Status))
+            if (OrderStatus.Complete.ToString().ToLower().Equals(request.Status) && trasanction.Count == 0)
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;

@@ -17,4 +17,5 @@ public class User : IdentityUser
     public TimeOnly? UserReminder { get; set; }
 
     public virtual Wallet Wallet { get; set; }
+    public virtual Member Member { get; set; }
 }

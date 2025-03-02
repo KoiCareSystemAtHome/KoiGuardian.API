@@ -43,6 +43,7 @@ public interface IAccountServices
     Task<string> UpdateAccountPackage(string email, Guid packageId);
     Task<string> UpdateAccountOrder(string email, List<Guid> orderIds);
     Task<string> ProcessPendingTransactions(DateTime inputDate);
+    Task<List<User>> GetMember();
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 }
@@ -85,10 +86,6 @@ IImageUploadService imageUpload
             }).FirstAsync();
     }
 
-    public Task<bool> ActivateAccount(string email, string code)
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<bool> AssingRole(User user, string roleName, CancellationToken cancellation)
     {
@@ -662,8 +659,15 @@ IImageUploadService imageUpload
         return "Wallet update successful!";
     }
 
-
-
+    public async Task<List<User>> GetMember()
+    {
+        var usersInRole = await _userManager.GetUsersInRoleAsync("Member");
+        var result =  (await userRepository.FindAsync(
+            u => usersInRole.Select(u => u.Id).Contains(u.Id)
+            ,include: u=> u.Include( u => u.Member))).ToList();
+       
+        return result;
+    }
 
 }
 

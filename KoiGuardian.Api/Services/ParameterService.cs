@@ -34,106 +34,127 @@ namespace KoiGuardian.Api.Services
 
         public async Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-            //var response = new ParameterResponse();
+            var response = new ParameterResponse();
+            try
+            {
+                using var stream = new MemoryStream();
+                await file.CopyToAsync(stream, cancellationToken);
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using var package = new ExcelPackage(stream);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
-            //try
-            //{
-            //    using var stream = new MemoryStream();
-            //    await file.CopyToAsync(stream, cancellationToken);
-            //    ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            //    using var package = new ExcelPackage(stream);
-            //    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                if (worksheet == null)
+                {
+                    response.status = "400";
+                    response.message = "No worksheet found in the Excel file.";
+                    return response;
+                }
 
-            //    if (worksheet == null)
-            //    {
-            //        response.status = "400";
-            //        response.message = "No worksheet found in the Excel file.";
-            //        return response;
-            //    }
+                for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+                {
+                    var parameterIdString = worksheet.Cells[row, 1].GetValue<string>();
+                    if (!Guid.TryParse(parameterIdString, out var parameterId))
+                    {
+                        response.status = "400";
+                        response.message = $"Invalid Guid format in row {row}, column 1.";
+                        return response;
+                    }
 
-            //    for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
-            //    {
-            //        var parameterIdString = worksheet.Cells[row, 1].GetValue<string>();
-            //        if (!Guid.TryParse(parameterIdString, out var parameterId))
-            //        {
-            //            response.status = "400";
-            //            response.message = $"Invalid Guid format in row {row}, column 1.";
-            //            return response;
-            //        }
+                    var parameterName = worksheet.Cells[row, 2].GetValue<string>();
+                    var parameterTypeString = worksheet.Cells[row, 3].GetValue<string>();
+                    if (!Enum.TryParse(parameterTypeString, out ParameterType parameterType))
+                    {
+                        response.status = "400";
+                        response.message = $"Invalid ParameterType format in row {row}, column 3.";
+                        return response;
+                    }  
+                        
+                        var isActive = worksheet.Cells[row, 4].GetValue<bool>();
+                        var measurementInstruction = worksheet.Cells[row, 5].GetValue<string>();
+                        var age = worksheet.Cells[row, 6].GetValue<int>();
+                        var unitName = worksheet.Cells[row, 7].GetValue<string>();
+                        var warningUpper = worksheet.Cells[row, 8].GetValue<double?>();
+                        var warningLower = worksheet.Cells[row, 9].GetValue<double?>();
+                        var dangerUpper = worksheet.Cells[row, 10].GetValue<double?>();
+                        var dangerLower = worksheet.Cells[row, 11].GetValue<double?>();
+                        var validUntil = worksheet.Cells[row, 12].GetValue<DateTime?>();
 
-            //        var parameterName = worksheet.Cells[row, 2].GetValue<string>();
-            //        var parameterTypeString = worksheet.Cells[row, 3].GetValue<string>();
-            //        if (!Enum.TryParse(parameterTypeString, out ParameterType parameterType))
-            //        {
-            //            response.status = "400";
-            //            response.message = $"Invalid ParameterType format in row {row}, column 3.";
-            //            return response;
-            //        }
+                    if (parameterType == ParameterType.Fish)
+                    {
+                       
 
-            //        var unitName = worksheet.Cells[row, 4].GetValue<string>();
+                        var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
+                        if (parameter == null)
+                        {
+                            parameter = new KoiStandardParam
+                            {
+                                ParameterID = parameterId,
+                                CreatedAt = DateTime.UtcNow,
+                                IsActive = isActive,
+                                MeasurementInstruction = measurementInstruction,
+                                Age = age
+                            };
+                            _parameterRepository.Insert(parameter);
+                        }
+                        else
+                        {
+                            parameter.IsActive = isActive;
+                            parameter.MeasurementInstruction = measurementInstruction;
+                            parameter.Age = age;
+                            _parameterRepository.Update(parameter);
+                        }
+                    }
+                    else if (parameterType == ParameterType.Pond)
+                    {
+                        var pondParameter = await _pondParameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
+                        if (pondParameter == null)
+                        {
+                            pondParameter = new PondStandardParam
+                            {
+                                ParameterID = parameterId,
+                                Name = parameterName,
+                                Type = parameterType.ToString(),
+                                UnitName = unitName,
+                                WarningUpper = warningUpper,
+                                WarningLowwer = warningLower,
+                                DangerUpper = dangerUpper,
+                                DangerLower = dangerLower,
+                                IsActive = isActive,
+                                MeasurementInstruction = measurementInstruction,
+                                //ValidUntil = validUntil,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _pondParameterRepository.Insert(pondParameter);
+                        }
+                        else
+                        {
+                            pondParameter.Name = parameterName;
+                            pondParameter.UnitName = unitName;
+                            pondParameter.WarningUpper = warningUpper;
+                            pondParameter.WarningLowwer = warningLower;
+                            pondParameter.DangerUpper = dangerUpper;
+                            pondParameter.DangerLower = dangerLower;
+                            pondParameter.IsActive = isActive;
+                            pondParameter.MeasurementInstruction = measurementInstruction;
+                            pondParameter.ValidUntil = validUntil;
+                            _pondParameterRepository.Update(pondParameter);
+                        }
+                    }
+                }
 
-            //        // Ensure that Warning and Danger values are handled safely
-            //        var warningUpper = worksheet.Cells[row, 5].GetValue<double?>();
-            //        var warningLower = worksheet.Cells[row, 6].GetValue<double?>();
-            //        var dangerUpper = worksheet.Cells[row, 7].GetValue<double?>();
-            //        var dangerLower = worksheet.Cells[row, 8].GetValue<double?>();
-            //        var isActive = worksheet.Cells[row, 9].GetValue<bool>(); // Assuming it's in column 9
-            //        var measurementInstruction = worksheet.Cells[row, 10].GetValue<string>(); // Assuming it's in column 10
-            //        var ageFrom = worksheet.Cells[row, 11].GetValue<int>();  // Assuming it's in column 11
-            //        var ageTo = worksheet.Cells[row, 12].GetValue<int>();    // Assuming it's in column 12
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                response.status = "200";
+                response.message = "Upsert operation completed successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.status = "500";
+                response.message = $"An error occurred: {ex.Message}";
+            }
 
-            //        // Upsert Parameter
-            //        var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
-            //        if (parameter == null)
-            //        {
-            //            parameter = new KoiStandardParam
-            //            {
-            //                ParameterID = parameterId,
-            //                Name = parameterName,
-            //                Type = parameterType.ToString(),
-            //                UnitName = unitName,
-            //                WarningUpper = warningUpper,
-            //                WarningLowwer = warningLower,
-            //                DangerUpper = dangerUpper,
-            //                DangerLower = dangerLower,
-            //                IsActive = isActive,
-            //                MeasurementInstruction = measurementInstruction,
-            //                AgeFrom = ageFrom,
-            //                AgeTo = ageTo,
-            //                CreatedAt = DateTime.UtcNow
-            //            };
-            //            _parameterRepository.Insert(parameter);
-            //        }
-            //        else
-            //        {
-            //            parameter.Name = parameterName;
-            //            parameter.Type = parameterType.ToString();
-            //            parameter.UnitName = unitName;
-            //            parameter.WarningUpper = warningUpper;
-            //            parameter.WarningLowwer = warningLower;
-            //            parameter.DangerUpper = dangerUpper;
-            //            parameter.DangerLower = dangerLower;
-            //            parameter.IsActive = isActive;
-            //            parameter.MeasurementInstruction = measurementInstruction;
-            //            parameter.AgeFrom = ageFrom;
-            //            parameter.AgeTo = ageTo;
-            //            _parameterRepository.Update(parameter);
-            //        }
-            //    }
-
-            //    await _unitOfWork.SaveChangesAsync(cancellationToken);
-            //    response.status = "200";
-            //    response.message = "Upsert operation completed successfully.";
-            //}
-            //catch (Exception ex)
-            //{
-            //    response.status = "500";
-            //    response.message = $"An error occurred: {ex.Message}";
-            //}
-
-            //return response;
+            return response;
         }
+
 
 
         public async Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken)

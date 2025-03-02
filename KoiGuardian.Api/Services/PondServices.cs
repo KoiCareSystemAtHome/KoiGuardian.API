@@ -200,7 +200,7 @@ namespace KoiGuardian.Api.Services
                     predicate: p => p.PondID == pondId,
                     include: query => query
                         .Include(p => p.RelPondParameter)
-                                .ThenInclude(pu => pu.Parameter)
+                            .ThenInclude(rp => rp.Parameter)
                         .Include(p => p.Fish),
                     cancellationToken: cancellation
                 );
@@ -214,16 +214,23 @@ namespace KoiGuardian.Api.Services
                         Image = pond.Image,
                         CreateDate = pond.CreateDate,
                         OwnerId = pond.OwnerId,
-                        PondParameters = pond.RelPondParameter.Select(rp => new PondParameterInfo
-                        {
-                            ParameterUnitID = rp.Parameter.ParameterID,
-                            UnitName = rp.Parameter.UnitName,
-                            WarningLowwer = rp.Parameter.WarningLowwer,
-                            WarningUpper = rp.Parameter.WarningUpper,
-                            DangerLower = rp.Parameter.DangerLower,
-                            DangerUpper = rp.Parameter.DangerUpper,
-                            MeasurementInstruction = rp.Parameter.MeasurementInstruction
-                        }).ToList(),
+                        PondParameters = pond.RelPondParameter
+                            .GroupBy(rp => rp.ParameterID) // Nhóm theo ParameterID
+                            .Select(group => new PondParameterInfo
+                            {
+                                ParameterUnitID = group.Key, // Lấy ParameterID
+                                UnitName = group.First().Parameter.UnitName,
+                                WarningLowwer = group.First().Parameter.WarningLowwer,
+                                WarningUpper = group.First().Parameter.WarningUpper,
+                                DangerLower = group.First().Parameter.DangerLower,
+                                DangerUpper = group.First().Parameter.DangerUpper,
+                                MeasurementInstruction = group.First().Parameter.MeasurementInstruction,
+                                valueInfors = group.Select(rp => new ValueInfor
+                                {
+                                    caculateDay = rp.CalculatedDate,
+                                    Value = rp.Value
+                                }).ToList()
+                            }).ToList(),
                         Fish = pond.Fish.Select(f => new FishInfo
                         {
                             FishId = f.KoiID,
@@ -231,18 +238,15 @@ namespace KoiGuardian.Api.Services
                         }).ToList()
                     };
                 }
-                else
-                {
-
-                }
             }
             catch (Exception ex)
             {
-
+                // Xử lý lỗi nếu cần
             }
 
             return response;
         }
+
 
         public async Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
         {

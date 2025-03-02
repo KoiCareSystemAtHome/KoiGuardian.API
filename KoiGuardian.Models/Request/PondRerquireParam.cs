@@ -21,5 +21,12 @@
         public double? DangerLower { get; set; }
         public double? DangerUpper { get; set; }
         public string MeasurementInstruction { get; set; }
+        public List<ValueInfor> valueInfors { get; set; }
+    }
+
+    public class ValueInfor
+    {
+        public DateTime caculateDay { get; set; }
+        public double Value { get; set; }
     }
 }

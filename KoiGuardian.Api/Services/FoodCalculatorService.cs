@@ -53,7 +53,9 @@ public class FoodCalculatorService
                 && req.TemperatureUpper <= u.Temperature,
                 CancellationToken.None);
             var normPercent = normPercents.OrderByDescending(u => u.Temperature).FirstOrDefault();
-            koiPercent = koiPercent + normPercent.StandardAmount;
+            if (normPercent != null) { 
+                koiPercent = koiPercent + normPercent.StandardAmount;
+            }
 
             var treatmentAmount = await koiProfileRepository.GetAsync(
                  u => koi.KoiID == koi.KoiID

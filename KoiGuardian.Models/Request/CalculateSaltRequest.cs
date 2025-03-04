@@ -11,7 +11,7 @@ namespace KoiGuardian.Models.Request
         public Guid PondId { get; set; }
         public string StandardSaltLevel { get; set; } // "Low", "Medium", "High"
         public double WaterChangePercent { get; set; }
-        public double AddedSalt { get; set; } // Lượng muối đã thêm (kg)
+       /* public double AddedSalt { get; set; } // Lượng muối đã thêm (kg)*/
     }
 
     public class SaltAdditionRecord

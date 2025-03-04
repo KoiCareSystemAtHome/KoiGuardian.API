@@ -48,10 +48,11 @@ public class FoodCalculatorService
         foreach (var koi in pond.Fish)
         {
             var koiPercent = 0f;
-            var normPercent = await normFoodAmountRepository.GetAsync(
+            var normPercents = await normFoodAmountRepository.FindAsync(
                 u => u.AgeFrom <= koi.Age && u.AgeTo >= koi.Age
-                && req.TemperatureUpper == u.Temperature,
+                && req.TemperatureUpper <= u.Temperature,
                 CancellationToken.None);
+            var normPercent = normPercents.OrderByDescending(u => u.Temperature).FirstOrDefault();
             koiPercent = koiPercent + normPercent.StandardAmount;
 
             var treatmentAmount = await koiProfileRepository.GetAsync(

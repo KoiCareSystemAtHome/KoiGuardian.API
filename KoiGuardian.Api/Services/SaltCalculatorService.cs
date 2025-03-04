@@ -218,6 +218,31 @@ namespace KoiGuardian.Api.Services
                 ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
                 : pond.MaxVolume;
 
+            if (request.WaterChangePercent == 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = pond.PondID,
+                    TotalSalt = 0,
+                    CurrentSalt = 0,
+                    SaltNeeded = 0,
+                    WaterNeeded = 0,
+                    AdditionalInstruction = new List<string> { "Hồ không có nước, không thể thêm muối." }
+                };
+            }
+            else if (request.WaterChangePercent > 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = pond.PondID,
+                    TotalSalt = 0,
+                    CurrentSalt = 0,
+                    SaltNeeded = 0,
+                    WaterNeeded = 0,
+                    AdditionalInstruction = new List<string> { "Mực nước hiện tại không hợp lí vui lòng kiểm tra lại" }
+                };
+            }
+
             double currentSaltConcentration = currentSaltValue?.Value ?? 0;
 
             /*if (request.AddedSalt > 0)

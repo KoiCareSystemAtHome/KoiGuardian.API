@@ -35,12 +35,7 @@ namespace KoiGuardian.Api.Services
         private const int MIN_HOURS_BETWEEN_ADDITIONS = 6;
         private const int MAX_HOURS_BETWEEN_ADDITIONS = 8;
 
-        private readonly Dictionary<string, double> _standardSaltPercentDict = new()
-        {
-            { "Low", 0.3 },
-            { "Medium", 0.5 },
-            { "High", 0.7 }
-        };
+       
 
         public SaltCalculatorService(
             IRepository<Pond> pondRepository,
@@ -174,6 +169,12 @@ namespace KoiGuardian.Api.Services
             return TimeSpan.FromHours(hoursRemaining); // Trả về thời gian còn lại dưới dạng TimeSpan
         }
 
+        private readonly Dictionary<string, double> _standardSaltPercentDict = new()
+{
+            { "low", 0.003 },
+            { "medium", 0.005 },
+            { "high", 0.007 }
+        };
 
         public async Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request)
         {
@@ -219,12 +220,12 @@ namespace KoiGuardian.Api.Services
 
             double currentSaltConcentration = currentSaltValue?.Value ?? 0;
 
-            if (request.AddedSalt > 0)
+            /*if (request.AddedSalt > 0)
             {
                 currentSaltConcentration += request.AddedSalt;
-            }
+            }*/
 
-            if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel, out double standardSalt))
+            if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel.ToLower(), out double standardSalt))
             {
                 return new CalculateSaltResponse
                 {
@@ -235,6 +236,11 @@ namespace KoiGuardian.Api.Services
             }
 
             var additionalNotes = new List<string>();
+
+            if (request.StandardSaltLevel.ToLower() == "high")
+            {
+                additionalNotes.Add("Nếu có cá bệnh truyền nhiễm, nên tách hồ để tránh ảnh hưởng đến các con cá khác.");
+            }
 
             // Check fish diseases and adjust salt percentage
             double saltModifyPercent = 0;
@@ -270,7 +276,7 @@ namespace KoiGuardian.Api.Services
 
             // Calculate required salt with disease adjustment
             double requiredSaltPercent = standardSalt + saltModifyPercent;
-            double targetSaltWeightKg = currentVolume * (requiredSaltPercent / 100);
+            double targetSaltWeightKg = currentVolume * requiredSaltPercent;
             double additionalSaltNeeded = targetSaltWeightKg - currentSaltConcentration;
             double saltConcentrationMgPerL = (currentSaltConcentration * 1000) / currentVolume;
 
@@ -282,12 +288,12 @@ namespace KoiGuardian.Api.Services
                 double newTotalVolume = (currentVolume * currentSaltConcentrationPercent) / requiredSaltPercent;
                 double additionalWaterNeeded = newTotalVolume - currentVolume;
 
-                additionalNotes.Add($"Need to add {additionalWaterNeeded:F2} m³ water to reduce salt concentration to target level.");
+                additionalNotes.Add($"Need to add {additionalWaterNeeded:F2} l water to reduce salt concentration to target level.");
 
                 if (newTotalVolume > pond.MaxVolume)
                 {
                     double excessVolume = newTotalVolume - pond.MaxVolume;
-                    additionalNotes.Add($"Warning: Adding {additionalWaterNeeded:F2} m³ water exceeds pond capacity by {excessVolume:F2} m³.");
+                    additionalNotes.Add($"Warning: Adding {additionalWaterNeeded:F2} l water exceeds pond capacity by {excessVolume:F2} l.");
                 }
 
                 return new CalculateSaltResponse

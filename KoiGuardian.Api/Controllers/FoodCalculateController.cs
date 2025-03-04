@@ -9,11 +9,11 @@ namespace KoiGuardian.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     public class FoodCalculateController
-        ( FoodCalculatorService _services
+        ( IFoodCalculatorService _services
         ) : ControllerBase
     {
         [HttpGet]
-        public async Task<CalculateFoodResponse> Cal([FromBody] CalculateFoodRequest createBlog)
+        public async Task<CalculateFoodResponse> Cal([FromQuery] CalculateFoodRequest createBlog)
         {
             return await _services.Calculate(createBlog);
         }

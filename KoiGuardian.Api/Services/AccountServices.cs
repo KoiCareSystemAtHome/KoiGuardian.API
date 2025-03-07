@@ -136,7 +136,7 @@ IImageUploadService imageUpload
 
     public async Task<LoginResponse> Login(string username, string password, CancellationToken cancellation)
     {
-        var user = await userRepository.GetAsync(u => (u.UserName ?? string.Empty).Equals(username.ToLower()), cancellation);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(username.ToLower()), cancellation);
 
         bool isvalid = await _userManager.CheckPasswordAsync(user ?? new User(), password);
 
@@ -178,13 +178,13 @@ IImageUploadService imageUpload
 
         var user = new User()
         {
-            UserName = registrationRequestDto.Email,
+            UserName = registrationRequestDto.UserName,
             Email = registrationRequestDto.Email,
             NormalizedEmail = registrationRequestDto.Email.ToUpper(),
             Status = UserStatus.NotVerified,
             Code = SD.RandomCode(),
             CreatedDate = DateTime.UtcNow,
-            ValidUntil = DateTime.UtcNow,
+            ValidUntil = DateTime.UtcNow.AddMinutes(5),
         };
 
         var avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
@@ -209,7 +209,7 @@ IImageUploadService imageUpload
                         UserId = userToReturn.Id,
                         Address = registrationRequestDto.Address,
                         Avatar = avatar, 
-                        Gender = registrationRequestDto.Gender, 
+                        Gender = registrationRequestDto.Gender,
                     
                     });
                 }
@@ -662,11 +662,37 @@ IImageUploadService imageUpload
     public async Task<List<User>> GetMember()
     {
         var usersInRole = await _userManager.GetUsersInRoleAsync("Member");
-        var result =  (await userRepository.FindAsync(
-            u => usersInRole.Select(u => u.Id).Contains(u.Id)
-            ,include: u=> u.Include( u => u.Member))).ToList();
-       
-        return result;
+
+        var result = await userRepository.FindAsync(
+            u => usersInRole.Select(u => u.Id).Contains(u.Id),
+            include: u => u.Include(u => u.Member)
+                           .Include(u => u.Wallet)
+        );
+
+        return result.Select(u => new User
+        {
+            Id = u.Id,
+            UserName = u.UserName,
+            Email = u.Email,
+            PhoneNumber = u.PhoneNumber,
+            NormalizedEmail = u.NormalizedEmail,
+            PackageId = u.PackageId,
+            Status= u.Status,
+            CreatedDate = u.CreatedDate,
+            AccessFailedCount = u.AccessFailedCount,
+            ConcurrencyStamp = u.ConcurrencyStamp,
+            EmailConfirmed = u.EmailConfirmed,
+            ValidUntil  = u.ValidUntil,
+            UserReminder = u.UserReminder,
+            PasswordHash = u.PasswordHash,
+            Wallet = u.Wallet != null ? new Wallet {
+                WalletId= u.Wallet.WalletId, 
+                Amount = u.Wallet.Amount, 
+                UserId = u.Wallet.UserId,
+                Status = u.Wallet.Status.ToString(),
+            } : null,
+            Member = u.Member != null ? u.Member : null
+        }).ToList();
     }
 
 }

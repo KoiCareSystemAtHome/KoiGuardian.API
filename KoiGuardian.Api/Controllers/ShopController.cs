@@ -3,7 +3,6 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
-
 namespace KoiGuardian.Api.Controllers
 {
     [ApiController]
@@ -11,7 +10,6 @@ namespace KoiGuardian.Api.Controllers
     public class ShopController : ControllerBase
     {
         private readonly IShopService _shopService;
-
         public ShopController(IShopService shopService)
         {
             _shopService = shopService;
@@ -23,7 +21,7 @@ namespace KoiGuardian.Api.Controllers
             return await _shopService.CreateShop(shopRequest, cancellationToken);
         }
 
-        [HttpGet("{shopId}")]
+        [HttpGet("shop/{shopId}")]
         public async Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellationToken)
         {
             return await _shopService.GetShopById(shopId, cancellationToken);
@@ -45,6 +43,12 @@ namespace KoiGuardian.Api.Controllers
         public async Task<ShopResponse> UpdateShop(Guid shopId, [FromBody] ShopRequest shopRequest, CancellationToken cancellationToken)
         {
             return await _shopService.UpdateShop(shopId, shopRequest, cancellationToken);
+        }
+
+        [HttpGet("user/{userId}")]
+        public async Task<ShopResponse> GetShopByUserId(Guid userId, CancellationToken cancellationToken)
+        {
+            return await _shopService.GetShopByUserId(userId, cancellationToken);
         }
     }
 }

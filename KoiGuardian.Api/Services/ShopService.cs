@@ -18,6 +18,8 @@ namespace KoiGuardian.Api.Services
         Task<ShopResponse> UpdateShop(Guid shopId, ShopRequest shopRequest, CancellationToken cancellation);
 
         Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken);
+
+        Task<ShopResponse> GetShopByUserId(Guid userId, CancellationToken cancellation);
     }
 
     public class ShopService : IShopService
@@ -159,7 +161,8 @@ namespace KoiGuardian.Api.Services
                         Brand = p.Brand,
                         ManufactureDate = p.ManufactureDate,
                         StockQuantity = p.StockQuantity,
-                        Description = p.Description
+                        Description = p.Description,
+                        CategoryId = p.CategoryId,
 
                     }).ToList()
                 };
@@ -216,6 +219,55 @@ namespace KoiGuardian.Api.Services
         public async Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken)
         {
             return await _shopRepository.GetQueryable().ToListAsync(cancellationToken);
+        }
+
+        public async Task<ShopResponse> GetShopByUserId(Guid userId, CancellationToken cancellation)
+        {
+            var shopResponse = new ShopResponse();
+
+            string userIdString = userId.ToString();
+
+            // Assuming there's a UserId property in the Shop entity
+            var shop = await _shopRepository
+                .GetQueryable()
+                .Include(s => s.Products)  // Include products
+                .FirstOrDefaultAsync(x => x.UserId == userIdString, cancellation);
+
+            if (shop is not null)
+            {
+                shopResponse.Shop = new ShopRequestDetails
+                {
+                    ShopId = shop.ShopId,
+                    ShopName = shop.ShopName,
+                    ShopRate = shop.ShopRate,
+                    ShopDescription = shop.ShopDescription,
+                    ShopAddress = shop.ShopAddress,
+                    IsActivate = shop.IsActivate,
+                    BizLicences = shop.BizLicences,
+                    Products = shop.Products?.Select(p => new ProductDetailsRequest
+                    {
+                        ProductId = p.ProductId,
+                        ProductName = p.ProductName,
+                        Price = p.Price,
+                        Image = p.Image,
+                        ExpiryDate = p.ExpiryDate,
+                        Brand = p.Brand,
+                        ManufactureDate = p.ManufactureDate,
+                        StockQuantity = p.StockQuantity,
+                        Description = p.Description,
+                        CategoryId = p.CategoryId
+                    }).ToList()
+                };
+                shopResponse.Status = "200";
+                shopResponse.Message = "Get Shop Success";
+            }
+            else
+            {
+                shopResponse.Status = "404";
+                shopResponse.Message = "Shop Not Found";
+            }
+
+            return shopResponse;
         }
     }
 }

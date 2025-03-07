@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using static KoiGuardian.Models.Enums.CommonEnums;
 using KoiGuardian.Api.Constants;
+using KoiGuardian.DataAccess.Db;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -114,6 +115,12 @@ namespace KoiGuardian.Api.Controllers
         public async Task<string> ProcessPendingTransactions([FromBody] DateTime requestDate)
         {
             return await service.ProcessPendingTransactions(requestDate);
+        }
+
+        [HttpPost("member")]
+        public async Task<List<User>> GetMember()
+        {
+            return await service.GetMember();
         }
 
     }

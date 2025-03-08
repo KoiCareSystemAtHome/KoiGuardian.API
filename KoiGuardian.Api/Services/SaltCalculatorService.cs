@@ -16,11 +16,9 @@ namespace KoiGuardian.Api.Services
     public interface ISaltCalculatorService
     {
         Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request);
-        AddSaltResponse ValidateAndCalculateSaltAddition(AddSaltRequest request);
-        void RecordSaltAddition(Guid pondId, double saltAmount);
-        double GetCurrentSaltWeightKg(Guid pondId);
+        Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId);
 
-        TimeSpan CalculateRemainingTimeToAddSalt(Guid pondId, double saltAmountToAdd);
+
     }
 
     public class SaltCalculatorService : ISaltCalculatorService
@@ -29,13 +27,11 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<RelPondParameter> _pondParamRepository;
         private readonly IRepository<PondStandardParam> _pondStandardParamRepository;
         private readonly IRepository<KoiDiseaseProfile> _koiDiseaseProfileRepository;
-        private static readonly ConcurrentDictionary<Guid, List<SaltAdditionRecord>> _saltHistory = new();
+        private static readonly ConcurrentDictionary<Guid, CalculateSaltResponse> _saltCalculationCache = new();
 
-        private const double MAX_SALT_INCREASE_PERCENT = 0.05; // 0.05% maximum increase
-        private const int MIN_HOURS_BETWEEN_ADDITIONS = 6;
-        private const int MAX_HOURS_BETWEEN_ADDITIONS = 8;
 
-       
+
+
 
         public SaltCalculatorService(
             IRepository<Pond> pondRepository,
@@ -47,127 +43,7 @@ namespace KoiGuardian.Api.Services
             _pondParamRepository = pondParamRepository;
             _koiDiseaseProfileRepository = koiDiseaseProfile;
         }
-        public AddSaltResponse ValidateAndCalculateSaltAddition(AddSaltRequest request)
-        {
-            var response = new AddSaltResponse();
-            var currentSaltWeightKg = GetCurrentSaltWeightKg(request.PondId);
-
-            // Get pond volume
-            var pond = _pondRepository.GetQueryable(p => p.PondID == request.PondId).FirstOrDefault();
-            if (pond == null)
-            {
-                response.CanAddSalt = false;
-                response.Messages.Add("Không tìm thấy thông tin hồ.");
-                return response;
-            }
-
-            // Get salt addition history
-            _saltHistory.TryGetValue(request.PondId, out var history);
-            var lastAddition = history?.OrderByDescending(h => h.AddedTime).FirstOrDefault();
-
-            // Check time between additions
-            if (lastAddition != null)
-            {
-                var hoursSinceLastAddition = (DateTime.UtcNow - lastAddition.AddedTime).TotalHours;
-
-                if (hoursSinceLastAddition < MIN_HOURS_BETWEEN_ADDITIONS)
-                {
-                    response.CanAddSalt = false;
-                    response.NextAllowedTime = lastAddition.AddedTime.AddHours(MIN_HOURS_BETWEEN_ADDITIONS);
-                    response.Messages.Add($"Phải đợi ít nhất {MIN_HOURS_BETWEEN_ADDITIONS} giờ giữa các lần đổ muối. " +
-                        $"Có thể đổ muối tiếp sau {response.NextAllowedTime:HH:mm:ss}");
-                    return response;
-                }
-
-                if (hoursSinceLastAddition > MAX_HOURS_BETWEEN_ADDITIONS)
-                {
-                    response.Messages.Add("Đã quá 8 giờ từ lần đổ muối trước, nên đổ muối ngay để đảm bảo hiệu quả.");
-                }
-            }
-
-            // Calculate maximum allowed salt addition (0.05% of current volume)
-            double currentVolumeL = pond.MaxVolume;
-            double maxAllowedSaltIncreaseKg = (currentVolumeL * MAX_SALT_INCREASE_PERCENT) / 100;
-            double neededSaltWeightKg = request.TargetSaltWeightKg - currentSaltWeightKg;
-
-            if (neededSaltWeightKg <= 0)
-            {
-                response.CanAddSalt = false;
-                response.Messages.Add("Đã đạt hoặc vượt mức muối mục tiêu.");
-                return response;
-            }
-
-            response.CanAddSalt = true;
-            response.AllowedSaltWeightKg = Math.Min(neededSaltWeightKg, maxAllowedSaltIncreaseKg);
-
-            if (response.AllowedSaltWeightKg < neededSaltWeightKg)
-            {
-                response.Messages.Add($"Có thể thêm tối đa {response.AllowedSaltWeightKg:F2} kg muối (0.05% thể tích hồ).");
-                response.Messages.Add($"Cần thêm {Math.Ceiling(neededSaltWeightKg / maxAllowedSaltIncreaseKg)} lần để đạt mục tiêu.");
-            }
-            else
-            {
-                response.Messages.Add($"Có thể thêm {response.AllowedSaltWeightKg:F2} kg muối để đạt mục tiêu.");
-            }
-
-            return response;
-        }
-
-        public void RecordSaltAddition(Guid pondId, double saltWeightKg)
-        {
-            var record = new SaltAdditionRecord
-            {
-                PondId = pondId,
-                SaltAmount = saltWeightKg,
-                AddedTime = DateTime.UtcNow
-            };
-
-            _saltHistory.AddOrUpdate(
-                pondId,
-                new List<SaltAdditionRecord> { record },
-                (_, list) =>
-                {
-                    list.Add(record);
-                    return list;
-                });
-        }
-
-        public double GetCurrentSaltWeightKg(Guid pondId)
-        {
-            // Lấy từ history nếu có
-            if (_saltHistory.TryGetValue(pondId, out var history))
-            {
-                return history.Sum(h => h.SaltAmount);
-            }
-            return 0;
-        }
-
-
-
-        public TimeSpan CalculateRemainingTimeToAddSalt(Guid pondId, double saltAmountToAdd)
-        {
-            // Tốc độ đổ muối, ví dụ: 0.5 kg muối mỗi giờ
-            const double saltDischargeRatePerHour = 0.5; // kg muối mỗi giờ
-
-            // Lấy thể tích hồ (lít) từ thông tin hồ
-            var pond = _pondRepository.GetQueryable(
-                    predicate: p => p.PondID == pondId
-
-
-                );
-            if (pond == null)
-            {
-                throw new Exception("Pond not found");
-            }
-
-            // Tính toán thời gian còn lại để đổ hết lượng muối
-            double totalSaltWeightKg = saltAmountToAdd; // Lượng muối cần đổ (kg)
-
-            // Tính thời gian cần để đổ hết lượng muối (theo giờ)
-            double hoursRemaining = totalSaltWeightKg / saltDischargeRatePerHour;
-
-            return TimeSpan.FromHours(hoursRemaining); // Trả về thời gian còn lại dưới dạng TimeSpan
-        }
+       
 
         private readonly Dictionary<string, double> _standardSaltPercentDict = new()
 {
@@ -349,13 +225,80 @@ namespace KoiGuardian.Api.Services
             if (saltConcentrationMgPerL > (saltParameter.Parameter.DangerUpper ?? double.MaxValue))
                 additionalNotes.Add("Salt level above danger threshold. Fish may be at risk.");
 
-            return new CalculateSaltResponse
+            var response = new CalculateSaltResponse
             {
-                PondId = pond.PondID,
+                PondId = request.PondId,
                 TotalSalt = targetSaltWeightKg,
                 CurrentSalt = currentSaltConcentration,
                 SaltNeeded = additionalSaltNeeded,
                 AdditionalInstruction = additionalNotes
+            };
+
+            // Lưu kết quả vào cache
+            _saltCalculationCache[request.PondId] = response;
+            return response;
+        }
+
+        public async Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId)
+        {
+            // Kiểm tra xem có kết quả CalculateSalt nào cho PondId này không
+            if (!_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse saltResponse))
+            {
+                return new SaltAdditionProcessResponse
+                {
+                    PondId = pondId,
+                    Instructions = new List<string> { "No salt calculation found for this pond. Please calculate salt first." }
+                };
+            }
+
+            var pondQuery = _pondRepository.GetQueryable(p => p.PondID == pondId)
+                .Include(p => p.Fish);
+            var pond = await pondQuery.FirstOrDefaultAsync();
+
+            if (pond == null)
+            {
+                return new SaltAdditionProcessResponse
+                {
+                    PondId = pondId,
+                    Instructions = new List<string> { "Pond not found." }
+                };
+            }
+
+            double additionalSaltNeeded = saltResponse.SaltNeeded;
+
+            var instructions = new List<string>();
+
+            if (additionalSaltNeeded <= 0)
+            {
+                instructions.Add("No additional salt needed or current salt exceeds target.");
+                return new SaltAdditionProcessResponse
+                {
+                    PondId = pondId,
+                    Instructions = instructions
+                };
+            }
+
+            // Quy tắc 1: Tăng tối đa 0.05% mỗi lần
+            double maxSaltIncreasePerTime = pond.MaxVolume * 0.0005; // 0.05% của thể tích tối đa
+            int numberOfAdditions = (int)Math.Ceiling(additionalSaltNeeded / maxSaltIncreasePerTime);
+            double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
+
+            instructions.Add($"Tổng lượng muối cần thêm: {additionalSaltNeeded:F2} kg.");
+            instructions.Add($"Số lần thêm muối: {numberOfAdditions}.");
+            instructions.Add($"Lượng muối mỗi lần: {saltPerAddition:F2} kg.");
+            instructions.Add($"Quy tắc 1: Tăng tối đa 0.05% ({maxSaltIncreasePerTime:F2} kg) mỗi lần.");
+
+            // Quy tắc 2: Thời gian giữa các lần tăng là 6-8 giờ
+            instructions.Add("Quy tắc 2: Chờ 6-8 giờ giữa các lần thêm muối để đảm bảo an toàn cho cá.");
+            for (int i = 1; i <= numberOfAdditions; i++)
+            {
+                instructions.Add($"Lần {i}: Thêm {saltPerAddition:F2} kg muối. Chờ 6-8 giờ trước khi thêm lần tiếp theo.");
+            }
+
+            return new SaltAdditionProcessResponse
+            {
+                PondId = pondId,
+                Instructions = instructions
             };
         }
 

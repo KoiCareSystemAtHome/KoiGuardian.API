@@ -48,15 +48,19 @@ public class FoodCalculatorService
         foreach (var koi in pond.Fish)
         {
             var koiPercent = 0f;
-            var normPercent = await normFoodAmountRepository.GetAsync(
+            var normPercents = await normFoodAmountRepository.FindAsync(
                 u => u.AgeFrom <= koi.Age && u.AgeTo >= koi.Age
-                && req.TemperatureUpper == u.Temperature,
+                && req.TemperatureUpper <= u.Temperature,
                 CancellationToken.None);
-            koiPercent = koiPercent + normPercent.StandardAmount;
-
+            var normPercent = normPercents.OrderByDescending(u => u.Temperature).FirstOrDefault();
+            if (normPercent != null) { 
+                koiPercent = koiPercent + normPercent.StandardAmount;
+                often.Add(normPercent.FeedingFrequency);
+            }
+            var test = await koiProfileRepository.GetAllAsync();
             var treatmentAmount = await koiProfileRepository.GetAsync(
                  u => koi.KoiID == koi.KoiID
-                 && u.EndDate <= DateTime.Now
+                 && u.EndDate <= DateTime.UtcNow
                  ,
                 include: u => u.Include(u => u.Disease));
 
@@ -70,7 +74,7 @@ public class FoodCalculatorService
                 .OrderByDescending(u=> u.CalculatedDate).FirstOrDefaultAsync();
 
             foodTotal = foodTotal + (koiPercent * koiweight?.Weight ?? 0);
-            often.Add(normPercent.FeedingFrequency);
+            
         }
 
         DesiredGrowthPercent.TryGetValue(req.DesiredGrowth, out var growth);
@@ -87,7 +91,7 @@ public class FoodCalculatorService
             FeedingOften = often
                 .GroupBy(x => x)
                 .OrderByDescending(g => g.Count())
-                .FirstOrDefault()?.Key ?? "",
+                .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày",
             AddtionalInstruction = noteList
         };
     }

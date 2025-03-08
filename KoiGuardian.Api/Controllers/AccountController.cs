@@ -91,11 +91,17 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("test")]
-        public async Task<string> test(IFormFile filene)
+        public async Task<IActionResult> UploadImage(IFormFile file)
         {
-            var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
 
-            return await image.UploadImageAsync(baseUrl,"test", "123", filene);
+            string id = Guid.NewGuid().ToString(); // Sinh id tự động
+            var imageUrl = await image.UploadImageAsync("test", id, file);
+
+            return Ok(new { imageUrl });
         }
 
         [HttpPost("pay-package")]

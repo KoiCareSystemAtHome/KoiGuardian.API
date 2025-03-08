@@ -1,52 +1,58 @@
-﻿using Azure;
-using KoiGuardian.DataAccess.Db;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace KoiGuardian.Api.Services;
 
 public interface IImageUploadService
 {
-    Task<string> UploadImageAsync(string baseUrl , string tablename, string id, IFormFile imageFile);
+    Task<string> UploadImageAsync(string tablename, string id, IFormFile imageFile);
 }
 
 public class ImageUploadService : IImageUploadService
 {
-    public async Task<string> UploadImageAsync(string baseUrl, string tablename, string id, IFormFile imageFile)
+    private readonly Cloudinary _cloudinary;
+    private const string Placeholder = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXxZR0_1ISIJx_T4oB5-5OJVSNgSMFLe8eCw&s";
+
+    public ImageUploadService(IConfiguration configuration)
     {
-        var placeholder = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXxZR0_1ISIJx_T4oB5-5OJVSNgSMFLe8eCw&s";
+        var account = new Account(
+            configuration["Cloudinary:CloudName"],
+            configuration["Cloudinary:ApiKey"],
+            configuration["Cloudinary:ApiSecret"]
+        );
+
+        _cloudinary = new Cloudinary(account);
+    }
+
+    public async Task<string> UploadImageAsync(string tablename, string id, IFormFile imageFile)
+    {
         try
         {
             if (imageFile == null || imageFile.Length == 0)
             {
-                return placeholder;
+                return Placeholder;
             }
 
-            string fileName = $"{id}_{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+            using var memoryStream = new MemoryStream();
+            await imageFile.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
 
-            string relativeFolderPath = Path.Combine("wwwroot", "Images", tablename);
-
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), relativeFolderPath);
-
-            if (!Directory.Exists(folderPath))
+            var uploadParams = new ImageUploadParams()
             {
-                Directory.CreateDirectory(folderPath);
-            }
+                File = new FileDescription(imageFile.FileName, memoryStream),
+                PublicId = $"{tablename}/{id}_{Guid.NewGuid()}"
+            };
 
-            string filePath = Path.Combine(folderPath, fileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(fileStream);
-            }
-
-            //var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
-            string imageUrl = $"{baseUrl}/Images/{tablename}/{fileName}";
-
-            return imageUrl;
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            return uploadResult.SecureUrl.AbsoluteUri;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return placeholder;
+            return Placeholder;
         }
     }
 }

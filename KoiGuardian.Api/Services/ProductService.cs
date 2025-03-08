@@ -110,7 +110,7 @@ namespace KoiGuardian.Api.Services
             };
 
             // Upload the image
-            var image = await _imageUploadService.UploadImageAsync(baseUrl, "test", product.ProductId.ToString(), productRequest.Image);
+            var image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), productRequest.Image);
             product.Image = image;
 
             // Set parameter impacts
@@ -426,7 +426,7 @@ namespace KoiGuardian.Api.Services
             };
 
             // Upload hình ảnh
-            product.Image = await _imageUploadService.UploadImageAsync(baseUrl, "test", product.ProductId.ToString(), foodRequest.Image);
+            product.Image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), foodRequest.Image);
 
             product.SetParameterImpacts(foodRequest.ParameterImpacts);
             // Lưu Product vào database
@@ -482,7 +482,7 @@ namespace KoiGuardian.Api.Services
             };
 
             // Upload hình ảnh
-            product.Image = await _imageUploadService.UploadImageAsync(baseUrl, "test", product.ProductId.ToString(), medicineRequest.Image);
+            product.Image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), medicineRequest.Image);
 
             product.SetParameterImpacts(medicineRequest.ParameterImpacts);
             // Lưu Product vào database

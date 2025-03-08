@@ -187,7 +187,7 @@ IImageUploadService imageUpload
             ValidUntil = DateTime.UtcNow.AddMinutes(5),
         };
 
-        var avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, registrationRequestDto.Avatar);
+        var avatar = await imageUpload.UploadImageAsync("User", user.Id, registrationRequestDto.Avatar);
 
         try
         {
@@ -445,7 +445,7 @@ IImageUploadService imageUpload
         }
         user.UserName = request.Name;
         member.Address = JsonSerializer.Serialize(address);
-        member.Avatar = await imageUpload.UploadImageAsync(baseUrl, "User", user.Id, request.Avatar);
+        member.Avatar = await imageUpload.UploadImageAsync("User", user.Id, request.Avatar);
         member.Gender = request.Gender;
         user.UserReminder = request.UserReminder;
 

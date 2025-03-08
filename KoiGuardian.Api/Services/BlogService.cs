@@ -12,6 +12,7 @@ using System.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KoiGuardian.Api.Helper;
+using MongoDB.Driver;
 
 namespace KoiGuardian.Api.Services
 {
@@ -19,7 +20,7 @@ namespace KoiGuardian.Api.Services
     {
         Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
         Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
-        Task<Blog> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken);
+        Task<BlogDto> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken);
 
@@ -103,19 +104,65 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<Blog> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken)
+        public async Task<BlogDto> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken)
         {
-            return await _blogRepository
+            var blog = await _blogRepository
                 .GetQueryable()
-                .Include(b => b.BlogProducts) 
+                .Include(b => b.BlogProducts)
+                    .ThenInclude(bp => bp.Product)
+                .Include(b => b.Shop)
                 .FirstOrDefaultAsync(b => b.BlogId == blogId, cancellationToken);
+
+            if (blog == null)
+            {
+                return null; // Or throw an exception, depending on your requirements
+            }
+
+            return new BlogDto
+            {
+                BlogId = blog.BlogId,
+                Title = blog.Title,
+                Content = blog.Content,
+                Images = blog.Images,
+                Tag = blog.Tag,
+                IsApproved = blog.IsApproved,
+                Type = blog.Type,
+                ReportedBy = blog.ReportedBy,
+                ReportedDate = blog.ReportedDate,
+                ShopId = blog.ShopId,
+                Shop = blog.Shop != null ? new ShopBasicDto
+                {
+                    ShopId = blog.Shop.ShopId,
+                    Name = blog.Shop.ShopName,
+                    Description = blog.Shop.ShopDescription
+              
+                } : null,
+                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
+                {
+                    ProductId = bp.Product?.ProductId ?? Guid.Empty, 
+                    Name = bp.Product?.ProductName,
+                    Price = bp.Product.Price,
+                    Image = bp.Product.Image
+                }).ToList() ?? new List<ProductBasicDto>()
+            };
         }
+
 
         public async Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
         {
             var blogResponse = new BlogResponse();
             var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogRequest.BlogId), cancellationToken);
 
+            if (existingBlog == null)
+            {
+                return new BlogResponse
+                {
+                    Status = "404",
+                    Message = "Blog not found."
+                };
+            }
+
+            // Update blog properties
             existingBlog.Title = blogRequest.Title;
             existingBlog.Content = blogRequest.Content;
             existingBlog.Images = blogRequest.Images;
@@ -125,24 +172,31 @@ namespace KoiGuardian.Api.Services
             existingBlog.ShopId = blogRequest.ShopId;
             existingBlog.ReportedDate = blogRequest.ReportedDate;
             existingBlog.ReportedBy = blogRequest.ReportedBy;
-           
 
             _blogRepository.Update(existingBlog);
 
-            // Update blog products
-            var existingBlogProducts = existingBlog.BlogProducts.ToList();
+            // Handle BlogProducts (upsert logic)
+            var existingBlogProducts = await _blogProductRepository.FindAsync(bp => bp.BlogId == existingBlog.BlogId, cancellationToken);
+            var existingProductIds = existingBlogProducts.Select(bp => bp.ProductId).ToList();
+            var newProductIds = blogRequest.ProductIds ?? new List<Guid>();
+
+            // Remove BlogProducts that are no longer in the request
             foreach (var existingBlogProduct in existingBlogProducts)
             {
-                _blogProductRepository.Delete(existingBlogProduct);
+                if (!newProductIds.Contains(existingBlogProduct.ProductId))
+                {
+                    _blogProductRepository.Delete(existingBlogProduct);
+                }
             }
 
-            if (blogRequest.ProductIds?.Any() == true)
+            // Add new BlogProducts that don't already exist
+            foreach (var productId in newProductIds)
             {
-                foreach (var productId in blogRequest.ProductIds)
+                if (!existingProductIds.Contains(productId))
                 {
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid(),
+                        BPId = Guid.NewGuid(), // Generate new unique ID
                         BlogId = existingBlog.BlogId,
                         ProductId = productId
                     };

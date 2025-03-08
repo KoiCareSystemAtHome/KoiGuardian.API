@@ -35,7 +35,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for getting a blog by ID
         [HttpGet("{blogId}")]
-        public async Task<Blog> GetBlogById(Guid blogId, CancellationToken cancellationToken)
+        public async Task<BlogDto> GetBlogById(Guid blogId, CancellationToken cancellationToken)
         {
             return await _services.GetBlogByIdAsync(blogId, cancellationToken);
         }

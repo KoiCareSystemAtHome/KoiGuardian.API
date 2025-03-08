@@ -23,4 +23,10 @@ namespace KoiGuardian.Models.Response
         public DateTime? NextAllowedTime { get; set; }
         public List<string> Messages { get; set; } = new();
     }
+
+    public class SaltAdditionProcessResponse
+    {
+        public Guid PondId { get; set; }
+        public List<string> Instructions { get; set; }
+    }
 }

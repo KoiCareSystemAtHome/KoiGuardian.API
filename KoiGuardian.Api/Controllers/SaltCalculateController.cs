@@ -21,57 +21,11 @@ namespace KoiGuardian.Api.Controllers
         {
             return await _saltCalculatorService.CalculateSalt(request);
         }
-
-
-        [HttpPost("validate")]
-        public ActionResult<AddSaltResponse> ValidateSaltAddition(AddSaltRequest request)
+        [HttpPost("addition-process")]
+        public async Task<SaltAdditionProcessResponse> GetSaltAdditionProcess([FromQuery] Guid pondId)
         {
-            var response = _saltCalculatorService.ValidateAndCalculateSaltAddition(request);
-            return Ok(response);
+            return await _saltCalculatorService.GetSaltAdditionProcess(pondId);
         }
 
-        [HttpPost("add")]
-        public ActionResult AddSalt(AddSaltRequest request)
-        {
-            var validation = _saltCalculatorService.ValidateAndCalculateSaltAddition(request);
-
-            if (!validation.CanAddSalt)
-            {
-                return BadRequest(new
-                {
-                    Messages = validation.Messages,
-                    NextAllowedTime = validation.NextAllowedTime
-                });
-            }
-
-            _saltCalculatorService.RecordSaltAddition(request.PondId, validation.AllowedSaltWeightKg);
-
-            return Ok(new
-            {
-                PondId = request.PondId,
-                AddedAmount = validation.AllowedSaltWeightKg,
-                CurrentSaltLevel = _saltCalculatorService.GetCurrentSaltWeightKg(request.PondId),
-                Messages = validation.Messages
-            });
-        }
-
-        [HttpGet("current/{pondId}")]
-        public ActionResult GetCurrentSaltLevel(Guid pondId)
-        {
-            var currentLevel = _saltCalculatorService.GetCurrentSaltWeightKg(pondId);
-            return Ok(new { PondId = pondId, CurrentSaltLevel = currentLevel });
-        }
-
-        [HttpGet("remaining-time/{pondId}/{saltAmountToAdd}")]
-        public ActionResult GetRemainingTimeToAddSalt(Guid pondId, double saltAmountToAdd)
-        {
-            var remainingTime = _saltCalculatorService.CalculateRemainingTimeToAddSalt(pondId, saltAmountToAdd);
-            return Ok(new
-            {
-                Success = true,
-                PondId = pondId,
-                RemainingTime = remainingTime.ToString(@"d' days 'hh\:mm\:ss") // Return in hours:minutes:seconds format
-            });
-        }
     }
 }

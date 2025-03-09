@@ -12,6 +12,7 @@ namespace KoiGuardian.DataAccess.Db
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
         public string UserId { get; set; }
+        public string GHNId { get; set; }
 
 
 

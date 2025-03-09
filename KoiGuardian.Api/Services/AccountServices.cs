@@ -266,9 +266,9 @@ IImageUploadService imageUpload
         };
     }
 
-    public async Task<string> ActivateAccount(string username, int code)
+    public async Task<string> ActivateAccount(string email, int code)
     {
-        var user = await userRepository.GetAsync(u => (u.UserName ?? string.Empty).Equals(username.ToLower()), CancellationToken.None);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null)
         {
@@ -280,7 +280,7 @@ IImageUploadService imageUpload
             return "Code is invalid";
         }
 
-        if (user.ValidUntil < DateTime.Now)
+        if (user.ValidUntil < DateTime.UtcNow)
         {
             return "Code is expired, please resend it";
         }
@@ -291,12 +291,12 @@ IImageUploadService imageUpload
         userRepository.Update(user);
         await uow.SaveChangesAsync(CancellationToken.None);
 
-        return "";
+        return "success";
     }
 
     public async Task<bool> ResendCode(string email)
     {
-        var user = await userRepository.GetAsync(u => (u.UserName ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null)
         {
@@ -320,7 +320,7 @@ IImageUploadService imageUpload
 
     public async Task<string> ForgotPassword(string email)
     {
-        var user = await userRepository.GetAsync(u => (u.UserName ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
+        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null)
         {
@@ -328,7 +328,7 @@ IImageUploadService imageUpload
         }
 
         user.Code = SD.RandomCode();
-        user.ValidUntil = DateTime.Now.AddMinutes(5);
+        user.ValidUntil = DateTime.UtcNow.AddMinutes(5);
 
         string sendMail = SendMail.SendEmail(user.Email ?? "", "Code for register", EmailTemplate.Register(user.Code), "");
         if (sendMail != "")
@@ -339,13 +339,13 @@ IImageUploadService imageUpload
         userRepository.Update(user);
         await uow.SaveChangesAsync(CancellationToken.None);
 
-        return "";
+        return "success";
     }
 
     public async Task<string> ChangePassword(string email, string oldPass, string newPass)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user != null && oldPass != null && newPass != null)
+        if (user == null && oldPass == null && newPass == null)
         {
             return "Invalid data";
         }
@@ -359,7 +359,7 @@ IImageUploadService imageUpload
             return ex.Message;
         }
 
-        return "";
+        return "success";
     }
 
     public async Task<string> ConfirmResetPassCode(string email, int code, string newPass)
@@ -375,7 +375,7 @@ IImageUploadService imageUpload
                 }
                 if (user.Code == code)
                 {
-                    if (DateTime.Now > (user.ValidUntil ?? DateTime.Now).AddMinutes(10))
+                    if (DateTime.UtcNow > (user.ValidUntil ?? DateTime.UtcNow).AddMinutes(10))
                     {
                         return "Expired code! ";
                     }
@@ -385,7 +385,7 @@ IImageUploadService imageUpload
                 }
 
             }
-            return "";
+            return "success";
         }
         catch (Exception ex)
         {
@@ -431,28 +431,43 @@ IImageUploadService imageUpload
 
     public async Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request)
     {
-        var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(request.Email.ToLower()), CancellationToken.None);
-        var member = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id), CancellationToken.None);
+        var user = await userRepository.GetAsync(
+            u => u.Email != null && u.Email.ToLower().Equals(request.Email.ToLower()),
+            CancellationToken.None);
+
         if (user == null || user.Status != UserStatus.Active)
         {
             return "Account is not valid!";
         }
 
-        var address = JsonSerializer.Deserialize<List<string>>(member.Address);
-        if (address != null)
+        var member = await memberRepository.GetAsync(
+            m => m.UserId != null && m.UserId.Equals(user.Id),
+            CancellationToken.None);
+
+        if (member == null)
         {
-            address.Add(request.Address);
+            return "Member profile not found!";
         }
+
+        // Update user details
         user.UserName = request.Name;
-        member.Address = JsonSerializer.Serialize(address);
-        member.Avatar = await imageUpload.UploadImageAsync("User", user.Id, request.Avatar);
-        member.Gender = request.Gender;
         user.UserReminder = request.UserReminder;
 
+        // Update member details
+        member.Gender = request.Gender;
+        member.Address = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
+
+        // Upload avatar if provided
+        if (request.Avatar != null)
+        {
+            member.Avatar = await imageUpload.UploadImageAsync("User", user.Id, request.Avatar);
+        }
+        memberRepository.Update(member);
         await uow.SaveChangesAsync();
 
-        return string.Empty;
+        return "Profile updated successfully!";
     }
+
 
     public async Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId)
     {

@@ -279,13 +279,15 @@ public class OrderService(
 
         return result.Select(u =>
         {
-            var address = JsonSerializer.Deserialize<AddressDto>(u.Address);
+            var address = !string.IsNullOrEmpty(u.Address)
+                ? JsonSerializer.Deserialize<AddressDto>(u.Address)
+                : new AddressDto { ProvinceName = "No address info" };
             return new OrderFilterResponse()
             {
                 OrderId = u.OrderId,
                 ShopName = u.Shop.ShopName,
                 CustomerName = u.User.UserName,
-                CustomerAddress = address?.ToString() ?? "No address info",
+                CustomerAddress = address?.ToString(),
                 CustomerPhoneNumber = u.User.PhoneNumber,
                 ShipFee = u.ShipFee,
                 oder_code = u.oder_code,
@@ -413,7 +415,9 @@ public class OrderService(
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = JsonSerializer.Deserialize<AddressDto>(order.Address),
+            CustomerAddress = !string.IsNullOrEmpty(order.Address)
+                ? JsonSerializer.Deserialize<AddressDto>(order.Address)
+                : new AddressDto { ProvinceName = "No address info" }, // Giá trị mặc định
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,
@@ -427,5 +431,6 @@ public class OrderService(
             }).ToList()
         }).ToList();
     }
+
 
 }

@@ -152,6 +152,7 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
+            // Update basic product information
             existingProduct.ProductName = productRequest.ProductName;
             existingProduct.Description = productRequest.Description;
             existingProduct.Price = productRequest.Price;
@@ -161,6 +162,19 @@ namespace KoiGuardian.Api.Services
             existingProduct.ManufactureDate = productRequest.ManufactureDate;
             existingProduct.ExpiryDate = productRequest.ExpiryDate;
             existingProduct.ShopId = productRequest.ShopId;
+
+            // Update image if provided
+            if (productRequest.Image != null)
+            {
+                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), productRequest.Image);
+                existingProduct.Image = newImage;
+            }
+
+            // Update parameter impacts if provided
+            if (productRequest.ParameterImpacts != null)
+            {
+                existingProduct.SetParameterImpacts(productRequest.ParameterImpacts);
+            }
 
             _productRepository.Update(existingProduct);
 
@@ -208,6 +222,7 @@ namespace KoiGuardian.Api.Services
                 return productResponse;
             }
 
+            // Update Product entity fields
             existingProduct.ProductName = foodRequest.ProductName;
             existingProduct.Description = foodRequest.Description;
             existingProduct.Price = foodRequest.Price;
@@ -216,8 +231,21 @@ namespace KoiGuardian.Api.Services
             existingProduct.Brand = foodRequest.Brand;
             existingProduct.ManufactureDate = foodRequest.ManufactureDate;
             existingProduct.ExpiryDate = foodRequest.ExpiryDate;
-            existingProduct.SetParameterImpacts(foodRequest.ParameterImpacts);
 
+            // Update image on Product if provided
+            if (foodRequest.Image != null)
+            {
+                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), foodRequest.Image);
+                existingProduct.Image = newImage;
+            }
+
+            // Update parameter impacts on Product if provided
+            if (foodRequest.ParameterImpacts != null)
+            {
+                existingProduct.SetParameterImpacts(foodRequest.ParameterImpacts);
+            }
+
+            // Update Food-specific fields
             existingFood.Name = foodRequest.Name;
             existingFood.AgeFrom = foodRequest.AgeFrom;
             existingFood.AgeTo = foodRequest.AgeTo;
@@ -225,10 +253,18 @@ namespace KoiGuardian.Api.Services
             _productRepository.Update(existingProduct);
             _foodRepository.Update(existingFood);
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                productResponse.Status = "200";
+                productResponse.Message = "Food updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                productResponse.Status = "500";
+                productResponse.Message = "Error updating food: " + ex.Message;
+            }
 
-            productResponse.Status = "200";
-            productResponse.Message = "Food updated successfully.";
             return productResponse;
         }
 
@@ -259,6 +295,7 @@ namespace KoiGuardian.Api.Services
                 return productResponse;
             }
 
+            // Update Product entity fields
             existingProduct.ProductName = medicineRequest.ProductName;
             existingProduct.Description = medicineRequest.Description;
             existingProduct.Price = medicineRequest.Price;
@@ -267,8 +304,21 @@ namespace KoiGuardian.Api.Services
             existingProduct.Brand = medicineRequest.Brand;
             existingProduct.ManufactureDate = medicineRequest.ManufactureDate;
             existingProduct.ExpiryDate = medicineRequest.ExpiryDate;
-            existingProduct.SetParameterImpacts(medicineRequest.ParameterImpacts);
 
+            // Update image on Product if provided
+            if (medicineRequest.Image != null)
+            {
+                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), medicineRequest.Image);
+                existingProduct.Image = newImage;
+            }
+
+            // Update parameter impacts on Product if provided
+            if (medicineRequest.ParameterImpacts != null)
+            {
+                existingProduct.SetParameterImpacts(medicineRequest.ParameterImpacts);
+            }
+
+            // Update Medicine-specific fields
             existingMedicine.Medicinename = medicineRequest.MedicineName;
             existingMedicine.DosageForm = medicineRequest.DosageForm;
             existingMedicine.Symtomps = medicineRequest.Symptoms;
@@ -276,10 +326,18 @@ namespace KoiGuardian.Api.Services
             _productRepository.Update(existingProduct);
             _medicineRepository.Update(existingMedicine);
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                productResponse.Status = "200";
+                productResponse.Message = "Medicine updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                productResponse.Status = "500";
+                productResponse.Message = "Error updating medicine: " + ex.Message;
+            }
 
-            productResponse.Status = "200";
-            productResponse.Message = "Medicine updated successfully.";
             return productResponse;
         }
 

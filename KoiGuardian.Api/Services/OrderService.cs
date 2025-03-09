@@ -87,7 +87,8 @@ public class OrderService(
                     Status = request.Status,
                     ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
                     Total = (float)total, // Gán tổng giá trị
-                    Note = addressNote,
+                    Address = addressNote,
+                    Note = request.Note,
                     CreatedDate = DateTime.UtcNow,
                     UpdatedDate = DateTime.MaxValue,
                     OrderDetail = new List<OrderDetail>()
@@ -139,7 +140,7 @@ public class OrderService(
             }
 
             // Update address note (JSON string)
-            order.Note = JsonSerializer.Serialize(new
+            order.Address = JsonSerializer.Serialize(new
             {
                 ProvinceName = request.Address.ProvinceName,
                 ProvinceId = request.Address.ProvinceId,
@@ -277,7 +278,7 @@ public class OrderService(
 
         return result.Select(u =>
         {
-            var address = JsonSerializer.Deserialize<AddressDto>(u.Note);
+            var address = JsonSerializer.Deserialize<AddressDto>(u.Address);
             return new OrderFilterResponse()
             {
                 OrderId = u.OrderId,

@@ -30,6 +30,7 @@ public class CreateOrderRequest
     public string ShipType { get; set; }
     public string Status { get; set; }
     public decimal ShipFee { get; set; } // Lưu dạng số
+    public string Note { get; set; }
     public AddressDto Address { get; set; } // Đối tượng Address
     public List<OrderDetailDto> OrderDetails { get; set; }
 }

@@ -61,4 +61,10 @@ namespace KoiGuardian.Models.Request
         public string ModeName { get; set; }
     }
 
+    public class UpdatePondIOTRequest
+    {
+        public Guid PondID { get; set; }
+        public required List<PondParam> RequirementPondParam { get; set; }
+    }
+
 }

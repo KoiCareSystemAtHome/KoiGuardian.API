@@ -44,5 +44,11 @@ namespace KoiGuardian.Api.Controllers
         {
             return await services.GetPondById(pondId, cancellationToken);
         }
+
+        [HttpPut("update-iot-pond")]
+        public async Task<PondResponse> UpdateIOTPond([FromBody] UpdatePondIOTRequest updatePond, CancellationToken cancellationToken)
+        {
+            return await services.UpdateIOTPond(updatePond, cancellationToken);
+        }
     }
 }

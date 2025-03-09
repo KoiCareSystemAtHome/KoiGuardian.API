@@ -20,6 +20,8 @@ namespace KoiGuardian.Api.Services
         Task<PondDetailResponse> GetPondById(Guid pondId, CancellationToken cancellation);
         Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default);
 
+        Task<PondResponse> UpdateIOTPond(UpdatePondIOTRequest Request, CancellationToken cancellation);
+
 
     }
 
@@ -281,6 +283,49 @@ namespace KoiGuardian.Api.Services
             return pondDtos;
         }
 
+        public async Task<PondResponse> UpdateIOTPond(UpdatePondIOTRequest Request, CancellationToken cancellation)
+        {
+            var requirementsParam = await RequireParam(cancellation);
+            var response = new PondResponse();
+            var pond = await pondRepository.GetAsync(x => x.PondID.Equals(Request.PondID), cancellation);
+            if (pond != null)
+            {
 
+                var validValues = Request.RequirementPondParam.Where(u =>
+                    requirementsParam.Select(u => u.ParameterId).Contains(u.HistoryId)
+                    );
+
+                foreach (var validValue in validValues)
+                {
+                    relPondparameterRepository.Insert(new RelPondParameter()
+                    {
+                        RelPondParameterId = Guid.NewGuid(),
+                        PondId = pond.PondID,
+                        ParameterHistoryId = validValue.HistoryId,
+                        ParameterID = validValue.HistoryId,
+                        CalculatedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                        Value = validValue.Value
+                    });
+                }
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellation);
+
+                    response.status = "201";
+                    response.message = "Update Ponnd Success";
+                }
+                catch (Exception ex)
+                {
+                    response.status = "500";
+                    response.message = $"An error occurred: {ex.Message}";
+                }
+            }
+            else
+            {
+                response.status = "409 ";
+                response.message = "Pond Haven't Existed";
+            }
+            return response;
+        }
     }
 }

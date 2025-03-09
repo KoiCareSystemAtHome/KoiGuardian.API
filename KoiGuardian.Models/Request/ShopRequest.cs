@@ -13,6 +13,7 @@ namespace KoiGuardian.Models.Request
         public decimal ShopRate { get; set; }
         public string ShopDescription { get; set; }
         public string ShopAddress { get; set; }
+        public string GhnId { get; set; }
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
 

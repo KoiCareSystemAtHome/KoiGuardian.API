@@ -66,5 +66,12 @@ namespace KoiGuardian.Models.Request
         public Guid PondID { get; set; }
         public required List<PondParam> RequirementPondParam { get; set; }
     }
-
+    public class PondInfo
+    {
+        public Guid PondID { get; set; }
+        public string Name { get; set; }
+        public DateTime CreateDate { get; set; }
+        public string Image { get; set; }
+        public float MaxVolume { get; set; }
+    }
 }

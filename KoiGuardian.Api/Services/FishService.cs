@@ -14,9 +14,9 @@ namespace KoiGuardian.Api.Services
     {
         Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
-        Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
+        Task<FishDetailResponse> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
         Task<List<FishDto>> GetFishByOwnerId(Guid Owner,CancellationToken cancellation);
-        Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
+        Task<List<FishDetailResponse>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
 
     }
 
@@ -137,10 +137,64 @@ namespace KoiGuardian.Api.Services
             return fishResponse;
         }
 
-        public async Task<Fish> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
+        public async Task<FishDetailResponse?> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
         {
-            return await _fishRepository.GetAsync(x => x.KoiID == koiId, cancellationToken);
+            try
+            {
+                var fish = await _fishRepository.GetAsync(
+                    predicate: f => f.KoiID == koiId,
+                    include: query => query
+                        .Include(f => f.Variety)
+                        .Include(f => f.Pond)
+                        .Include(f => f.RelKoiParameters), // Thêm bảng KoiReport
+                    cancellationToken: cancellationToken
+                );
+
+                if (fish == null)
+                    return null;
+
+                return new FishDetailResponse
+                {
+                    FishId = fish.KoiID,
+                    Name = fish.Name,
+                    Image = fish.Image,
+                    Price = fish.Price,
+                    Sex = fish.Sex,
+                    Physique = fish.Physique,
+                    Breeder = fish.Breeder,
+                    Age = fish.Age,
+                    InPondSince = fish.InPondSince,
+                    Variety = new VarietyInfo
+                    {
+                        VarietyId = fish.Variety.VarietyId,
+                        VarietyName = fish.Variety.VarietyName,
+                        Description = fish.Variety.Description
+                    },
+                    Pond = new PondInfo
+                    {
+                        PondID = fish.Pond.PondID,
+                        Name = fish.Pond.Name,
+                        CreateDate = fish.Pond.CreateDate,
+                        Image = fish.Pond.Image,
+                        MaxVolume = fish.Pond.MaxVolume
+                    },
+                    fishReportInfos = fish.RelKoiParameters.Select(r => new FishReportInfo
+                    {
+                        KoiReportId = r.KoiReportId,
+                        KoiId = r.KoiId,
+                        CalculatedDate = r.CalculatedDate,
+                        Weight = r.Weight,
+                        Size = r.Size
+                    }).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần
+                return null;
+            }
         }
+
 
 
         public async Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
@@ -221,19 +275,50 @@ namespace KoiGuardian.Api.Services
             return fishResponse;
         }
 
-        public async Task<List<Fish>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default)
+        public async Task<List<FishDetailResponse>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default)
         {
-            return (await _fishRepository.FindAsync(
-                predicate: !string.IsNullOrWhiteSpace(name)
-                    ? f => f.Name.ToLower().Contains(name.ToLower())
-                    : null,
-                include: query => query
-                    .Include(f => f.Variety)
-                    .Include(f => f.Pond),
-                orderBy: query => query.OrderBy(f => f.Name),
-                cancellationToken: cancellationToken
-            )).ToList();
+            var response = new List<FishDetailResponse>();
+
+            try
+            {
+                var fishList = await _fishRepository.FindAsync(
+                    predicate: !string.IsNullOrWhiteSpace(name)
+                        ? f => f.Name.ToLower().Contains(name.ToLower())
+                        : null,
+                    include: query => query
+                        .Include(f => f.Variety)
+                        .Include(f => f.Pond),
+                    orderBy: query => query.OrderBy(f => f.Name),
+                    cancellationToken: cancellationToken
+                );
+
+                response = fishList.Select(f => new FishDetailResponse
+                {
+                    FishId = f.KoiID,
+                    Name = f.Name,
+                    Image = f.Image,
+                    Price = f.Price,
+                    Sex = f.Sex,
+                    Physique = f.Physique,
+                    Breeder = f.Breeder,
+                    Age = f.Age,
+                    InPondSince = f.InPondSince,
+                    Variety = new VarietyInfo
+                    {
+                        VarietyId = f.Variety.VarietyId,
+                        VarietyName = f.Variety.VarietyName,
+                        Description = f.Variety.Description
+                    }
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                // Xử lý lỗi nếu cần, ví dụ log lỗi
+            }
+
+            return response;
         }
+
 
         public async Task<List<FishDto>> GetFishByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
         {

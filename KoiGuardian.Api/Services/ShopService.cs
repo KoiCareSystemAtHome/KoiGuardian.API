@@ -96,6 +96,7 @@ namespace KoiGuardian.Api.Services
                 shop.ShopDescription = shopRequest.ShopDescription;
                 shop.ShopAddress = shopRequest.ShopAddress;
                 shop.IsActivate = shopRequest.IsActivate;
+                shop.GHNId = shopRequest.GhnId;
                 shop.BizLicences = shopRequest.BizLicences;
 
                 _shopRepository.Update(shop);

@@ -19,6 +19,7 @@ public interface IOrderService
     Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
     Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request);
     Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request);
+    Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId);
 }
 
 public class OrderService(
@@ -234,9 +235,9 @@ public class OrderService(
         }
 
         var processingOrder = result.Where(u =>
-            u.Status != OrderStatus.Complete.ToString() &&
-            u.Status != OrderStatus.Pending.ToString() &&
-            u.Status != OrderStatus.Confirm.ToString()
+            u.Status != OrderStatus.Complete.ToString().ToLower() &&
+            u.Status != OrderStatus.Pending.ToString().ToLower() &&
+            u.Status != OrderStatus.Confirm.ToString().ToLower()
         );
 
         if (processingOrder.Any())
@@ -396,4 +397,35 @@ public class OrderService(
         }
         throw new NotImplementedException();
     }
+
+    public async Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId)
+    {
+        var orders = await orderRepository.FindAsync(
+            predicate: o => o.ShopId == shopId,
+            include: o => o.Include(o => o.OrderDetail)
+                           .Include(o => o.Shop)
+                           .Include(o => o.User),
+            orderBy: o => o.OrderByDescending(o => o.CreatedDate)
+        );
+
+        return orders.Select(order => new OrderDetailResponse
+        {
+            OrderId = order.OrderId,
+            ShopName = order.Shop.ShopName,
+            CustomerName = order.User.UserName,
+            CustomerAddress = JsonSerializer.Deserialize<AddressDto>(order.Address),
+            CustomerPhoneNumber = order.User.PhoneNumber,
+            ShipFee = order.ShipFee,
+            oder_code = order.oder_code,
+            Status = order.Status,
+            ShipType = order.ShipType,
+            Note = order.Note,
+            Details = order.OrderDetail.Select(d => new OrderDetailDto
+            {
+                ProductId = d.ProductId,
+                Quantity = d.Quantity
+            }).ToList()
+        }).ToList();
+    }
+
 }

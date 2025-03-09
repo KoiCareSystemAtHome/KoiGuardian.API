@@ -13,7 +13,7 @@ namespace KoiGuardian.Api.Controllers
         IKoiDiseaseService _services) : ControllerBase
     {
         [HttpGet]
-        public async Task<List<Fish>> GetAllFishAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
+        public async Task<List<FishDetailResponse>> GetAllFishAsync([FromQuery] string? name = null, CancellationToken cancellationToken = default)
         {
             return await fishService.GetAllFishAsync(name,cancellationToken);
         }
@@ -38,35 +38,10 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("{koiId}")]
-        public async Task<FishResponse> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
+        public async Task<FishDetailResponse> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken)
         {
-            var fish = await fishService.GetFishByIdAsync(koiId, cancellationToken);
-            if (fish == null)
-            {
-                return new FishResponse
-                {
-                    Status = "404",
-                    Message = $"Fish with ID {koiId} was not found."
-                };
-            }
-
-            return new FishResponse
-            {
-                Status = "200",
-                Message = "Fish retrieved successfully.",
-               Fish = new FishDto()
-               {
-                   KoiID  = fish.KoiID,
-                   Age = fish.Age,
-                   Image = fish.Image,  
-                   Name = fish.Name,
-                   Price = fish.Price,
-                   Sex = fish.Sex,
-                   Pond = fish.Pond,
-                   Variety = fish.Variety,
-                   DiseaseTracking = await _services.GetDisease(koiId),
-               }
-            };
+           return await fishService.GetFishByIdAsync(koiId, cancellationToken);
+           
         }
     }
 }

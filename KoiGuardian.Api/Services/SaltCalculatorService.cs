@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
+using Azure.Core;
 using KoiGuardian.Core.Repository;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
@@ -18,6 +19,10 @@ namespace KoiGuardian.Api.Services
         Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request);
         Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId);
 
+        Task<List<Notification>> GetSaltNotifications(Guid pondId);
+
+
+        Task<bool> AdjustSaltAdditionStartTime(Guid pondId, DateTime newStartTime);
 
     }
 
@@ -27,6 +32,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<RelPondParameter> _pondParamRepository;
         private readonly IRepository<PondStandardParam> _pondStandardParamRepository;
         private readonly IRepository<KoiDiseaseProfile> _koiDiseaseProfileRepository;
+        private readonly IRepository<Notification> _notificationRepository;
         private static readonly ConcurrentDictionary<Guid, CalculateSaltResponse> _saltCalculationCache = new();
 
 
@@ -36,11 +42,13 @@ namespace KoiGuardian.Api.Services
         public SaltCalculatorService(
             IRepository<Pond> pondRepository,
             IRepository<KoiDiseaseProfile> koiDiseaseProfile,
+            IRepository<Notification> notificationRepository,
             IRepository<RelPondParameter> pondParamRepository)
             
         {
             _pondRepository = pondRepository;
             _pondParamRepository = pondParamRepository;
+            _notificationRepository = notificationRepository;
             _koiDiseaseProfileRepository = koiDiseaseProfile;
         }
        
@@ -52,11 +60,13 @@ namespace KoiGuardian.Api.Services
             { "high", 0.007 }
         };
 
+       
+
         public async Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request)
         {
             // Fetch pond with fish included
             var pondQuery = _pondRepository.GetQueryable(p => p.PondID == request.PondId)
-                .Include(p => p.Fish); // Apply Include directly on IQueryable
+                .Include(p => p.Fish);
             var pond = await pondQuery.FirstOrDefaultAsync();
 
             if (pond == null)
@@ -71,7 +81,7 @@ namespace KoiGuardian.Api.Services
 
             // Fetch salt parameter
             var saltParamQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
-                .Include(p => p.Parameter); // Apply Include directly on IQueryable
+                .Include(p => p.Parameter);
             var saltParameter = await saltParamQuery.FirstOrDefaultAsync();
 
             if (saltParameter?.Parameter == null)
@@ -87,7 +97,7 @@ namespace KoiGuardian.Api.Services
             // Get current salt value for the pond
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
-                .Include(p => p.Parameter); // Apply Include directly on IQueryable
+                .Include(p => p.Parameter);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
 
             double currentVolume = request.WaterChangePercent > 0
@@ -120,12 +130,6 @@ namespace KoiGuardian.Api.Services
             }
 
             double currentSaltConcentration = currentSaltValue?.Value ?? 0;
-
-            /*if (request.AddedSalt > 0)
-            {
-                currentSaltConcentration += request.AddedSalt;
-            }*/
-
             if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel.ToLower(), out double standardSalt))
             {
                 return new CalculateSaltResponse
@@ -145,16 +149,13 @@ namespace KoiGuardian.Api.Services
 
             // Check fish diseases and adjust salt percentage
             double saltModifyPercent = 0;
-
-            // Ensure Fish collection is not null
             var fishList = pond.Fish?.ToList() ?? new List<Fish>();
             if (fishList.Any())
             {
                 foreach (var fish in fishList)
                 {
-                    // Fetch disease profiles for the current fish
                     var diseaseProfilesQuery = _koiDiseaseProfileRepository.GetQueryable(d => d.FishId == fish.KoiID)
-                        .Include(d => d.Disease); // Apply Include directly on IQueryable
+                        .Include(d => d.Disease);
                     var diseaseProfiles = await diseaseProfilesQuery.ToListAsync();
 
                     foreach (var diseaseProfile in diseaseProfiles)
@@ -212,6 +213,9 @@ namespace KoiGuardian.Api.Services
                 additionalNotes.Add($"Need to add: {additionalSaltNeeded:F2} kg salt.");
                 additionalNotes.Add($"Current salt: {currentSaltConcentration:F2} kg.");
                 additionalNotes.Add($"Target salt: {targetSaltWeightKg:F2} kg.");
+
+                // Create and save notifications every 7 hours
+                await CreateSaltNotifications(pond, additionalSaltNeeded);
             }
 
             // Add warnings based on salt concentration thresholds
@@ -234,14 +238,40 @@ namespace KoiGuardian.Api.Services
                 AdditionalInstruction = additionalNotes
             };
 
-            // Lưu kết quả vào cache
             _saltCalculationCache[request.PondId] = response;
             return response;
         }
 
+        private async Task CreateSaltNotifications(Pond pond, double additionalSaltNeeded)
+        {
+            var now = DateTime.UtcNow; 
+            const int hoursInterval = 7; 
+
+            // Calculate number of reminders based on salt addition steps
+            double maxSaltIncreasePerTime = pond.MaxVolume * 0.0005; // 0.05% of MaxVolume in kg
+            int numberOfReminders = (int)Math.Ceiling(additionalSaltNeeded / maxSaltIncreasePerTime);
+
+            for (int i = 0; i < numberOfReminders; i++)
+            {
+                var sendDate = now.AddHours(hoursInterval * i);
+
+                var notification = new Notification
+                {
+                    NotificationId = Guid.NewGuid(),
+                    ReceiverId = Guid.Parse(pond.OwnerId), // Assuming OwnerId is string; adjust if Guid
+                    Type = "SaltAdditionReminder",
+                    Title = "Nhắc nhở thêm muối cho hồ",
+                    Content = $"Hồ của bạn cần thêm {additionalSaltNeeded:F2} kg muối. Lần {i + 1}: Thêm {(additionalSaltNeeded / numberOfReminders):F2} kg muối vào {sendDate:HH:mm dd/MM/yyyy}.",
+                    Seendate = sendDate,
+                    Data = Newtonsoft.Json.JsonConvert.SerializeObject(new { PondId = pond.PondID, SaltNeeded = additionalSaltNeeded, Step = i + 1, SaltPerStep = additionalSaltNeeded / numberOfReminders })
+                };
+
+                 _notificationRepository.Insert(notification); // Assuming Insert returns Task
+            }
+        }
+
         public async Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId)
         {
-            // Kiểm tra xem có kết quả CalculateSalt nào cho PondId này không
             if (!_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse saltResponse))
             {
                 return new SaltAdditionProcessResponse
@@ -278,8 +308,7 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Quy tắc 1: Tăng tối đa 0.05% mỗi lần
-            double maxSaltIncreasePerTime = pond.MaxVolume * 0.0005; // 0.05% của thể tích tối đa
+            double maxSaltIncreasePerTime = pond.MaxVolume * 0.0005;
             int numberOfAdditions = (int)Math.Ceiling(additionalSaltNeeded / maxSaltIncreasePerTime);
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
@@ -287,13 +316,8 @@ namespace KoiGuardian.Api.Services
             instructions.Add($"Số lần thêm muối: {numberOfAdditions}.");
             instructions.Add($"Lượng muối mỗi lần: {saltPerAddition:F2} kg.");
             instructions.Add($"Quy tắc 1: Tăng tối đa 0.05% ({maxSaltIncreasePerTime:F2} kg) mỗi lần.");
-
-            // Quy tắc 2: Thời gian giữa các lần tăng là 6-8 giờ
-            instructions.Add("Quy tắc 2: Chờ 6-8 giờ giữa các lần thêm muối để đảm bảo an toàn cho cá.");
-            for (int i = 1; i <= numberOfAdditions; i++)
-            {
-                instructions.Add($"Lần {i}: Thêm {saltPerAddition:F2} kg muối. Chờ 6-8 giờ trước khi thêm lần tiếp theo.");
-            }
+            instructions.Add("Quy tắc 2: Chờ 7 giờ giữa các lần thêm muối để đảm bảo an toàn cho cá.");
+           
 
             return new SaltAdditionProcessResponse
             {
@@ -301,6 +325,77 @@ namespace KoiGuardian.Api.Services
                 Instructions = instructions
             };
         }
+
+        public async Task<List<Notification>> GetSaltNotifications(Guid pondId)
+        {
+            var notificationsQuery = _notificationRepository.GetQueryable(n =>
+                n.Type == "SaltAdditionReminder" &&
+                n.Data.Contains(pondId.ToString())) // Filter by PondId in Data (JSON string)
+                .OrderBy(n => n.Seendate); // Sort by scheduled time
+
+            return await notificationsQuery.ToListAsync();
+        }
+
+        public async Task<bool> AdjustSaltAdditionStartTime(Guid pondId, DateTime newStartTime)
+        {
+            // Kiểm tra hồ cá có tồn tại không
+            var pond = await _pondRepository.GetQueryable(p => p.PondID == pondId).FirstOrDefaultAsync();
+            if (pond == null)
+            {
+                return false;
+            }
+
+            // Lấy tất cả thông báo thêm muối hiện tại cho hồ
+            var existingNotifications = await GetSaltNotifications(pondId);
+            if (!existingNotifications.Any())
+            {
+                return false;
+            }
+
+            // Xóa thông báo cũ - sửa lỗi ở đây
+            foreach (var notification in existingNotifications)
+            {
+                
+                 _notificationRepository.Delete(notification);
+            }
+
+            // Lấy thông tin từ notification đầu tiên để tái tạo
+            var firstNotification = existingNotifications.First();
+            var notificationData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(firstNotification.Data);
+
+            double additionalSaltNeeded = (double)notificationData.SaltNeeded;
+            int totalSteps = existingNotifications.Count;
+            double saltPerStep = additionalSaltNeeded / totalSteps;
+
+            // Tạo lại thông báo với thời gian mới
+            const int hoursInterval = 7;
+            for (int i = 0; i < totalSteps; i++)
+            {
+                var sendDate = newStartTime.AddHours(hoursInterval * i);
+
+                var notification = new Notification
+                {
+                    NotificationId = Guid.NewGuid(),
+                    ReceiverId = Guid.Parse(pond.OwnerId),
+                    Type = "SaltAdditionReminder",
+                    Title = "Nhắc nhở thêm muối cho hồ",
+                    Content = $"Hồ của bạn cần thêm {additionalSaltNeeded:F2} kg muối. Lần {i + 1}: Thêm {saltPerStep:F2} kg muối vào {sendDate:HH:mm dd/MM/yyyy}.",
+                    Seendate = sendDate,
+                    Data = Newtonsoft.Json.JsonConvert.SerializeObject(new
+                    {
+                        PondId = pond.PondID,
+                        SaltNeeded = additionalSaltNeeded,
+                        Step = i + 1,
+                        SaltPerStep = saltPerStep
+                    })
+                };
+
+                 _notificationRepository.Insert(notification);
+            }
+
+            return true;
+        }
+
 
 
 

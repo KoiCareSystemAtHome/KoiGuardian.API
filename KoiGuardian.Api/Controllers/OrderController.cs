@@ -54,6 +54,22 @@ namespace KoiGuardian.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPut("updateOrderShipFee")]
+        public async Task<IActionResult> UpdateOrderShipFee([FromBody] UpdateOrderShipFeeRequest request)
+        {
+            var response = await service.UpdateOrderShipFeeAsync(request);
+
+            return Ok(response);
+        }
+
+        [HttpPut("updateOrderShipType")]
+        public async Task<IActionResult> UpdateOrderShipType([FromBody] UpdateOrderShipTypeRequest request)
+        {
+            var response = await service.UpdateOrderShipTypeAsync(request);
+
+            return Ok(response);
+        }
+
         [HttpPut("updateOrderStatus")]
         public async Task<IActionResult> UpdateOrderStatus([FromBody] UpdateOrderStatusRequest request)
         {

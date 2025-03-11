@@ -56,3 +56,14 @@ public class UpdateOrderCodeRequest
     public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
     public string order_code { get; set; }  // Trạng thái đơn hàng
 }
+
+public class UpdateOrderShipFeeRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    public string ShipFee { get; set; }  // Trạng thái đơn hàng
+}
+public class UpdateOrderShipTypeRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    public string ShipType { get; set; }  // Trạng thái đơn hàng
+}

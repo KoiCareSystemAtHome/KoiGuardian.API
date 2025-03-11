@@ -19,6 +19,8 @@ public interface IOrderService
     Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
     Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request);
     Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request);
+    Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request);
+    Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request);
     Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId);
 }
 
@@ -435,5 +437,47 @@ public class OrderService(
         }).ToList();
     }
 
+    public async Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request)
+    {
+        try
+        {
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+            order.ShipFee = request.ShipFee;
+            orderRepository.Update(order);
+            await uow.SaveChangesAsync();
 
+            return OrderResponse.Success("Order updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
+        throw new NotImplementedException();
+    }
+
+    public async Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request)
+    {
+        try
+        {
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+            order.ShipType = request.ShipType;
+            orderRepository.Update(order);
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success("Order updated successfully");
+        }
+        catch (Exception ex)
+        {
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
+        throw new NotImplementedException();
+    }
 }

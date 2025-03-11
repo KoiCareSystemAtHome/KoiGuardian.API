@@ -580,7 +580,7 @@ IImageUploadService imageUpload
         }
 
         var orders = await orderRepository
-           .FindAsync(o => orderIds.Contains(o.OrderId) && o.UserId == user.Id && o.Status != "Paid");
+           .FindAsync(o => orderIds.Contains(o.OrderId) && o.UserId == user.Id);
           
 
         if (!orders.Any()) return "No valid orders found";
@@ -593,7 +593,6 @@ IImageUploadService imageUpload
         wallet.Amount -= totalAmount;
         foreach (var order in orders)
         {
-            order.Status = "Paid";
             var transaction = new Transaction
             {
                 TransactionId = Guid.NewGuid(),
@@ -639,7 +638,7 @@ IImageUploadService imageUpload
             .Select(group => new
             {
                 ShopId = group.Key,
-                TotalAmount = group.Sum(o => o.Total)
+                TotalAmount = group.Sum(o => o.Total)*0.97,
             })
             .ToList();
 
@@ -656,7 +655,7 @@ IImageUploadService imageUpload
             if (shopWallet == null) return "Shop Wallet is not valid!";
 
             // Cộng tiền vào ví của shop
-            shopWallet.Amount += shopTran.TotalAmount;
+            shopWallet.Amount += (float)shopTran.TotalAmount;
             walletRepository.Update(shopWallet);
         }
 

@@ -225,6 +225,32 @@ public class OrderService(
 
     public async Task<List<OrderFilterResponse>> FilterOrder(OrderFilterRequest request)
     {
+        /* 
+
+       if (processingOrder.Any())
+       {
+           foreach (var order in processingOrder)
+           {
+               var tracking = new TrackingGHNRequest()
+               {
+                   order_code = order.oder_code
+               };
+
+               var trackingResponse = await ghnService.TrackingShippingOrder(tracking);
+               if (!string.IsNullOrEmpty(trackingResponse))
+               {
+                   var doc = JsonDocument.Parse(trackingResponse);
+                   string? status = doc.RootElement
+                       .GetProperty("data")
+                       .GetProperty("status")
+                       .GetString();
+
+                   order.Status = status ?? OrderStatus.Inprogress.ToString();
+                   orderRepository.Update(order);
+               }
+           }
+           await uow.SaveChangesAsync();
+       }*/
         var result = new List<Order>();
 
         if (request.AccountId != null)
@@ -234,46 +260,11 @@ public class OrderService(
                 CancellationToken.None)).ToList();
         }
 
-        var processingOrder = result.Where(u =>
-            u.Status != OrderStatus.Complete.ToString().ToLower() &&
-            u.Status != OrderStatus.Pending.ToString().ToLower() &&
-            u.Status != OrderStatus.Confirm.ToString().ToLower()
+        // Truy vấn danh sách Transaction có DocNo trùng với OrderId
+        var transactionList = await transactionRepository.FindAsync(
+            t => result.Select(o => o.OrderId).Contains(t.DocNo),
+            CancellationToken.None
         );
-
-        if (processingOrder.Any())
-        {
-            foreach (var order in processingOrder)
-            {
-                var tracking = new TrackingGHNRequest()
-                {
-                    order_code = order.oder_code
-                };
-
-                var trackingResponse = await ghnService.TrackingShippingOrder(tracking);
-                if (!string.IsNullOrEmpty(trackingResponse))
-                {
-                    var doc = JsonDocument.Parse(trackingResponse);
-                    string? status = doc.RootElement
-                        .GetProperty("data")
-                        .GetProperty("status")
-                        .GetString();
-
-                    order.Status = status ?? OrderStatus.Inprogress.ToString();
-                    orderRepository.Update(order);
-                }
-            }
-            await uow.SaveChangesAsync();
-        }
-
-        if (!string.IsNullOrEmpty(request.RequestStatus))
-        {
-            result = result.Where(u => u.Status.Equals(request.RequestStatus, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        if (!string.IsNullOrEmpty(request.SearchKey))
-        {
-            result = result.Where(u => u.Note.ToLower().Contains(request.SearchKey.ToLower())).ToList();
-        }
 
         var mem = await memRepository.FindAsync(u => result.Select(u => u.UserId).Contains(u.UserId), CancellationToken.None);
 
@@ -282,6 +273,9 @@ public class OrderService(
             var address = !string.IsNullOrEmpty(u.Address)
                 ? JsonSerializer.Deserialize<AddressDto>(u.Address)
                 : new AddressDto { ProvinceName = "No address info" };
+
+            var transaction = transactionList.FirstOrDefault(t => t.DocNo == u.OrderId);
+
             return new OrderFilterResponse()
             {
                 OrderId = u.OrderId,
@@ -293,7 +287,16 @@ public class OrderService(
                 oder_code = u.oder_code,
                 Status = u.Status,
                 ShipType = u.ShipType,
-                Note = u.Note
+                Note = u.Note,
+
+                // Object chứa thông tin transaction
+                TransactionInfo = transaction != null ? new TransactionDto
+                {
+                    TransactionId = transaction.TransactionId,
+                    TransactionDate = transaction.TransactionDate,
+                    TransactionType = transaction.TransactionType,
+                    VnPayTransactionId = transaction.VnPayTransactionid
+                } : null
             };
         }).ToList();
     }

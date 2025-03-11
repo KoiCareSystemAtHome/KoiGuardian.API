@@ -29,6 +29,7 @@ namespace KoiGuardian.DataAccess.Db
         Pending, 
         Confirm,
         Complete,
-        Inprogress
+        Inprogress,
+        Fail
     }
 }

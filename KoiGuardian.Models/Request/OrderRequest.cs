@@ -51,17 +51,18 @@ public class UpdateOrderStatusRequest
     public string Status { get; set; }  // Trạng thái đơn hàng
 }
 
-public class UpdateOrderCodeRequest
+public class UpdateOrderCodeShipFeeRequest
 {
     public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
     public string order_code { get; set; }  // Trạng thái đơn hàng
+    public string ShipFee { get; set; }  // Trạng thái đơn hàng
 }
 
-public class UpdateOrderShipFeeRequest
+/*public class UpdateOrderShipFeeRequest
 {
     public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
     public string ShipFee { get; set; }  // Trạng thái đơn hàng
-}
+}*/
 public class UpdateOrderShipTypeRequest
 {
     public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật

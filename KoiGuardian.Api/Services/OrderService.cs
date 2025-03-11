@@ -18,8 +18,8 @@ public interface IOrderService
     Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request);
     Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
     Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request);
-    Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request);
-    Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request);
+    Task<OrderResponse> UpdateOrderCodeShipFeeAsync(UpdateOrderCodeShipFeeRequest request);
+  /*  Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request);*/
     Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request);
     Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId);
 }
@@ -383,7 +383,7 @@ public class OrderService(
         }
     }
 
-    public async Task<OrderResponse> UpdateOrderCodeAsync(UpdateOrderCodeRequest request)
+    public async Task<OrderResponse> UpdateOrderCodeShipFeeAsync(UpdateOrderCodeShipFeeRequest request)
     {
         try
         {
@@ -393,6 +393,7 @@ public class OrderService(
                 return OrderResponse.Error("Order not found");
             }
             order.oder_code = request.order_code;
+            order.ShipFee = request.ShipFee;
             orderRepository.Update(order);
             await uow.SaveChangesAsync();
 
@@ -437,7 +438,7 @@ public class OrderService(
         }).ToList();
     }
 
-    public async Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request)
+/*    public async Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request)
     {
         try
         {
@@ -457,7 +458,7 @@ public class OrderService(
             return OrderResponse.Error($"Failed to update order: {ex.Message}");
         }
         throw new NotImplementedException();
-    }
+    }*/
 
     public async Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request)
     {

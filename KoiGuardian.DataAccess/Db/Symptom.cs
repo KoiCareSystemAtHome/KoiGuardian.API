@@ -23,7 +23,7 @@ public enum SymptomType
     Common,
     Common_Food,
     Common_Enviroment,
-    Common_DiseaseF
+    Common_Disease
 }
 
 public enum SymptomUnit

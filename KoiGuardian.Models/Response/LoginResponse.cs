@@ -14,4 +14,5 @@ public class UserDto
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
+    public string ShopId { get; set; } = string.Empty;
 }

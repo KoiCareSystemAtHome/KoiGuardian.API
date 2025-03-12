@@ -149,6 +149,8 @@ IImageUploadService imageUpload
             };
         }
         var mem = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
+        var shop = await shopRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
+
         var roles = await _userManager.GetRolesAsync(user);
 
         var token = _jwtTokenGenerator.GenerateToken(user, roles);
@@ -162,6 +164,7 @@ IImageUploadService imageUpload
             Status = user.Status.ToString(),
             Gender = mem?.Gender ?? "",
             Address = mem?.Address ?? "",
+            ShopId = shop?.ShopId.ToString() ?? ""
         };
 
         LoginResponse loginResponse = new()
@@ -406,6 +409,7 @@ IImageUploadService imageUpload
             };
         }
         var mem = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
+        var shop = await shopRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
 
         var roles = await _userManager.GetRolesAsync(user);
 
@@ -416,8 +420,9 @@ IImageUploadService imageUpload
             ID = user.Id,
             Name = user.UserName ?? string.Empty,
             PackageID = user.PackageId,
-            Avatar = mem.Avatar,
+            Avatar = mem.Avatar, // Ưu tiên avatar của shop, nếu không có thì lấy avatar của member
             Status = user.Status.ToString(),
+            ShopId = shop.ShopId.ToString(),
         };
 
         LoginResponse loginResponse = new()

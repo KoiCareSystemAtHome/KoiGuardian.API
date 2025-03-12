@@ -27,6 +27,12 @@ namespace KoiGuardian.Models.Request
         public double TargetSaltWeightKg { get; set; }
     }
 
+    public class AdjustSaltStartTimeRequest
+    {
+        public Guid PondId { get; set; }
+        public DateTime NewStartTime { get; set; }
+    }
+
 
 
 }

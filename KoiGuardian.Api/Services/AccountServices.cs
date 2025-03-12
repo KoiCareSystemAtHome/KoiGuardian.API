@@ -164,7 +164,8 @@ IImageUploadService imageUpload
             Status = user.Status.ToString(),
             Gender = mem?.Gender ?? "",
             Address = mem?.Address ?? "",
-            ShopId = shop?.ShopId.ToString() ?? ""
+            ShopId = shop?.ShopId.ToString() ?? "",
+            GHNid = shop?.GHNId ??""
         };
 
         LoginResponse loginResponse = new()
@@ -422,6 +423,7 @@ IImageUploadService imageUpload
             PackageID = user.PackageId,
             Avatar = mem.Avatar, // Ưu tiên avatar của shop, nếu không có thì lấy avatar của member
             Status = user.Status.ToString(),
+            GHNid = shop?.GHNId ?? "",
             ShopId = shop.ShopId.ToString(),
         };
 

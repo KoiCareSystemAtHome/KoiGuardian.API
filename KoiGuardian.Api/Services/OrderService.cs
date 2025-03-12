@@ -112,7 +112,7 @@ public class OrderService(
                     orderDetailRepository.Insert(orderDetail);
                 }
 
-                responses.Add(OrderResponse.Success($"Order created successfully with ID: {order.OrderId}"));
+                responses.Add(OrderResponse.Success(order.OrderId.ToString()));
             }
 
             await uow.SaveChangesAsync();

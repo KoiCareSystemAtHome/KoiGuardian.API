@@ -298,7 +298,12 @@ public class OrderService(
                     TransactionDate = transaction.TransactionDate,
                     TransactionType = transaction.TransactionType,
                     VnPayTransactionId = transaction.VnPayTransactionid
-                } : null
+                } : null,
+                Details = u.OrderDetail.Select(d => new OrderDetailDto
+                {
+                    ProductId = d.ProductId,
+                    Quantity = d.Quantity
+                }).ToList()
             };
         }).ToList();
     }

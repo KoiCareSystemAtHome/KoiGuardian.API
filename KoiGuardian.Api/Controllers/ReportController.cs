@@ -13,6 +13,24 @@ namespace KoiGuardian.Api.Controllers
         IReportServices services
         ) : ControllerBase
     {
+        [HttpGet]
+        public async Task<IList<Report>> GetAllReports(CancellationToken cancellationToken)
+        {
+            return await services.GetAllReportAsync(cancellationToken);
+        }
+
+        [HttpGet("get-by-report-id")]
+        public async Task<ReportDetailResponse> GetReportsById(Guid id,CancellationToken cancellationToken)
+        {
+            return await services.GetReportByIDAsync(id,cancellationToken);
+        }
+
+        [HttpGet("get-by-user-id")]
+        public async Task<List<ReportDetailResponse>> GetReportByUserIds(Guid id, CancellationToken cancellationToken)
+        {
+            return await services.GetReportByUserIdAsync(id, cancellationToken);
+        }
+
         [HttpPost("create-report")]
         public async Task<ReportResponse> CreateReportAsync([FromBody] CreateReportRequest Request, CancellationToken cancellationToken)
         {

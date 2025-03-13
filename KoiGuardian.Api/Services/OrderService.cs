@@ -312,22 +312,24 @@ public class OrderService(
 
         if (order == null) return new();
 
-        var address = JsonSerializer.Deserialize<AddressDto>(order.Note);
+        AddressDto addressDto;
+        try
+        {
+            addressDto = !string.IsNullOrEmpty(order.Address)
+                ? JsonSerializer.Deserialize<AddressDto>(order.Address)
+                : new AddressDto { ProvinceName = "No address info" };
+        }
+        catch (JsonException)
+        {
+            addressDto = new AddressDto { ProvinceName = "Invalid address" };
+        };
 
         return new OrderDetailResponse()
         {
             OrderId = order.OrderId,
             ShopName = order.Shop.ShopName,
             CustomerName = order.User.UserName,
-            CustomerAddress = new AddressDto
-            {
-                DistrictName = address.DistrictName,
-                DistrictId = address.DistrictId,
-                ProvinceName = address.ProvinceName, 
-                ProvinceId = address.ProvinceId,
-                WardName = address.WardName,
-                WardId = address.WardId,
-            },
+            CustomerAddress = addressDto,
             CustomerPhoneNumber = order.User.PhoneNumber,
             ShipFee = order.ShipFee,
             oder_code = order.oder_code,

@@ -15,16 +15,16 @@ namespace KoiGuardian.Api.Controllers
             _shopService = shopService;
         }
 
-        [HttpPost("create")]
+       /* [HttpPost("create")]
         public async Task<ShopResponse> CreateShop([FromBody] ShopRequest shopRequest, CancellationToken cancellationToken)
         {
             return await _shopService.CreateShop(shopRequest, cancellationToken);
-        }
+        }*/
 
         [HttpGet("shop/{shopId}")]
         public async Task<ShopResponse> GetShopById(Guid shopId, CancellationToken cancellationToken)
         {
-            return await _shopService.GetShopById(shopId, cancellationToken);
+            return await _shopService.GetShopByIdAsync(shopId, cancellationToken);
         }
 
         [HttpGet]

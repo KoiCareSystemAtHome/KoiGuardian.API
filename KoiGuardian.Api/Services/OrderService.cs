@@ -415,26 +415,38 @@ public class OrderService(
                            .Include(o => o.User),
             orderBy: o => o.OrderByDescending(o => o.CreatedDate)
         );
-
-        return orders.Select(order => new OrderDetailResponse
+        return orders.Select(order =>
         {
-            OrderId = order.OrderId,
-            ShopName = order.Shop.ShopName,
-            CustomerName = order.User.UserName,
-            CustomerAddress = !string.IsNullOrEmpty(order.Address)
-                ? JsonSerializer.Deserialize<AddressDto>(order.Address)
-                : new AddressDto { ProvinceName = "No address info" }, // Giá trị mặc định
-            CustomerPhoneNumber = order.User.PhoneNumber,
-            ShipFee = order.ShipFee,
-            oder_code = order.oder_code,
-            Status = order.Status,
-            ShipType = order.ShipType,
-            Note = order.Note,
-            Details = order.OrderDetail.Select(d => new OrderDetailDto
+            AddressDto customerAddress;
+            try
             {
-                ProductId = d.ProductId,
-                Quantity = d.Quantity
-            }).ToList()
+                customerAddress = !string.IsNullOrEmpty(order.Address)
+                    ? JsonSerializer.Deserialize<AddressDto>(order.Address)
+                    : new AddressDto { ProvinceName = "No address info" };
+            }
+            catch (JsonException)
+            {
+                customerAddress = new AddressDto { ProvinceName = "Invalid address" };
+            }
+
+            return new OrderDetailResponse
+            {
+                OrderId = order.OrderId,
+                ShopName = order.Shop?.ShopName ?? "Unknown Shop",
+                CustomerName = order.User?.UserName ?? "Unknown Customer",
+                CustomerAddress = customerAddress,
+                CustomerPhoneNumber = order.User?.PhoneNumber ?? "No phone number",
+                ShipFee = order.ShipFee,
+                oder_code = order.oder_code,
+                Status = order.Status,
+                ShipType = order.ShipType,
+                Note = order.Note,
+                Details = order.OrderDetail?.Select(d => new OrderDetailDto
+                {
+                    ProductId = d.ProductId,
+                    Quantity = d.Quantity
+                }).ToList() ?? new List<OrderDetailDto>() // Tránh lỗi null
+            };
         }).ToList();
     }
 

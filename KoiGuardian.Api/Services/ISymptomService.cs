@@ -16,7 +16,7 @@ public interface ISymptomService
 public class SymptomService( 
     IRepository<PredictSymptoms> symptomRepository,
     IRepository<Disease> diseaseRepository,
-    IRepository<RelSymptomDisease> relSymptomDiseaseRepository
+    IRepository<RelPredictSymptomDisease> relSymptomDiseaseRepository
 
     ) : ISymptomService
 {
@@ -94,7 +94,7 @@ public class SymptomService(
     {
         var relations = await relSymptomDiseaseRepository
             .FindAsync( u => symptoms.Select(u => u.SymtompId).Contains( u.SymtompId),
-                include: u=> u.Include(u => u.Symptom)
+                include: u=> u.Include(u => u.PredictSymptoms)
             , CancellationToken.None);
 
         var groupData = relations.GroupBy( u => u.DiseaseId);
@@ -106,14 +106,14 @@ public class SymptomService(
             foreach (var symptomData in rel)
             {
                 var reqSymp = symptoms.FirstOrDefault( u => u.SymtompId == symptomData.SymtompId);
-                if (Enum.TryParse<SymptomUnit>(symptomData.Symptom.SymptomUnit, out var unit))
+                if (Enum.TryParse<SymptomUnit>(symptomData.PredictSymptoms.SymptomUnit, out var unit))
                 {
                     switch (unit)
                     {
                         case SymptomUnit.check:
                             if (reqSymp.Value.ToLower() == "true")
                             {
-                                if (symptomData.Symptom.SymptomPriority)
+                                if (symptomData.PredictSymptoms.SymptomPriority)
                                 {
                                     currentPoint = currentPoint + 2;
                                 }
@@ -127,7 +127,7 @@ public class SymptomService(
                         case SymptomUnit.rate:
                             if (int.TryParse(reqSymp.Value.ToLower(), out var rate))
                             {
-                                if (rate >= 3 && symptomData.Symptom.SymptomPriority)
+                                if (rate >= 3 && symptomData.PredictSymptoms.SymptomPriority)
                                 {
                                     currentPoint = currentPoint + 2;
                                 }
@@ -142,7 +142,7 @@ public class SymptomService(
                             if (float.TryParse(reqSymp.Value.ToLower(), out var range))
                             {
                                 if (range >= symptomData.DiseaseUpper && range <= symptomData.DiseaseLower
-                                    && symptomData.Symptom.SymptomPriority)
+                                    && symptomData.PredictSymptoms.SymptomPriority)
                                 {
                                     currentPoint = currentPoint + 2;
                                 }
@@ -176,10 +176,10 @@ public class SymptomService(
 
         return new FinalDiseaseTypePredictResponse()
         {
-            CauseGroupType = relations.First().Symptom.Type ,
+            CauseGroupType = relations.First().PredictSymptoms.Type ,
             DiseaseId = predictDiseaseId ?? Guid.Empty,
-           /* DiseaseName =  predictDisease.Name,
-            Description = predictDisease.Description,*/
+            DiseaseName =  predictDisease.Name,
+            Description = predictDisease.Description,
         };
     }
 

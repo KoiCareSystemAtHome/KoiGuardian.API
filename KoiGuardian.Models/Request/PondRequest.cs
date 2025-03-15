@@ -14,6 +14,7 @@ namespace KoiGuardian.Models.Request
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
         public string Image { get; set; }
+        public float MaxVolume { get; set; }
         public required List<PondParam> RequirementPondParam { get; set; }
 
     }
@@ -33,6 +34,7 @@ namespace KoiGuardian.Models.Request
         public string Name { get; set; }
         public DateTime CreateDate { get; set; }
         public string Image { get; set; }
+        public float MaxVolume { get; set; }
 
         public required List<PondParam> RequirementPondParam { get; set; }
     }
@@ -45,7 +47,7 @@ namespace KoiGuardian.Models.Request
         public string Image { get; set; }
         public DateTime CreateDate { get; set; }
         public string OwnerId { get; set; }
-
+        public float MaxVolume { get; set; }
         public List<PondParameterInfo> PondParameters { get; set; }
         public List<FishInfo> Fish { get; set; }
         public FeedingModeInfo FeedingMode { get; set; }

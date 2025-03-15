@@ -28,6 +28,8 @@ public class OrderFilterResponse
     public string ShipFee { get; set; } // include currencies
     public string Note { get; set; }
     public TransactionDto TransactionInfo { get; set; }
+    public ReportDetailResponse ReportDetail { get; set; }
+
     public object Details { get; set; }
 }
 
@@ -42,7 +44,6 @@ public class OrderDetailResponse
     public string oder_code { get; set; }
     public string Status { get; set; }
     public string ShipFee { get; set; } // include currencies
-    public string Note { get; set; }
-
+    public string Note { get; set; } 
     public object Details { get; set; }
 }

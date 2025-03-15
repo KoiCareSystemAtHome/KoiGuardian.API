@@ -47,6 +47,7 @@ namespace KoiGuardian.Api.Services
                     CreateDate = request.CreateDate,
                     Name = request.Name,
                     Image = request.Image,
+                    MaxVolume = request.MaxVolume,
 
                 };
 
@@ -115,6 +116,7 @@ namespace KoiGuardian.Api.Services
                 pond.CreateDate = request.CreateDate;
                 pond.Name = request.Name;
                 pond.Image = request.Image;
+                pond.MaxVolume = request.MaxVolume; 
 
                 var validValues = request.RequirementPondParam.Where(u =>
                     requirementsParam.Select(u => u.ParameterId).Contains(u.HistoryId)
@@ -183,6 +185,7 @@ namespace KoiGuardian.Api.Services
                 OwnerId = p.OwnerId,
                 CreateDate = p.CreateDate,
                 Image = p.Image,
+                MaxVolume = p.MaxVolume,    
             }).ToList();
 
             return pondDtos;
@@ -216,6 +219,7 @@ namespace KoiGuardian.Api.Services
                         Image = pond.Image,
                         CreateDate = pond.CreateDate,
                         OwnerId = pond.OwnerId,
+                        MaxVolume= pond.MaxVolume,
                         PondParameters = pond.RelPondParameter
                             .GroupBy(rp => rp.ParameterID) // Nhóm theo ParameterID
                             .Select(group => new PondParameterInfo
@@ -269,6 +273,7 @@ namespace KoiGuardian.Api.Services
                 OwnerId = p.OwnerId,
                 CreateDate = p.CreateDate,
                 Image = p.Image,
+                MaxVolume = p.MaxVolume,
                 Fish = p.Fish.Select(f => new FishDto
                 {
                     KoiID = f.KoiID,

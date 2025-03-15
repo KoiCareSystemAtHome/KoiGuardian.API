@@ -8,6 +8,7 @@ using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using System.Text.Json;
+using System.Threading;
 
 namespace KoiGuardian.Api.Services;
 
@@ -28,6 +29,7 @@ public class OrderService(
     IRepository<Order> orderRepository,
     IRepository<Transaction> transactionRepository,
     IRepository<OrderDetail> orderDetailRepository,
+    IRepository<Wallet> walletRepository,
     IRepository<Product> productRepository,
     IRepository<Member> memRepository,
     IUnitOfWork<KoiGuardianDbContext> uow,
@@ -365,13 +367,15 @@ public class OrderService(
         try
         {
             var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
-            var trasanction = await transactionRepository.FindAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()),CancellationToken.None);
             if (order == null)
             {
                 return OrderResponse.Error("Order not found");
             }
 
-            if (OrderStatus.Complete.ToString().ToLower().Equals(request.Status) && trasanction.Count == 0)
+            var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
+            string status = request.Status.ToLower();
+
+            if (status == OrderStatus.Complete.ToString().ToLower() && transaction == null)
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
@@ -384,15 +388,29 @@ public class OrderService(
                     UserId = order.UserId,
                     DocNo = order.OrderId,
                 });
+            }
+            else if (status == OrderStatus.Fail.ToString().ToLower() && transaction != null
+                     && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = request.Status;
+                transaction.TransactionType = TransactionType.Cancel.ToString();
+                transactionRepository.Update(transaction);
 
+                var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(order.UserId), CancellationToken.None);
+                if (wallet != null)
+                {
+                    wallet.Amount += order.Total;
+                    walletRepository.Update(wallet);
+                }
             }
             else
             {
                 order.Status = request.Status;
             }
+
             orderRepository.Update(order);
             await uow.SaveChangesAsync();
-
             return OrderResponse.Success("Order updated successfully");
         }
         catch (Exception ex)

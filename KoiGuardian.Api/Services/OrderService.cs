@@ -258,7 +258,7 @@ public class OrderService(
         if (request.AccountId != null)
         {
             result = (await orderRepository.FindAsync(u => u.UserId == request.AccountId,
-                include: u => u.Include(u => u.Shop).Include(u => u.User).Include(u => u.OrderDetail),
+                include: u => u.Include(u => u.Shop).Include(u => u.User).Include(u => u.OrderDetail).Include(u => u.Report),
                 CancellationToken.None)).ToList();
         }
 
@@ -299,6 +299,17 @@ public class OrderService(
                     TransactionType = transaction.TransactionType,
                     VnPayTransactionId = transaction.VnPayTransactionid
                 } : null,
+
+                ReportDetail = u.Report != null ? new ReportDetailResponse 
+                {
+                    ReportId = u.Report.ReportId,
+                    CreatedDate = u.Report.CreatedDate,
+                    image = u.Report.image,
+                    status = u.Report.status,
+                    Reason = u.Report.Reason,
+                    OrderId = u.Report.OrderId,
+                } : null,
+
                 Details = u.OrderDetail.Select(d => new OrderDetailDto
                 {
                     ProductId = d.ProductId,

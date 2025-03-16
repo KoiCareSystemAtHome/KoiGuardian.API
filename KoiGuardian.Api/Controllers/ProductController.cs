@@ -124,5 +124,16 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
+        [HttpGet("/all-food")]
+        public async Task<IEnumerable<FoodResponse>> GetAllFood(CancellationToken cancellationToken)
+        {
+            return await services.GetAllFoodAsync(cancellationToken);
+        }
+
+        [HttpGet("/all-medicine")]
+        public async Task<IEnumerable<MedicineResponse>> GetAllMedicine(CancellationToken cancellationToken)
+        {
+            return await services.GetAllMedicineAsync(cancellationToken);
+        }
     }
 }

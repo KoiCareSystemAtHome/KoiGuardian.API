@@ -42,7 +42,10 @@ namespace KoiGuardian.Api.Services
       CancellationToken cancellationToken);
 
         Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken);
-       
+        Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken);
+        Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken);
+
+
     }
 
     public class ProductService : IProductService
@@ -621,6 +624,104 @@ namespace KoiGuardian.Api.Services
                         CategoryId = p.Category.CategoryId,
                         Name = p.Category.Name
                     }
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return results;
+        }
+
+        public async Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken)
+        {
+            var query = _productRepository.GetQueryable()
+                .Where(p => p.Type == ProductType.Medicine)
+                .Include(p => p.Category)
+                .Include(p => p.Shop)
+                .Include(p => p.Feedbacks)
+                .Join(_medicineRepository.GetQueryable().Include(m => m.MedicinePondParameters),
+                    product => product.ProductId,
+                    medicine => medicine.ProductId,
+                    (product, medicine) => new { Product = product, Medicine = medicine });
+
+            var results = await query
+                .Select(x => new MedicineResponse
+                {
+                    // Product fields
+                    ProductId = x.Product.ProductId,
+                    ProductName = x.Product.ProductName,
+                    Description = x.Product.Description,
+                    Price = x.Product.Price,
+                    StockQuantity = x.Product.StockQuantity,
+                    Image = x.Product.Image,
+                    CategoryId = x.Product.CategoryId,
+                    CategoryName = x.Product.Category.Name,
+                    Brand = x.Product.Brand,
+                    ManufactureDate = x.Product.ManufactureDate,
+                    ExpiryDate = x.Product.ExpiryDate,
+                    ParameterImpactment = x.Product.ParameterImpactment,
+                    ShopId = x.Product.ShopId,
+                    ShopName = x.Product.Shop.ShopName,
+                    Type = x.Product.Type,
+
+                    // Medicine fields
+                    MedicineId = x.Medicine.MedicineId,
+                    MedicineName = x.Medicine.Medicinename,
+                    DosageForm = x.Medicine.DosageForm,
+                    Symptoms = x.Medicine.Symtomps,
+                    PondParamId = x.Medicine.MedicinePondParameters.FirstOrDefault() != null ?
+                        x.Medicine.MedicinePondParameters.FirstOrDefault().PondParamId : null,
+
+                    // Feedback statistics
+                    FeedbackCount = x.Product.Feedbacks.Count(),
+                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return results;
+        }
+
+        public async Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken)
+        {
+            var query = _productRepository.GetQueryable()
+                .Where(p => p.Type == ProductType.Food)
+                .Include(p => p.Category)
+                .Include(p => p.Shop)
+                .Include(p => p.Feedbacks)
+                .Join(_foodRepository.GetQueryable(),
+                    product => product.ProductId,
+                    food => food.ProductId,
+                    (product, food) => new { Product = product, Food = food });
+
+            var results = await query
+                .Select(x => new FoodResponse
+                {
+                    // Product fields
+                    ProductId = x.Product.ProductId,
+                    ProductName = x.Product.ProductName,
+                    Description = x.Product.Description,
+                    Price = x.Product.Price,
+                    StockQuantity = x.Product.StockQuantity,
+                    Image = x.Product.Image,
+                    CategoryId = x.Product.CategoryId,
+                    CategoryName = x.Product.Category.Name,
+                    Brand = x.Product.Brand,
+                    ManufactureDate = x.Product.ManufactureDate,
+                    ExpiryDate = x.Product.ExpiryDate,
+                    ParameterImpactment = x.Product.ParameterImpactment,
+                    ShopId = x.Product.ShopId,
+                    ShopName = x.Product.Shop.ShopName,
+                    Type = x.Product.Type,
+
+                    // Food fields
+                    FoodId = x.Food.FoodId,
+                    Name = x.Food.Name,
+                    AgeFrom = x.Food.AgeFrom,
+                    AgeTo = x.Food.AgeTo,
+
+                    // Feedback statistics
+                    FeedbackCount = x.Product.Feedbacks.Count(),
+                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);

@@ -119,9 +119,9 @@ public class KoiDiseaseService
                     var medicineResponse = new MedicineResponse
                     {
                         MedicineId = medicine.MedicineId,
-                        Medicinename = medicine.Medicinename,
+                        MedicineName = medicine.Medicinename,
                         DosageForm = medicine.DosageForm,
-                        Symtomps = medicine.Symtomps,
+                        Symptoms = medicine.Symtomps,
                         Price = medicine.Product.Price,
                         StockQuantity = medicine.Product.StockQuantity,
                         FeedbackCount = feedbackCount,

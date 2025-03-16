@@ -14,6 +14,8 @@ namespace KoiGuardian.DataAccess.Db
         public string DosageForm { get; set; }
         public string Symtomps { get; set; }
 
+        public virtual ICollection<MedicinePondParameter> MedicinePondParameters { get; set; } = new List<MedicinePondParameter>();
+
         public virtual Product? Product { get; set; }
         public virtual IEnumerable<MedicineDisease>? MedicineDisease { get; set; }
     }

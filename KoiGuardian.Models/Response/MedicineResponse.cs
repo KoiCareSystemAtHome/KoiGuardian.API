@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KoiGuardian.Models.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,16 +9,34 @@ namespace KoiGuardian.Models.Response
 {
     public class MedicineResponse
     {
-        public Guid MedicineId { get; set; }
-        public string Medicinename { get; set; }
-        public string DosageForm { get; set; }
-        public string Symtomps { get; set; }
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public string Description { get; set; }
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
-        public double FeedbackCount { get; set; }
+        public string Image { get; set; }
+        public Guid CategoryId { get; set; }
+        public string CategoryName { get; set; }
+        public string Brand { get; set; }
+        public DateTime ManufactureDate { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public string ParameterImpactment { get; set; }
+        public Guid ShopId { get; set; }
+        public string ShopName { get; set; }
+        public ProductType Type { get; set; }
 
+        // Medicine-specific fields
+        public Guid MedicineId { get; set; }
+        public string MedicineName { get; set; }
+        public string DosageForm { get; set; }
+        public string Symptoms { get; set; }
+        public Guid? PondParamId { get; set; }
+
+        // Feedback data
+        public int FeedbackCount { get; set; }
         public double AverageRating { get; set; }
     }
+
 
     public class RecommendResponse
     {

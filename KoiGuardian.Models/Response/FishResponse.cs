@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KoiGuardian.Models.Request;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,5 +25,6 @@ namespace KoiGuardian.Models.Response
         public object? Pond { get; set; }
         public object? Variety { get; set; }
         public object? DiseaseTracking { get; set; }
+        public List<FishReportInfo> fishReportInfos { get; set; }
     }
 }

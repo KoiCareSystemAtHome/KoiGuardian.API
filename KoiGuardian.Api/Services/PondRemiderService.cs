@@ -5,18 +5,19 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace KoiGuardian.Api.Services
 {
     public interface IPondReminderService
     {
         Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken);
-
-        Task<PondRemiderResponse> GetRemindersByidAsync (Guid id, CancellationToken cancellationToken);
-        Task<double> CalculateAverageParameterIncreaseAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
-        Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, CancellationToken cancellationToken);
+        Task<PondRemiderResponse> GetRemindersByIdAsync(Guid id, CancellationToken cancellationToken);
         Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken);
-        //bảo trì địng kì
         Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken);
         Task SaveMaintenanceReminderAsync(PondReminder reminder, CancellationToken cancellationToken);
     }
@@ -40,158 +41,168 @@ namespace KoiGuardian.Api.Services
             _unitOfWork = unitOfWork;
         }
 
-        // Tính toán sự thay đổi trung bình của tham số trong 3 tháng qua
-        public async Task<double> CalculateAverageParameterIncreaseAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken)
+        // Sinh ra lịch bảo trì cho hồ (hàm chính gộp tất cả logic)
+        public async Task<PondReminder> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken)
         {
-            const int LookbackMonths = 3; // Thời gian tính trung bình là 3 tháng
+            const int LookbackMonths = 3;
+            const int DaysSinceLastUpdateThreshold = 14; // Ngưỡng 14 ngày chưa cập nhật
             var cutoffDate = DateTime.UtcNow.AddMonths(-LookbackMonths);
+            DateTime? earliestMaintenanceDate = null;
+            string? earliestDescription = null;
+            double earliestValue = 0;
+            string? earliestParamName = null;
 
-            // FindAsync with dynamic parameterId
-            var parameterData = await _relPondParameter.FindAsync(
-                rp => rp.PondId == pondId && rp.CalculatedDate >= cutoffDate
-                     && rp.ParameterHistoryId == parameterId,
-                cancellationToken: cancellationToken
-            );
-
-            if (!parameterData.Any())
-            {
-                throw new InvalidOperationException($"No data found for parameter ID '{parameterId}' in the last 3 months.");
-            }
-
-            // Tính sự gia tăng trung bình của tham số trong khoảng thời gian này
-            double totalIncrease = 0;
-            int count = 0;
-
-            for (int i = 1; i < parameterData.Count; i++)
-            {
-                double increase = parameterData[i].Value - parameterData[i - 1].Value;
-                totalIncrease += increase;
-                count++;
-            }
-
-            return count > 0 ? totalIncrease / count : 0;
-        }
-
-        // Tính ngày bảo trì dựa trên sự gia tăng tham số trung bình
-        public async Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, CancellationToken cancellationToken)
-        {
-            // Lấy tất cả các thông số hiện tại của hồ từ RelPondParameter
+            // Load tất cả dữ liệu của hồ trong 3 tháng gần nhất
             var pondParameters = await _relPondParameter.FindAsync(
-                rp => rp.PondId == pondId,
+                rp => rp.PondId == pondId && rp.CalculatedDate >= cutoffDate,
                 cancellationToken: cancellationToken
             );
 
+            // Nếu không có dữ liệu
             if (!pondParameters.Any())
             {
-                throw new InvalidOperationException($"No parameter data found for pond ID '{pondId}'.");
-            }
-
-            DateTime earliestMaintenanceDate = DateTime.MaxValue;
-
-            // Duyệt qua từng thông số của hồ
-            foreach (var pondParam in pondParameters)
-            {
-                // Lấy thông tin chuẩn của thông số từ bảng master data
-                var parameter = await _parameterRepository.GetAsync(
-                    rp => rp.ParameterID.Equals(pondParam.ParameterID),
-                    cancellationToken: cancellationToken
-                );
-
-                if (parameter == null)
-                {
-                    continue; // Bỏ qua nếu không tìm thấy thông số chuẩn
-                }
-
-                // Xử lý ngưỡng nguy hiểm và cảnh báo nếu là null
-                double? maxSafeDensity = parameter.DangerUpper; // Ngưỡng nguy hiểm
-                double? warningUpper = parameter.WarningUpper;  // Ngưỡng cảnh báo cao
-                double currentDensity = pondParam.Value;        // Giá trị hiện tại của thông số
-
-                // Nếu warningUpper không null, kiểm tra và gửi cảnh báo
-                if (warningUpper.HasValue && currentDensity > warningUpper.Value)
-                {
-                    Console.WriteLine($"Warning: Parameter '{parameter.Name}' (ID: {parameter.ParameterID}) " +
-                                      $"is out of safe range. Current value: {currentDensity}, Warning Upper: {warningUpper.Value}");
-                }
-
-                // Nếu maxSafeDensity là null, coi như không có ngưỡng nguy hiểm -> bỏ qua bảo trì dựa trên thông số này
-                if (!maxSafeDensity.HasValue)
-                {
-                    continue; // Không cần tính ngày bảo trì vì ngưỡng là "rất cao"
-                }
-
-                // Nếu đã vượt ngưỡng nguy hiểm
-                if (currentDensity >= maxSafeDensity.Value)
-                {
-                    return DateTime.Now; // Bảo trì ngay lập tức
-                }
-
-                // Tính tốc độ gia tăng trung bình của thông số
-                double averageParameterIncrease = await CalculateAverageParameterIncreaseAsync(
-                    pondId,
-                    pondParam.ParameterID,
-                    cancellationToken
-                );
-
-                // Nếu không có gia tăng (hoặc giảm), bỏ qua thông số này
-                if (averageParameterIncrease <= 0)
-                {
-                    continue;
-                }
-
-                // Tính số ngày để đạt ngưỡng nguy hiểm
-                int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity.Value - currentDensity) / averageParameterIncrease);
-                DateTime maintenanceDate = DateTime.Now.AddDays(daysUntilMaintenance);
-
-                // Cập nhật ngày bảo trì sớm nhất
-                if (maintenanceDate < earliestMaintenanceDate)
-                {
-                    earliestMaintenanceDate = maintenanceDate;
-                }
-            }
-
-            // Nếu không có ngày nào được tính toán (ví dụ: tất cả thông số đều ổn định hoặc ngưỡng là null), trả về ngày xa trong tương lai
-            if (earliestMaintenanceDate == DateTime.MaxValue)
-            {
-                return DateTime.Now.AddMonths(6); // Giả định mặc định là 6 tháng nếu không có vấn đề
-            }
-
-            return earliestMaintenanceDate;
-        }
-
-        // Sinh ra lịch bảo trì cho hồ
-        public async Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var maintenanceDate = await CalculateMaintenanceDateAsync(pondId, cancellationToken);
-
-                // Chuyển đổi sang UTC
-                maintenanceDate = maintenanceDate.ToUniversalTime();
-
                 return new PondReminder
                 {
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
                     ReminderType = ReminderType.Pond,
-                    Title = "Maintenance",
-                    Description = "One or more parameters are reaching unsafe limits. Maintenance required.",
-                    MaintainDate = maintenanceDate,
+                    Title = "Maintenance for Pond",
+                    Description = "No data available for the pond. Maintenance required.",
+                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
-            catch (Exception ex)
+
+            // Nhóm theo ParameterID
+            var parameterGroups = pondParameters
+                .GroupBy(rp => rp.ParameterID)
+                .ToDictionary(g => g.Key, g => g.OrderBy(rp => rp.CalculatedDate).ToList());
+
+            // Load master data parameters
+            var parameterIds = parameterGroups.Keys.ToList();
+            var parameters = await _parameterRepository.FindAsync(
+                p => parameterIds.Contains(p.ParameterID),
+                cancellationToken: cancellationToken
+            );
+            var parameterLookup = parameters.ToDictionary(p => p.ParameterID);
+
+            // Kiểm tra lần cập nhật cuối cùng
+            var latestUpdate = pondParameters.Max(rp => rp.CalculatedDate);
+            var daysSinceLastUpdate = (DateTime.UtcNow - latestUpdate).Days;
+
+            if (daysSinceLastUpdate > DaysSinceLastUpdateThreshold)
             {
-                throw new InvalidOperationException($"Failed to generate maintenance reminder: {ex.Message}");
+                return new PondReminder
+                {
+                    PondReminderId = Guid.NewGuid(),
+                    PondId = pondId,
+                    ReminderType = ReminderType.Pond,
+                    Title = "Maintenance for Pond",
+                    Description = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago).",
+                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
+                    SeenDate = DateTime.MinValue.ToUniversalTime()
+                };
             }
+
+            // Tính toán ngày bảo trì cho từng parameter
+            foreach (var paramId in parameterGroups.Keys)
+            {
+                if (!parameterLookup.TryGetValue(paramId, out var parameter) || parameter.DangerUpper == null)
+                    continue;
+
+                var paramData = parameterGroups[paramId];
+                if (paramData.Count < 2) // Cần ít nhất 2 bản ghi để tính gia tăng
+                    continue;
+
+                var currentValue = paramData.Last().Value;
+                var maxSafeDensity = (double)parameter.DangerUpper;
+                var warningUpper = parameter.WarningUpper;
+
+                DateTime maintenanceDate;
+                string description;
+
+                // Kiểm tra ngưỡng nguy hiểm
+                if (currentValue >= maxSafeDensity)
+                {
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
+                    description = $"{parameter.Name} chạm ngưỡng nguy hiểm ({currentValue}/{maxSafeDensity})";
+                }
+                // Kiểm tra ngưỡng cảnh báo
+                else if (warningUpper.HasValue && currentValue > warningUpper.Value)
+                {
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
+                    description = $"{parameter.Name} vượt ngưỡng cảnh báo ({currentValue}/{warningUpper.Value})";
+                }
+                // Tính ngày bảo trì dựa trên gia tăng
+                else
+                {
+                    double totalIncrease = 0;
+                    int count = 0;
+                    for (int i = 1; i < paramData.Count; i++)
+                    {
+                        double increase = paramData[i].Value - paramData[i - 1].Value;
+                        totalIncrease += increase;
+                        count++;
+                    }
+                    double avgIncrease = count > 0 ? totalIncrease / count : 0;
+
+                    if (avgIncrease > 0)
+                    {
+                        int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity - currentValue) / avgIncrease);
+                        if (daysUntilMaintenance < 0)
+                            continue;
+                        maintenanceDate = DateTime.UtcNow.AddDays(daysUntilMaintenance);
+                        description = $"{parameter.Name} approaching unsafe limits ({currentValue}/{maxSafeDensity})";
+                    }
+                    else
+                    {
+                        continue; // Không có gia tăng thì bỏ qua parameter này
+                    }
+                }
+
+                if (!earliestMaintenanceDate.HasValue || maintenanceDate < earliestMaintenanceDate)
+                {
+                    earliestMaintenanceDate = maintenanceDate;
+                    earliestDescription = description;
+                    earliestValue = currentValue;
+                    earliestParamName = parameter.Name;
+                }
+            }
+
+            // Nếu không tính được ngày cụ thể từ các parameter
+            if (!earliestMaintenanceDate.HasValue)
+            {
+                earliestMaintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau nếu không có dữ liệu cụ thể
+                earliestDescription = "Routine maintenance scheduled (no critical parameters detected)";
+                earliestValue = 0;
+                earliestParamName = "Pond";
+            }
+
+            return new PondReminder
+            {
+                PondReminderId = Guid.NewGuid(),
+                PondId = pondId,
+                ReminderType = ReminderType.Pond,
+                Title = $"Maintenance for {earliestParamName}",
+                Description = $"Current value: {earliestValue} - {earliestDescription}. Maintenance required.",
+                MaintainDate = earliestMaintenanceDate.Value.ToUniversalTime(),
+                SeenDate = DateTime.MinValue.ToUniversalTime()
+            };
         }
 
-        public async Task<PondRemiderResponse> GetRemindersByidAsync(Guid id, CancellationToken cancellationToken)
+        // Lấy thông tin nhắc nhở theo ID
+        public async Task<PondRemiderResponse> GetRemindersByIdAsync(Guid id, CancellationToken cancellationToken)
         {
             var pondReminder = await _reminderRepository.GetAsync(
-            rp => rp.PondReminderId == id, cancellationToken: cancellationToken);
+                rp => rp.PondReminderId == id,
+                cancellationToken: cancellationToken);
 
-            PondRemiderResponse pondRemiderResponse = new PondRemiderResponse
+            if (pondReminder == null)
+            {
+                throw new InvalidOperationException($"Reminder with ID '{id}' not found.");
+            }
+
+            return new PondRemiderResponse
             {
                 PondReminderId = pondReminder.PondReminderId,
                 PondId = pondReminder.PondId,
@@ -201,13 +212,14 @@ namespace KoiGuardian.Api.Services
                 MaintainDate = pondReminder.MaintainDate,
                 SeenDate = pondReminder.SeenDate,
             };
-            return pondRemiderResponse;
         }
 
+        // Lấy danh sách nhắc nhở theo PondId
         public async Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken)
         {
             var pondReminders = await _reminderRepository.FindAsync(
-        rp => rp.PondId == pondId, cancellationToken: cancellationToken);
+                rp => rp.PondId == pondId,
+                cancellationToken: cancellationToken);
 
             return pondReminders.Select(pondReminder => new PondRemiderResponse
             {
@@ -221,7 +233,7 @@ namespace KoiGuardian.Api.Services
             }).ToList();
         }
 
-        //Tạo LỊch Bảo trì đinh kì theo các khoảng time
+        // Tạo lịch bảo trì định kỳ theo các khoảng thời gian
         public async Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken)
         {
             if (cycleDays <= 0)
@@ -234,7 +246,6 @@ namespace KoiGuardian.Api.Services
 
             while (startDate <= endDate)
             {
-                startDate = startDate.AddDays(cycleDays);
                 reminders.Add(new PondReminder
                 {
                     PondReminderId = Guid.NewGuid(),
@@ -242,7 +253,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Pond,
                     Title = "Scheduled Maintenance",
                     Description = "Routine maintenance scheduled for the pond.",
-                    MaintainDate = startDate,
+                    MaintainDate = startDate.ToUniversalTime(),
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 });
 
@@ -256,8 +267,6 @@ namespace KoiGuardian.Api.Services
 
             return reminders;
         }
-
-
 
         // Lưu lịch bảo trì vào DB
         public async Task SaveMaintenanceReminderAsync(PondReminder reminder, CancellationToken cancellationToken)

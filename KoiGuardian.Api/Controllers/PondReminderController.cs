@@ -23,7 +23,7 @@ namespace KoiGuardian.Api.Controllers
         {
             try
             {
-                var reminder = await _pondReminderService.GetRemindersByidAsync(id, cancellationToken);
+                var reminder = await _pondReminderService.GetRemindersByIdAsync(id, cancellationToken);
                 return Ok(reminder);
             }
             catch (InvalidOperationException ex)

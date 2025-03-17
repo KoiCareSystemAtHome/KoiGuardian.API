@@ -14,8 +14,8 @@ namespace KoiGuardian.Api.Services
 
         Task<PondRemiderResponse> GetRemindersByidAsync (Guid id, CancellationToken cancellationToken);
         Task<double> CalculateAverageParameterIncreaseAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
-        Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
-        Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken);
+        Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, CancellationToken cancellationToken);
+        Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken);
         //bảo trì địng kì
         Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken);
         Task SaveMaintenanceReminderAsync(PondReminder reminder, CancellationToken cancellationToken);
@@ -73,67 +73,101 @@ namespace KoiGuardian.Api.Services
         }
 
         // Tính ngày bảo trì dựa trên sự gia tăng tham số trung bình
-        public async Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken)
+        public async Task<DateTime> CalculateMaintenanceDateAsync(Guid pondId, CancellationToken cancellationToken)
         {
-            // Lấy tham số từ database để lấy ngưỡng cảnh báo và ngưỡng tối đa
-            var parameter = await _parameterRepository.GetAsync(rp => rp.ParameterID.Equals(parameterId), cancellationToken: cancellationToken);
-            if (parameter == null)
-            {
-                throw new InvalidOperationException($"Parameter with ID '{parameterId}' not found.");
-            }
-
-            double maxSafeDensity = (double)parameter.DangerUpper; // Ngưỡng tối đa cho tham số
-           // double warningLower = (double)parameter.WarningLowwer; // Ngưỡng cảnh báo thấp
-            double warningUpper = (double)parameter.WarningUpper; // Ngưỡng cảnh báo cao
-
-            // Lấy giá trị tham số hiện tại từ RelPondParameter
-            var latestParameterData = await _relPondParameter.FindAsync(
-                rp => rp.PondId == pondId && rp.ParameterHistoryId == parameterId,
+            // Lấy tất cả các thông số hiện tại của hồ từ RelPondParameter
+            var pondParameters = await _relPondParameter.FindAsync(
+                rp => rp.PondId == pondId,
                 cancellationToken: cancellationToken
             );
 
-            if (latestParameterData == null || !latestParameterData.Any())
+            if (!pondParameters.Any())
             {
-                throw new InvalidOperationException($"No data found for parameter ID '{parameterId}' for the pond.");
+                throw new InvalidOperationException($"No parameter data found for pond ID '{pondId}'.");
             }
 
-            double currentDensity = latestParameterData.First().Value; // Assuming only one result here
-            double averageParameterIncrease = await CalculateAverageParameterIncreaseAsync(pondId, parameterId, cancellationToken);
+            DateTime earliestMaintenanceDate = DateTime.MaxValue;
 
-            // Kiểm tra xem tham số có vượt ngưỡng cảnh báo hay không
-            if (/*currentDensity < warningLower ||*/ currentDensity > warningUpper)
+            // Duyệt qua từng thông số của hồ
+            foreach (var pondParam in pondParameters)
             {
-                // Gửi cảnh báo nếu tham số vượt quá ngưỡng cảnh báo
-                Console.WriteLine($"Warning: The parameter '{parameterId}' density is out of the safe range. Current value: {currentDensity}");
+                // Lấy thông tin chuẩn của thông số từ bảng master data
+                var parameter = await _parameterRepository.GetAsync(
+                    rp => rp.ParameterID.Equals(pondParam.ParameterID),
+                    cancellationToken: cancellationToken
+                );
+
+                if (parameter == null)
+                {
+                    continue; // Bỏ qua nếu không tìm thấy thông số chuẩn
+                }
+
+                // Xử lý ngưỡng nguy hiểm và cảnh báo nếu là null
+                double? maxSafeDensity = parameter.DangerUpper; // Ngưỡng nguy hiểm
+                double? warningUpper = parameter.WarningUpper;  // Ngưỡng cảnh báo cao
+                double currentDensity = pondParam.Value;        // Giá trị hiện tại của thông số
+
+                // Nếu warningUpper không null, kiểm tra và gửi cảnh báo
+                if (warningUpper.HasValue && currentDensity > warningUpper.Value)
+                {
+                    Console.WriteLine($"Warning: Parameter '{parameter.Name}' (ID: {parameter.ParameterID}) " +
+                                      $"is out of safe range. Current value: {currentDensity}, Warning Upper: {warningUpper.Value}");
+                }
+
+                // Nếu maxSafeDensity là null, coi như không có ngưỡng nguy hiểm -> bỏ qua bảo trì dựa trên thông số này
+                if (!maxSafeDensity.HasValue)
+                {
+                    continue; // Không cần tính ngày bảo trì vì ngưỡng là "rất cao"
+                }
+
+                // Nếu đã vượt ngưỡng nguy hiểm
+                if (currentDensity >= maxSafeDensity.Value)
+                {
+                    return DateTime.Now; // Bảo trì ngay lập tức
+                }
+
+                // Tính tốc độ gia tăng trung bình của thông số
+                double averageParameterIncrease = await CalculateAverageParameterIncreaseAsync(
+                    pondId,
+                    pondParam.ParameterID,
+                    cancellationToken
+                );
+
+                // Nếu không có gia tăng (hoặc giảm), bỏ qua thông số này
+                if (averageParameterIncrease <= 0)
+                {
+                    continue;
+                }
+
+                // Tính số ngày để đạt ngưỡng nguy hiểm
+                int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity.Value - currentDensity) / averageParameterIncrease);
+                DateTime maintenanceDate = DateTime.Now.AddDays(daysUntilMaintenance);
+
+                // Cập nhật ngày bảo trì sớm nhất
+                if (maintenanceDate < earliestMaintenanceDate)
+                {
+                    earliestMaintenanceDate = maintenanceDate;
+                }
             }
 
-            // Kiểm tra xem tham số có vượt ngưỡng tối đa không
-            if (currentDensity >= maxSafeDensity)
+            // Nếu không có ngày nào được tính toán (ví dụ: tất cả thông số đều ổn định hoặc ngưỡng là null), trả về ngày xa trong tương lai
+            if (earliestMaintenanceDate == DateTime.MaxValue)
             {
-                throw new InvalidOperationException($"The parameter '{parameterId}' density is already above the safe limit. Maintenance is required immediately.");
+                return DateTime.Now.AddMonths(6); // Giả định mặc định là 6 tháng nếu không có vấn đề
             }
 
-            // Tính toán số ngày cần thiết để đạt ngưỡng an toàn cho tham số
-            int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity - currentDensity) / averageParameterIncrease);
-
-            return DateTime.Now.AddDays(daysUntilMaintenance);
+            return earliestMaintenanceDate;
         }
 
         // Sinh ra lịch bảo trì cho hồ
-        public async Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, Guid parameterId, CancellationToken cancellationToken)
+        public async Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken)
         {
             try
             {
-                var maintenanceDate = await CalculateMaintenanceDateAsync(pondId, parameterId, cancellationToken);
+                var maintenanceDate = await CalculateMaintenanceDateAsync(pondId, cancellationToken);
 
-                // Ensure that the maintenance date is in UTC
+                // Chuyển đổi sang UTC
                 maintenanceDate = maintenanceDate.ToUniversalTime();
-
-                var parameter = await _parameterRepository.FindAsync(rp => rp.ParameterID == parameterId, cancellationToken: cancellationToken);
-                if (parameter == null)
-                {
-                    throw new InvalidOperationException($"Parameter with ID '{parameterId}' not found.");
-                }
 
                 return new PondReminder
                 {
@@ -141,9 +175,9 @@ namespace KoiGuardian.Api.Services
                     PondId = pondId,
                     ReminderType = ReminderType.Pond,
                     Title = "Maintenance",
-                    Description = "level is reaching unsafe limits. Maintenance required.",
-                    MaintainDate = maintenanceDate, // Ensure this is in UTC
-                    SeenDate = DateTime.MinValue.ToUniversalTime() // Ensure SeenDate is also in UTC
+                    Description = "One or more parameters are reaching unsafe limits. Maintenance required.",
+                    MaintainDate = maintenanceDate,
+                    SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
             catch (Exception ex)

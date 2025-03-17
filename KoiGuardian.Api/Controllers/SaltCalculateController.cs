@@ -87,7 +87,48 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
-   
+        [HttpPost("update-salt-amount")]
+        public async Task<IActionResult> UpdateSaltAmount([FromBody] UpdateSaltAmountRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (request == null || request.PondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Invalid request: PondId is required" });
+                }
+
+                if (request.AddedSaltKg < 0)
+                {
+                    return BadRequest(new { Message = "Salt amount cannot be negative" });
+                }
+
+                bool success = await _saltCalculatorService.UpdateSaltAmount(request.PondId, request.AddedSaltKg, cancellationToken);
+
+                if (!success)
+                {
+                    return BadRequest(new
+                    {
+                        Message = "Failed to update salt amount. Please check if the pond exists."
+                    });
+                }
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = $"Successfully set salt amount to {request.AddedSaltKg} kg for pond {request.PondId}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = $"An error occurred while updating salt amount: {ex.Message}"
+                });
+            }
+        }
+
+
 
 
 

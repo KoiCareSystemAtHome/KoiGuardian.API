@@ -6,6 +6,8 @@ using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Azure.Core;
 using KoiGuardian.Core.Repository;
+using KoiGuardian.Core.UnitOfWork;
+using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
@@ -26,7 +28,9 @@ namespace KoiGuardian.Api.Services
 
         Task<bool> CreateSaltNotificationsForUser(NotificationRequest request);
 
-       
+        Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
+
+
 
 
 
@@ -39,6 +43,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<PondStandardParam> _pondStandardParamRepository;
         private readonly IRepository<KoiDiseaseProfile> _koiDiseaseProfileRepository;
         private readonly IRepository<Notification> _notificationRepository;
+        private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
         private static readonly ConcurrentDictionary<Guid, CalculateSaltResponse> _saltCalculationCache = new();
 
 
@@ -49,13 +54,15 @@ namespace KoiGuardian.Api.Services
             IRepository<Pond> pondRepository,
             IRepository<KoiDiseaseProfile> koiDiseaseProfile,
             IRepository<Notification> notificationRepository,
-            IRepository<RelPondParameter> pondParamRepository)
+            IRepository<RelPondParameter> pondParamRepository,
+            IUnitOfWork<KoiGuardianDbContext> unitOfWork)
 
         {
             _pondRepository = pondRepository;
             _pondParamRepository = pondParamRepository;
             _notificationRepository = notificationRepository;
             _koiDiseaseProfileRepository = koiDiseaseProfile;
+            _unitOfWork = unitOfWork;
         }
 
 
@@ -444,7 +451,72 @@ namespace KoiGuardian.Api.Services
             return true;
         }
 
-      
+        public async Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var pond = await _pondRepository.GetQueryable(p => p.PondID == pondId)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (pond == null)
+                {
+                    return false;
+                }
+
+                var saltParamQuery = _pondParamRepository.GetQueryable(p =>
+                    p.PondId == pondId &&
+                    p.Parameter.Name.ToLower() == "salt")
+                    .Include(p => p.Parameter);
+
+                var saltParameter = await saltParamQuery.FirstOrDefaultAsync(cancellationToken);
+
+                if (saltParameter == null)
+                {
+                    var standardSaltParam = await _pondStandardParamRepository
+                        .GetQueryable(p => p.Name.ToLower() == "salt")
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (standardSaltParam == null)
+                    {
+                        return false;
+                    }
+
+                    saltParameter = new RelPondParameter
+                    {
+                        RelPondParameterId = Guid.NewGuid(),
+                        PondId = pondId,
+                        ParameterID = standardSaltParam.ParameterID,
+                        Value = (float)addedSaltKg,
+                        CalculatedDate = DateTime.UtcNow,
+                        ParameterHistoryId = Guid.NewGuid()
+                    };
+                    _pondParamRepository.Insert(saltParameter);
+                }
+                else
+                {
+                    saltParameter.Value = (float)addedSaltKg;
+                    saltParameter.CalculatedDate = DateTime.UtcNow;
+                    _pondParamRepository.Update(saltParameter);
+                }
+
+                // Sử dụng IUnitOfWork để lưu thay đổi
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
+                {
+                    cachedResponse.CurrentSalt = addedSaltKg;
+                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
+                    _saltCalculationCache[pondId] = cachedResponse;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating salt amount: {ex.Message}");
+                return false;
+            }
+        }
 
 
 

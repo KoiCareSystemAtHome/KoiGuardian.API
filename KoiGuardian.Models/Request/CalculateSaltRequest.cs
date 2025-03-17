@@ -33,6 +33,11 @@ namespace KoiGuardian.Models.Request
         public DateTime NewStartTime { get; set; }
     }
 
+    public class UpdateSaltAmountRequest
+    {
+        public Guid PondId { get; set; }
+        public double AddedSaltKg { get; set; }
+    }
 
 
 }

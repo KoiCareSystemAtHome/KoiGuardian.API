@@ -326,7 +326,8 @@ namespace KoiGuardian.Api.Services
                 predicate: x => (x.Pond.OwnerId ?? "") == ownerId.ToString(),
                 include: query => query
                     .Include(f => f.Variety)
-                    .Include(f => f.Pond),
+                    .Include(f => f.Pond)
+                    .Include(f => f.RelKoiParameters),
                 orderBy: query => query.OrderBy(f => f.Name),
                 cancellationToken: cancellationToken
             );
@@ -354,7 +355,15 @@ namespace KoiGuardian.Api.Services
                     VarietyName = f.Variety.VarietyName,
                     Description = f.Variety.Description,
                     AuthorId = f.Variety.AuthorId
-                }
+                },
+                fishReportInfos = f.RelKoiParameters.Select(r => new FishReportInfo
+                {
+                    KoiReportId = r.KoiReportId,
+                    KoiId = r.KoiId,
+                    CalculatedDate = r.CalculatedDate,
+                    Weight = r.Weight,
+                    Size = r.Size
+                }).ToList()
             }).ToList();
 
             return fishDtos;

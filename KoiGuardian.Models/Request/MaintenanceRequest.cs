@@ -9,7 +9,6 @@ namespace KoiGuardian.Models.Request
     public class MaintenanceRequest
     {
         public Guid PondId { get; set; }
-        public Guid ParameterId { get; set; }
     }
 
     public class RecurringMaintenance

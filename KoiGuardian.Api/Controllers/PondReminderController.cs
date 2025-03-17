@@ -61,7 +61,6 @@ namespace KoiGuardian.Api.Controllers
             {
                 var reminder = await _pondReminderService.GenerateMaintenanceReminderAsync(
                     request.PondId,
-                    request.ParameterId,
                     cancellationToken
                 );
 

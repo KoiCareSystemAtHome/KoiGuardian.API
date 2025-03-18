@@ -50,17 +50,16 @@ namespace KoiGuardian.Models.Request
         public float MaxVolume { get; set; }
         public List<PondParameterInfo> PondParameters { get; set; }
         public List<FishInfo> Fish { get; set; }
-        public FeedingModeInfo FeedingMode { get; set; }
+        public List<ProductRecommentInfo> Recomment { get; set; }
     }
 
     
 
   
 
-    public class FeedingModeInfo
+    public class ProductRecommentInfo
     {
-        public Guid FeedingModeId { get; set; }
-        public string ModeName { get; set; }
+        public Guid Productid  { get; set; }
     }
 
     public class UpdatePondIOTRequest

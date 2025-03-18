@@ -19,7 +19,7 @@ namespace KoiGuardian.Api.Services
     public interface IBlogService
     {
         Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
-        Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
+        Task<BlogResponse> UpdateBlogAsync(BlogUpdateRequest blogUpdateRequest, CancellationToken cancellationToken);
         Task<BlogDto> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken);
@@ -37,6 +37,8 @@ namespace KoiGuardian.Api.Services
 
          Task<BlogResponse> IncrementBlogViewAsync(Guid blogId, CancellationToken cancellationToken);
 
+        Task<BlogResponse> ReportBlogAsync(Guid blogId, string reason, CancellationToken cancellationToken);
+
 
 
     }
@@ -47,6 +49,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<BlogProduct> _blogProductRepository;
         private readonly IRepository<Shop> _shopRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly ICurrentUser _currentUser;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
         
 
@@ -55,6 +58,7 @@ namespace KoiGuardian.Api.Services
             IRepository<BlogProduct> blogProductRepository,
             IRepository<Shop> shopRepository,
             IRepository<User> userRepository,
+            ICurrentUser currentUser,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
 
         {
@@ -62,6 +66,7 @@ namespace KoiGuardian.Api.Services
             _blogProductRepository = blogProductRepository;
             _shopRepository = shopRepository;
             _userRepository = userRepository;
+            _currentUser = currentUser;
             _unitOfWork = unitOfWork;
 
         }
@@ -89,8 +94,7 @@ namespace KoiGuardian.Api.Services
                 IsApproved = false, // Chưa được duyệt
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
-                ReportedDate = blogRequest.ReportedDate,
-                ReportedBy = blogRequest.ReportedBy
+                
             };
 
             _blogRepository.Insert(blog);
@@ -148,10 +152,10 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<BlogResponse> UpdateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken)
+        public async Task<BlogResponse> UpdateBlogAsync(BlogUpdateRequest blogUpdateRequest, CancellationToken cancellationToken)
         {
             var blogResponse = new BlogResponse();
-            var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogRequest.BlogId), cancellationToken);
+            var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogUpdateRequest.BlogId), cancellationToken);
 
             if (existingBlog == null)
             {
@@ -163,22 +167,21 @@ namespace KoiGuardian.Api.Services
             }
 
             // Update blog properties
-            existingBlog.Title = blogRequest.Title;
-            existingBlog.Content = blogRequest.Content;
-            existingBlog.Images = blogRequest.Images;
-            existingBlog.Tag = blogRequest.Tag;
-            existingBlog.IsApproved = blogRequest.IsApproved;
-            existingBlog.Type = blogRequest.Type;
-            existingBlog.ShopId = blogRequest.ShopId;
-            existingBlog.ReportedDate = blogRequest.ReportedDate;
-            existingBlog.ReportedBy = blogRequest.ReportedBy;
+            existingBlog.Title = blogUpdateRequest.Title;
+            existingBlog.Content = blogUpdateRequest.Content;
+            existingBlog.Images = blogUpdateRequest.Images;
+            existingBlog.Tag = blogUpdateRequest.Tag;
+            existingBlog.IsApproved = blogUpdateRequest.IsApproved;
+            existingBlog.Type = blogUpdateRequest.Type;
+            existingBlog.ShopId = blogUpdateRequest.ShopId;
+           
 
             _blogRepository.Update(existingBlog);
 
             // Handle BlogProducts (upsert logic)
             var existingBlogProducts = await _blogProductRepository.FindAsync(bp => bp.BlogId == existingBlog.BlogId, cancellationToken);
             var existingProductIds = existingBlogProducts.Select(bp => bp.ProductId).ToList();
-            var newProductIds = blogRequest.ProductIds ?? new List<Guid>();
+            var newProductIds = blogUpdateRequest.ProductIds ?? new List<Guid>();
 
             // Remove BlogProducts that are no longer in the request
             foreach (var existingBlogProduct in existingBlogProducts)
@@ -237,7 +240,6 @@ namespace KoiGuardian.Api.Services
             }
 
             blog.IsApproved = isApproved;
-            blog.ReportedDate = DateTime.UtcNow;
             blog.Tag = isApproved ? "Approved" : "Rejected";
 
             _blogRepository.Update(blog);
@@ -442,6 +444,82 @@ namespace KoiGuardian.Api.Services
                 {
                     Status = "500",
                     Message = "Error incrementing blog view count: " + ex.Message
+                };
+            }
+
+            return blogResponse;
+        }
+
+        public async Task<BlogResponse> ReportBlogAsync(Guid blogId, string reason, CancellationToken cancellationToken)
+        {
+            var blogResponse = new BlogResponse();
+
+            // Kiểm tra xem blog có tồn tại không
+            var blog = await _blogRepository.GetAsync(x => x.BlogId == blogId, cancellationToken);
+            if (blog == null)
+            {
+                return new BlogResponse
+                {
+                    Status = "404",
+                    Message = "Blog not found."
+                };
+            }
+
+            // Kiểm tra lý do report có hợp lệ không
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return new BlogResponse
+                {
+                    Status = "400",
+                    Message = "Reason for reporting is required."
+                };
+            }
+
+            // Lấy thông tin user từ ICurrentUser
+            var reportedBy = _currentUser.UserName();
+            if (string.IsNullOrEmpty(reportedBy))
+            {
+                return new BlogResponse
+                {
+                    Status = "401",
+                    Message = "User not authenticated."
+                };
+            }
+
+            // Cập nhật thông tin báo cáo
+            blog.ReportedBy = reportedBy; 
+            blog.ReportedDate = DateTime.UtcNow; 
+            blog.Tag = "Reported"; 
+            blog.IsApproved = true; 
+
+            // Lưu thay đổi vào database
+            _blogRepository.Update(blog);
+
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                // Gửi email thông báo đến admin
+                string adminEmail = "admin@koiguardian.com"; // Thay bằng email thật
+                string subject = $"Blog Reported: {blog.Title}";
+                string body = $"Blog ID: {blog.BlogId}\n" +
+                              $"Title: {blog.Title}\n" +
+                              $"Reported By: {reportedBy}\n" +
+                              $"Reason: {reason}\n" +
+                              $"Reported Date: {DateTime.UtcNow}\n" +
+                              "Please review this blog.";
+
+                SendMail.SendEmail(adminEmail, subject, body, null);
+
+                blogResponse.Status = "200";
+                blogResponse.Message = "Blog has been reported successfully and is under review.";
+            }
+            catch (Exception ex)
+            {
+                return new BlogResponse
+                {
+                    Status = "500",
+                    Message = "Error reporting blog: " + ex.Message
                 };
             }
 

@@ -21,7 +21,8 @@ public class CurrentUser : ICurrentUser
 
     public string UserName()
     {
-        var username = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value;
+        // Lấy claim "name" thay vì ClaimTypes.Name
+        var username = _httpContextAccessor.HttpContext?.User?.FindFirst("name")?.Value;
         return username ?? string.Empty;
     }
 

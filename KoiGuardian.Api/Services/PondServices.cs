@@ -226,6 +226,7 @@ namespace KoiGuardian.Api.Services
                             {
                                 ParameterUnitID = group.Key, // Lấy ParameterID
                                 UnitName = group.First().Parameter.UnitName,
+                                ParameterName = group.First().Parameter.Name,
                                 WarningLowwer = group.First().Parameter.WarningLowwer,
                                 WarningUpper = group.First().Parameter.WarningUpper,
                                 DangerLower = group.First().Parameter.DangerLower,

@@ -12,7 +12,7 @@ public class Blog
     public string Tag { get; set; }
     public Guid ShopId { get; set; }
     public DateTime? ReportedDate { get; set; }
-    public string ReportedBy { get; set; }
+    public string? ReportedBy { get; set; }
 
     public virtual Shop Shop { get; set; }
 

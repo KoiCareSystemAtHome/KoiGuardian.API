@@ -1,6 +1,7 @@
 ﻿using KoiGuardian.Api.Services;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for updating a blog
         [HttpPut("update-blog")]
-        public async Task<BlogResponse> UpdateBlog([FromBody] BlogRequest updateBlog, CancellationToken cancellationToken)
+        public async Task<BlogResponse> UpdateBlog([FromBody] BlogUpdateRequest updateBlog, CancellationToken cancellationToken)
         {
             return await _services.UpdateBlogAsync(updateBlog, cancellationToken);
         }
@@ -112,6 +113,23 @@ namespace KoiGuardian.Api.Controllers
             return response != null ? Ok(response) : NotFound(new { Message = "Blog not found" });
         }
 
+
+        [HttpPost("report/{blogId}")]
+        [Authorize] // Yêu cầu user phải đăng nhập
+        public async Task<IActionResult> ReportBlog(Guid blogId, [FromBody] ReportBlogRequest request, CancellationToken cancellationToken)
+        {
+            var response = await _services.ReportBlogAsync(blogId, request.Reason, cancellationToken);
+            if (response.Status == "200")
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        public class ReportBlogRequest
+        {
+            public string Reason { get; set; }
+        }
 
 
     }

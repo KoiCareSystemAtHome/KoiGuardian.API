@@ -54,6 +54,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Pond> pondRepository,
             IRepository<KoiDiseaseProfile> koiDiseaseProfile,
             IRepository<Notification> notificationRepository,
+            IRepository<PondStandardParam> pondStandardParamRepository,
             IRepository<RelPondParameter> pondParamRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
 
@@ -62,6 +63,7 @@ namespace KoiGuardian.Api.Services
             _pondParamRepository = pondParamRepository;
             _notificationRepository = notificationRepository;
             _koiDiseaseProfileRepository = koiDiseaseProfile;
+            _pondStandardParamRepository = pondStandardParamRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -499,7 +501,6 @@ namespace KoiGuardian.Api.Services
                     _pondParamRepository.Update(saltParameter);
                 }
 
-                // Sử dụng IUnitOfWork để lưu thay đổi
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                 if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))

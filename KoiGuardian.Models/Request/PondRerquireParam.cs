@@ -15,6 +15,7 @@
     public class PondParameterInfo
     {
         public Guid ParameterUnitID { get; set; }
+        public string ParameterName { get; set; }
         public string UnitName { get; set; }
         public double? WarningLowwer { get; set; }
         public double? WarningUpper { get; set; }

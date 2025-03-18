@@ -264,61 +264,45 @@ namespace KoiGuardian.Api.Services
 
         private async Task<List<ProductRecommentInfo>> GetProductRecommendations(List<RelPondParameter> latestParameters)
         {
-            var recommendations = new List<ProductRecommentInfo>();
+            // Gộp thông số cần điều chỉnh
+            var adjustmentsNeeded = latestParameters
+                .Where(p => (p.Parameter.DangerLower.HasValue && p.Value < p.Parameter.DangerLower.Value) ||
+                            (p.Parameter.DangerUpper.HasValue && p.Value > p.Parameter.DangerUpper.Value) ||
+                            (p.Parameter.WarningLowwer.HasValue && p.Value < p.Parameter.WarningLowwer.Value) ||
+                            (p.Parameter.WarningUpper.HasValue && p.Value > p.Parameter.WarningUpper.Value))
+                .ToDictionary(
+                    p => p.Parameter.Name,
+                    p => (p.Parameter.DangerLower.HasValue && p.Value < p.Parameter.DangerLower.Value) ||
+                         (p.Parameter.WarningLowwer.HasValue && p.Value < p.Parameter.WarningLowwer.Value)
+                        ? "Increased" : "Decreased"
+                );
 
-            foreach (var param in latestParameters)
-            {
-                var standard = param.Parameter;
-                var currentValue = param.Value;
-                var paramName = standard.Name;
+            if (!adjustmentsNeeded.Any())
+                return new List<ProductRecommentInfo>();
 
-                bool isOutOfRange = false;
-                string requiredImpact = null;
+            // Truy vấn với FindAsync
+            var patterns = adjustmentsNeeded.Select(a => $"\"{a.Key}\":\"{a.Value}\"");
+            var products = await productRepository.FindAsync(
+                p => patterns.Any(pattern => p.ParameterImpactment.Contains(pattern)),
+                CancellationToken.None
+            );
 
-                // Kiểm tra ngưỡng Danger
-                if (standard.DangerLower.HasValue && currentValue < standard.DangerLower.Value)
+            if (products == null || !products.Any())
+                return new List<ProductRecommentInfo>();
+
+            // Trả ra ProductId, xếp hạng theo Score
+            return products
+                .Select(p => new
                 {
-                    isOutOfRange = true;
-                    requiredImpact = "Increased";
-                }
-                else if (standard.DangerUpper.HasValue && currentValue > standard.DangerUpper.Value)
+                    ProductId = p.ProductId,
+                })
+                .Select(x => new
                 {
-                    isOutOfRange = true;
-                    requiredImpact = "Decreased";
-                }
-                else if (standard.WarningLowwer.HasValue && currentValue < standard.WarningLowwer.Value)
-                {
-                    isOutOfRange = true;
-                    requiredImpact = "Increased";
-                }
-                else if (standard.WarningUpper.HasValue && currentValue > standard.WarningUpper.Value)
-                {
-                    isOutOfRange = true;
-                    requiredImpact = "Decreased";
-                }
+                    ProductId = x.ProductId,
 
-                if (isOutOfRange)
-                {
-                    // Tạo pattern JSON để tìm kiếm, ví dụ: "H2O":"Increased"
-                    var jsonPattern = $"\"{paramName}\":\"{requiredImpact}\""; ;
-
-                    // Truy vấn trực tiếp trên database với Contains
-                    var products = await productRepository.FindAsync(
-                        p => p.ParameterImpactment.Contains(jsonPattern),
-                        cancellationToken: CancellationToken.None
-                    );
-
-                    foreach (var product in products)
-                    {
-                        recommendations.Add(new ProductRecommentInfo
-                        {
-                            Productid = product.ProductId,
-                        });
-                    }
-                }
-            }
-
-            return recommendations;
+                })
+                .Select(x => new ProductRecommentInfo { Productid = x.ProductId })
+                .ToList();
         }
 
 

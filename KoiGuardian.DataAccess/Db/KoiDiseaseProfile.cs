@@ -9,7 +9,7 @@ namespace KoiGuardian.DataAccess.Db;
 public class KoiDiseaseProfile
 {
     public Guid KoiDiseaseProfileId { get; set; }
-    public Guid DiseaseID { get; set; }
+    public Guid? DiseaseID { get; set; }
     public Guid MedicineId { get; set; }
     public Guid FishId { get; set; }
     public DateTime Createddate { get; set; }

@@ -199,6 +199,11 @@ public class KoiDiseaseService
                 profile.Note = request.Note;
             }
 
+            if (request.EndDate != null)
+            {
+                profile.EndDate = request.EndDate?? DateTime.Now;
+            }
+
             // Cập nhật triệu chứng nếu có
             if (request.Symptoms != null && request.Symptoms.Any())
             {

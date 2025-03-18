@@ -23,6 +23,7 @@ public class UpdateDiseaseProfileRequest
     public string Status { get; set; }
     public Guid? MedicineId { get; set; }
     public string? Note { get; set; }
+    public DateTime? EndDate { get; set; }
     public List<SymptomsInput> Symptoms { get; set; }
 }
 

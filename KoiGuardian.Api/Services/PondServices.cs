@@ -29,6 +29,7 @@ namespace KoiGuardian.Api.Services
         IRepository<Pond> pondRepository,
         IRepository<PondStandardParam> pondStandardparameterRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
+        IRepository<Product> productRepository,
         KoiGuardianDbContext _dbContext,
         IImageUploadService imageUpload,
         IRepository<User> userRepository) : IPondServices
@@ -212,19 +213,19 @@ namespace KoiGuardian.Api.Services
 
                 if (pond != null)
                 {
-                    return new PondDetailResponse
+                    response = new PondDetailResponse
                     {
                         PondID = pond.PondID,
                         Name = pond.Name,
                         Image = pond.Image,
                         CreateDate = pond.CreateDate,
                         OwnerId = pond.OwnerId,
-                        MaxVolume= pond.MaxVolume,
+                        MaxVolume = pond.MaxVolume,
                         PondParameters = pond.RelPondParameter
-                            .GroupBy(rp => rp.ParameterID) // Nhóm theo ParameterID
+                            .GroupBy(rp => rp.ParameterID)
                             .Select(group => new PondParameterInfo
                             {
-                                ParameterUnitID = group.Key, // Lấy ParameterID
+                                ParameterUnitID = group.Key,
                                 UnitName = group.First().Parameter.UnitName,
                                 ParameterName = group.First().Parameter.Name,
                                 WarningLowwer = group.First().Parameter.WarningLowwer,
@@ -244,6 +245,13 @@ namespace KoiGuardian.Api.Services
                             FishName = f.Name
                         }).ToList()
                     };
+
+                    var latestParameters = pond.RelPondParameter
+                        .GroupBy(rp => rp.ParameterID)
+                        .Select(g => g.OrderByDescending(rp => rp.CalculatedDate).First())
+                        .ToList();
+
+                    response.Recomment = await GetProductRecommendations(latestParameters);
                 }
             }
             catch (Exception ex)
@@ -252,6 +260,65 @@ namespace KoiGuardian.Api.Services
             }
 
             return response;
+        }
+
+        private async Task<List<ProductRecommentInfo>> GetProductRecommendations(List<RelPondParameter> latestParameters)
+        {
+            var recommendations = new List<ProductRecommentInfo>();
+
+            foreach (var param in latestParameters)
+            {
+                var standard = param.Parameter;
+                var currentValue = param.Value;
+                var paramName = standard.Name;
+
+                bool isOutOfRange = false;
+                string requiredImpact = null;
+
+                // Kiểm tra ngưỡng Danger
+                if (standard.DangerLower.HasValue && currentValue < standard.DangerLower.Value)
+                {
+                    isOutOfRange = true;
+                    requiredImpact = "Increased";
+                }
+                else if (standard.DangerUpper.HasValue && currentValue > standard.DangerUpper.Value)
+                {
+                    isOutOfRange = true;
+                    requiredImpact = "Decreased";
+                }
+                else if (standard.WarningLowwer.HasValue && currentValue < standard.WarningLowwer.Value)
+                {
+                    isOutOfRange = true;
+                    requiredImpact = "Increased";
+                }
+                else if (standard.WarningUpper.HasValue && currentValue > standard.WarningUpper.Value)
+                {
+                    isOutOfRange = true;
+                    requiredImpact = "Decreased";
+                }
+
+                if (isOutOfRange)
+                {
+                    // Tạo pattern JSON để tìm kiếm, ví dụ: "H2O":"Increased"
+                    var jsonPattern = $"\"{paramName}\":\"{requiredImpact}\""; ;
+
+                    // Truy vấn trực tiếp trên database với Contains
+                    var products = await productRepository.FindAsync(
+                        p => p.ParameterImpactment.Contains(jsonPattern),
+                        cancellationToken: CancellationToken.None
+                    );
+
+                    foreach (var product in products)
+                    {
+                        recommendations.Add(new ProductRecommentInfo
+                        {
+                            Productid = product.ProductId,
+                        });
+                    }
+                }
+            }
+
+            return recommendations;
         }
 
 

@@ -1,4 +1,5 @@
 ﻿using KoiGuardian.Api.Services;
+using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +17,12 @@ namespace KoiGuardian.Api.Controllers
         public async Task<CalculateFoodResponse> Cal([FromQuery] CalculateFoodRequest createBlog)
         {
             return await _services.Calculate(createBlog);
+        }
+
+        [HttpGet("suggest-food")]
+        public async Task<object> Cal(Guid pondId)
+        {
+            return await _services.Suggest(pondId);
         }
     }
 }

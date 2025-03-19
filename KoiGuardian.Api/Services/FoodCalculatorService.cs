@@ -9,6 +9,7 @@ namespace KoiGuardian.Api.Services;
 public interface IFoodCalculatorService
 {
     Task<CalculateFoodResponse> Calculate(CalculateFoodRequest req);
+    Task<object> Suggest(Guid id);
 }
 
 public class FoodCalculatorService
@@ -16,6 +17,7 @@ public class FoodCalculatorService
         IRepository<NormFoodAmount> normFoodAmountRepository,
         IRepository<Pond> pondRepository,
         IRepository<KoiDiseaseProfile> koiProfileRepository,
+        IRepository<Food> foodRepository,
         IRepository<KoiReport> koiParamRepository
     )
     : IFoodCalculatorService
@@ -93,6 +95,69 @@ public class FoodCalculatorService
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày",
             AddtionalInstruction = noteList
+        };
+    }
+
+    public async Task<object> Suggest(Guid id)
+    {
+        var pond = await pondRepository.GetAsync(u => u.PondID == id, CancellationToken.None);
+
+        var minFishAge = int.MaxValue;
+        var fishDateSince = int.MaxValue;
+
+        foreach (var fish in pond.Fish)
+        {
+            int daysInPond = (DateTime.Now - fish.InPondSince).Days;
+
+            if (daysInPond < fishDateSince)
+            {
+                fishDateSince = daysInPond;
+            }
+
+            if (fish.Age < minFishAge)
+            {
+                minFishAge = fish.Age;
+            }
+        }
+
+        var food = await foodRepository.FindAsync( u => u.AgeFrom < minFishAge,
+            include: u => u.Include(u => u.Product));
+
+        if (food == null || food.Count() == 0)
+        {
+            food = await foodRepository.FindAsync(u => u.AgeTo > minFishAge,
+                include: u => u.Include(u => u.Product));
+        }
+
+        string note = "";
+        if (food == null || food.Count() == 0)
+        {
+            if( minFishAge < 90)
+            {
+                note = "Cá còn quá nhỏ, nên cho các loại thức ăn nhỏ như giun, bột cám,...";
+            }else if (minFishAge < 180)
+            {
+                note = "Cá đang trong quá trình phát triển," +
+                    " nên cho các loại thức ăn tăng trưởng...";
+            }
+            else 
+            {
+                note = "Cá đã phát triển," +
+                    " có thể cho cá ăn đa dạng nguồn thức ăn...";
+            }
+
+        }
+
+        if (food!= null && fishDateSince < 30)
+        {
+            note = note + " \n Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.";
+            food = (IList<Food>?) food.Where(u => u.Product.FoodIsFloat == true);
+        }
+
+        return new
+        {
+            Foods = food,
+            Note = note
         };
     }
 }

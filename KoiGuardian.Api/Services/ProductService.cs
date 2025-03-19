@@ -16,13 +16,13 @@ namespace KoiGuardian.Api.Services
 {
     public interface IProductService
     {
-        Task<ProductResponse> CreateProductAsync(string baseUrl,ProductRequest productRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken);
         Task<ProductResponse> UpdateProductAsync(ProductUpdateRequest productRequest, CancellationToken cancellationToken);
         Task<ProductDetailResponse> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken);
 
-        Task<ProductResponse> CreateFoodAsync(string baseUrl, FoodRequest foodRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> CreateFoodAsync( FoodRequest foodRequest, CancellationToken cancellationToken);
 
-        Task<ProductResponse> CreateMedicnieAsync(string baseUrl, MedicineRequest medicineRequest, CancellationToken cancellationToken);
+        Task<ProductResponse> CreateMedicnieAsync( MedicineRequest medicineRequest, CancellationToken cancellationToken);
 
         Task<ProductResponse> UpdateMedicineAsync(MedicineUpdateRequest medicineRequest, CancellationToken cancellationToken);
 
@@ -81,7 +81,7 @@ namespace KoiGuardian.Api.Services
             _imageUploadService = imageUpload;
         }
 
-        public async Task<ProductResponse> CreateProductAsync(string baseUrl, ProductRequest productRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 
@@ -109,12 +109,13 @@ namespace KoiGuardian.Api.Services
                 ManufactureDate = productRequest.ManufactureDate,
                 ExpiryDate = productRequest.ExpiryDate,
                 Type = (ProductType)Convert.ToInt32(ProductType.Pond_Equipment),
+                Image = productRequest.Image,
                 ShopId = productRequest.ShopId
             };
 
             // Upload the image
-            var image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), productRequest.Image);
-            product.Image = image;
+           
+            
 
             // Set parameter impacts
             product.SetParameterImpacts(productRequest.ParameterImpacts);
@@ -457,7 +458,7 @@ namespace KoiGuardian.Api.Services
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<ProductResponse> CreateFoodAsync(string baseUrl, FoodRequest foodRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateFoodAsync( FoodRequest foodRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 
@@ -483,11 +484,13 @@ namespace KoiGuardian.Api.Services
                 ManufactureDate = foodRequest.ManufactureDate,
                 ExpiryDate = foodRequest.ExpiryDate,
                 ShopId = foodRequest.ShopId,
+                Image = foodRequest.Image,
+
                 Type = (ProductType)Convert.ToInt32(ProductType.Food) // Đặt loại sản phẩm là Food
             };
 
             // Upload hình ảnh
-            product.Image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), foodRequest.Image);
+           
 
             product.SetParameterImpacts(foodRequest.ParameterImpacts);
             // Lưu Product vào database
@@ -513,7 +516,7 @@ namespace KoiGuardian.Api.Services
             return productResponse;
         }
 
-        public async Task<ProductResponse> CreateMedicnieAsync(string baseUrl, MedicineRequest medicineRequest, CancellationToken cancellationToken)
+        public async Task<ProductResponse> CreateMedicnieAsync( MedicineRequest medicineRequest, CancellationToken cancellationToken)
         {
             var productResponse = new ProductResponse();
 
@@ -539,11 +542,12 @@ namespace KoiGuardian.Api.Services
                 ManufactureDate = medicineRequest.ManufactureDate,
                 ExpiryDate = medicineRequest.ExpiryDate,
                 ShopId = medicineRequest.ShopId,
+                Image = medicineRequest.Image,
                 Type = (ProductType)Convert.ToInt32(ProductType.Medicine) // Đặt loại sản phẩm là Medicine
             };
 
             // Upload hình ảnh
-            product.Image = await _imageUploadService.UploadImageAsync("test", product.ProductId.ToString(), medicineRequest.Image);
+            
 
             product.SetParameterImpacts(medicineRequest.ParameterImpacts);
             // Lưu Product vào database

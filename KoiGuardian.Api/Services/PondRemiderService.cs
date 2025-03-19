@@ -16,6 +16,8 @@ namespace KoiGuardian.Api.Services
     public interface IPondReminderService
     {
         Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken);
+        Task<string> UpdateByidAsync(Guid id, CancellationToken cancellationToken);
+        Task<List<PondRemiderResponse>> GetRemindersByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken);
         Task<PondRemiderResponse> GetRemindersByIdAsync(Guid id, CancellationToken cancellationToken);
         Task<PondReminder?> GenerateMaintenanceReminderAsync(Guid pondId, CancellationToken cancellationToken);
         Task<List<PondReminder>> GenerateRecurringMaintenanceRemindersAsync(Guid pondId, DateTime endDate, int cycleDays, CancellationToken cancellationToken);
@@ -280,6 +282,41 @@ namespace KoiGuardian.Api.Services
             {
                 throw new InvalidOperationException($"Failed to save maintenance reminder: {ex.Message}");
             }
+        }
+
+        public async Task<List<PondRemiderResponse>> GetRemindersByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken)
+        {
+            var pondReminders = await _reminderRepository.FindAsync(
+                rp => rp.Pond.OwnerId.Equals(ownerId.ToString()),
+                cancellationToken: cancellationToken);
+
+            return pondReminders.Select(pondReminder => new PondRemiderResponse
+            {
+                PondReminderId = pondReminder.PondReminderId,
+                PondId = pondReminder.PondId,
+                ReminderType = pondReminder.ReminderType.ToString(),
+                Title = pondReminder.Title,
+                Description = pondReminder.Description,
+                MaintainDate = pondReminder.MaintainDate,
+                SeenDate = pondReminder.SeenDate,
+            }).ToList();
+        }
+
+        public async Task<string> UpdateByidAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var pondReminder = await _reminderRepository.GetAsync(
+                 rp => rp.PondReminderId == id,
+                 cancellationToken: cancellationToken);
+
+            if (pondReminder == null)
+            {
+                throw new InvalidOperationException($"Reminder with ID '{id}' not found.");
+                return "Fail";
+            }
+            pondReminder.SeenDate = DateTime.UtcNow;
+            _reminderRepository.Update(pondReminder);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return "success";
         }
     }
 }

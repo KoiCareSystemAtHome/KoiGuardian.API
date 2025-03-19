@@ -100,7 +100,8 @@ public class FoodCalculatorService
 
     public async Task<object> Suggest(Guid id)
     {
-        var pond = await pondRepository.GetAsync(u => u.PondID == id, CancellationToken.None);
+        var pond = await pondRepository.GetAsync(u => u.PondID == id,
+            include : u=> u.Include(u => u.Fish));
 
         var minFishAge = int.MaxValue;
         var fishDateSince = int.MaxValue;

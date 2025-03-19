@@ -51,7 +51,20 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
-
+        //
+        [HttpGet("get-by-owner/{ownerId}")]
+        public async Task<IActionResult> GetByOwnerId([FromRoute] Guid ownerId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var reminders = await _pondReminderService.GetRemindersByOwnerIdAsync(ownerId, cancellationToken);
+                return Ok(reminders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching reminders by owner ID.", Error = ex.Message });
+            }
+        }
 
         // Tính toán và trả về lịch bảo trì (không lưu)
         [HttpPost("calculate-maintenance")]
@@ -120,6 +133,21 @@ namespace KoiGuardian.Api.Controllers
                     Message = "Error saving maintenance reminder.",
                     Error = ex.Message
                 });
+            }
+        }
+
+        //getByPondId
+        [HttpPut("update")]
+        public async Task<IActionResult> update(Guid Id, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var reminders = await _pondReminderService.UpdateByidAsync(Id, cancellationToken);
+                return Ok(reminders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching reminders by owner ID.", Error = ex.Message });
             }
         }
     }

@@ -201,8 +201,8 @@ namespace KoiGuardian.Api.Services
             {
                 additionalNotes.Add($"Current salt ({currentSaltConcentration:F2} kg) exceeds target ({targetSaltWeightKg:F2} kg).");
 
-                double currentSaltConcentrationPercent = currentSaltConcentration / currentVolume * 100;
-                double newTotalVolume = (currentVolume * currentSaltConcentrationPercent) / requiredSaltPercent;
+                // Tính lượng nước cần thêm để pha loãng từ currentSaltConcentration xuống targetSaltWeightKg
+                double newTotalVolume = currentSaltConcentration / requiredSaltPercent;
                 double additionalWaterNeeded = newTotalVolume - currentVolume;
 
                 additionalNotes.Add($"Need to add {additionalWaterNeeded:F2} l water to reduce salt concentration to target level.");
@@ -228,9 +228,6 @@ namespace KoiGuardian.Api.Services
                 additionalNotes.Add($"Need to add: {additionalSaltNeeded:F2} kg salt.");
                 additionalNotes.Add($"Current salt: {currentSaltConcentration:F2} kg.");
                 additionalNotes.Add($"Target salt: {targetSaltWeightKg:F2} kg.");
-
-
-
             }
 
             // Add warnings based on salt concentration thresholds

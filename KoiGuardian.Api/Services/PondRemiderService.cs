@@ -208,6 +208,7 @@ namespace KoiGuardian.Api.Services
             {
                 PondReminderId = pondReminder.PondReminderId,
                 PondId = pondReminder.PondId,
+                PondName = pondReminder.Pond.Name,
                 ReminderType = pondReminder.ReminderType.ToString(),
                 Title = pondReminder.Title,
                 Description = pondReminder.Description,
@@ -227,6 +228,7 @@ namespace KoiGuardian.Api.Services
             {
                 PondReminderId = pondReminder.PondReminderId,
                 PondId = pondReminder.PondId,
+                PondName = pondReminder.Pond.Name,
                 ReminderType = pondReminder.ReminderType.ToString(),
                 Title = pondReminder.Title,
                 Description = pondReminder.Description,
@@ -293,6 +295,7 @@ namespace KoiGuardian.Api.Services
             return pondReminders.Select(pondReminder => new PondRemiderResponse
             {
                 PondReminderId = pondReminder.PondReminderId,
+                PondName = pondReminder.Pond.Name,
                 PondId = pondReminder.PondId,
                 ReminderType = pondReminder.ReminderType.ToString(),
                 Title = pondReminder.Title,

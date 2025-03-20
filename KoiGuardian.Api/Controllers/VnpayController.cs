@@ -1,6 +1,8 @@
 ﻿using KoiGuardian.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 using VNPAY.NET.Enums;
 using VNPAY.NET.Models;
 using VNPAY.NET.Utilities;
@@ -89,6 +91,69 @@ namespace KoiGuardian.Api.Controllers
             }
 
             return NotFound("Không tìm thấy thông tin thanh toán.");
+        }
+
+        /// <summary>
+        /// Tạo dữ liệu thô để React Native tự tạo link thanh toán
+        /// </summary>
+        [HttpGet("CreatePaymentData")]
+        public ActionResult<Dictionary<string, string>> CreatePaymentData(double money, string description, string returnUrl)
+        {
+            try
+            {
+                var ipAddress = NetworkHelper.GetIpAddress(HttpContext);
+
+                var request = new PaymentRequest
+                {
+                    PaymentId = DateTime.Now.Ticks,
+                    Money = money,
+                    Description = description,
+                    IpAddress = ipAddress,
+                    BankCode = BankCode.ANY,
+                    CreatedDate = DateTime.Now,
+                    Currency = Currency.VND,
+                    Language = DisplayLanguage.Vietnamese,
+                    CallBackUrl = returnUrl
+                };
+
+                // Tạo dữ liệu thô
+                var data = new Dictionary<string, string>
+                {
+                    { "vnp_Amount", (request.Money * 100).ToString() },
+                    { "vnp_Command", "pay" },
+                    { "vnp_CreateDate", request.CreatedDate.ToString("yyyyMMddHHmmss") },
+                    { "vnp_CurrCode", request.Currency.ToString() },
+                    { "vnp_IpAddr", request.IpAddress },
+                    { "vnp_Locale", request.Language == DisplayLanguage.Vietnamese ? "vn" : "en" },
+                    { "vnp_OrderInfo", request.Description },
+                    { "vnp_ReturnUrl", request.CallBackUrl },
+                    { "vnp_TxnRef", request.PaymentId.ToString() },
+                    { "vnp_Version", "2.1.0" },
+                    { "vnp_TmnCode", _configuration["Vnpay:TmnCode"] }
+                };
+
+                // Tạo SecureHash
+                var sortedData = data.OrderBy(k => k.Key);
+                string rawData = string.Join("&", sortedData.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                string secureHash = ComputeHmacSha512(rawData);
+                data["vnp_SecureHash"] = secureHash;
+
+                return Ok(data); // Trả về dữ liệu thô
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        private string ComputeHmacSha512(string rawData)
+        {
+            // Sử dụng HMAC-SHA512 để tính SecureHash
+            using (var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_configuration["Vnpay:HashSecret"])))
+            {
+                byte[] bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            }
         }
 
         /// <summary>

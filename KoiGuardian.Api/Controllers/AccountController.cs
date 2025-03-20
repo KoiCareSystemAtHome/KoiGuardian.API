@@ -129,5 +129,11 @@ namespace KoiGuardian.Api.Controllers
             return await service.GetMember();
         }
 
+        [HttpGet("wallet")]
+        public async Task<WalletResponse> GetWallet(Guid ownerid)
+        {
+            return await service.GetWalletByOwnerId(ownerid);
+        }
+
     }
 }

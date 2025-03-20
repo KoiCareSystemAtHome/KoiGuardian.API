@@ -46,6 +46,8 @@ public interface IAccountServices
     Task<List<User>> GetMember();
 
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
+
+    Task<WalletResponse> GetWalletByOwnerId(Guid OwnerId);
 }
 
 public class AccountService
@@ -716,5 +718,21 @@ IImageUploadService imageUpload
         }).ToList();
     }
 
+    public async Task<WalletResponse> GetWalletByOwnerId(Guid OwnerId)
+    {
+        var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(OwnerId.ToString()), CancellationToken.None);
+        if (wallet == null)
+        {
+            return new WalletResponse();
+        }
+        return new WalletResponse
+        {
+            WalletId = wallet.WalletId,
+            Amount = wallet.Amount,
+            UserId = wallet.UserId,
+            Status = wallet.Status,
+            PurchaseDate = wallet.PurchaseDate,
+        };
+    }
 }
 

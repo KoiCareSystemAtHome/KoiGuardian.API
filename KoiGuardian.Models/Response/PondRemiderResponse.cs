@@ -11,6 +11,7 @@ namespace KoiGuardian.Models.Response
         public Guid PondReminderId { get; set; }
         public Guid PondId { get; set; }
         public string ReminderType { get; set; }
+        public string PondName { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public DateTime MaintainDate { get; set; }

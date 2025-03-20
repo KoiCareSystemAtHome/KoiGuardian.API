@@ -97,7 +97,7 @@ namespace KoiGuardian.Api.Controllers
         /// Tạo dữ liệu thô để React Native tự tạo link thanh toán
         /// </summary>
         [HttpGet("CreatePaymentData")]
-        public ActionResult<Dictionary<string, string>> CreatePaymentData(double money, string description, string returnUrl)
+        public ActionResult <string> CreatePaymentData(double money, string description, string returnUrl)
         {
             try
             {
@@ -116,29 +116,8 @@ namespace KoiGuardian.Api.Controllers
                     CallBackUrl = returnUrl
                 };
 
-                // Tạo dữ liệu thô
-                var data = new Dictionary<string, string>
-                {
-                    { "vnp_Amount", (request.Money * 100).ToString() },
-                    { "vnp_Command", "pay" },
-                    { "vnp_CreateDate", request.CreatedDate.ToString("yyyyMMddHHmmss") },
-                    { "vnp_CurrCode", request.Currency.ToString() },
-                    { "vnp_IpAddr", request.IpAddress },
-                    { "vnp_Locale", request.Language == DisplayLanguage.Vietnamese ? "vn" : "en" },
-                    { "vnp_OrderInfo", request.Description },
-                    { "vnp_ReturnUrl", request.CallBackUrl },
-                    { "vnp_TxnRef", request.PaymentId.ToString() },
-                    { "vnp_Version", "2.1.0" },
-                    { "vnp_TmnCode", _configuration["Vnpay:TmnCode"] }
-                };
-
-                // Tạo SecureHash
-                var sortedData = data.OrderBy(k => k.Key);
-                string rawData = string.Join("&", sortedData.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-                string secureHash = ComputeHmacSha512(rawData);
-                data["vnp_SecureHash"] = secureHash;
-
-                return Ok(data); // Trả về dữ liệu thô
+                var paymentUrl = _vnpay.GetPaymentUrl(request);
+                return paymentUrl;
             }
             catch (Exception ex)
             {

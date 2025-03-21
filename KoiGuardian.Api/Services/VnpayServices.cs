@@ -46,7 +46,7 @@ namespace KoiGuardian.Api.Services
         /// <returns></returns>
         PaymentResult GetPaymentResult(IQueryCollection parameters);
     }
-    public class VnpayService : IVnpayService
+    public class VnpayServices : IVnpayService
     {
         private string _tmnCode;
         private string _hashSecret;

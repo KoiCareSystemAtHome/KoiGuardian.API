@@ -43,7 +43,7 @@ builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
-builder.Services.AddSingleton<IVnpayService, VnpayService>();
+builder.Services.AddSingleton<IVnpayService, VnpayServices>();
 builder.Services.AddScoped<IFishService, FishService>();
 builder.Services.AddScoped<IPondServices, PondServices>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
@@ -56,6 +56,7 @@ builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<IKoiDiseaseService, KoiDiseaseService>();
 builder.Services.AddScoped<IDiseaseService, DiseaseService>();
 builder.Services.AddScoped<IReportServices, ReportServices>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

@@ -196,7 +196,9 @@ namespace KoiGuardian.Api.Services
         public async Task<PondRemiderResponse> GetRemindersByIdAsync(Guid id, CancellationToken cancellationToken)
         {
             var pondReminder = await _reminderRepository.GetAsync(
-                rp => rp.PondReminderId == id,
+                predicate: rp => rp.PondReminderId == id,
+                include: query => query.Include(p => p.Pond),
+                orderBy: query => query.OrderBy(p => p.Pond.Name),
                 cancellationToken: cancellationToken);
 
             if (pondReminder == null)
@@ -221,7 +223,9 @@ namespace KoiGuardian.Api.Services
         public async Task<List<PondRemiderResponse>> GetRemindersByPondIdAsync(Guid pondId, CancellationToken cancellationToken)
         {
             var pondReminders = await _reminderRepository.FindAsync(
-                rp => rp.PondId == pondId,
+                predicate: rp => rp.PondId == pondId,
+                include: query => query.Include(p => p.Pond),
+                orderBy: query => query.OrderBy(p => p.Pond.Name),
                 cancellationToken: cancellationToken);
 
             return pondReminders.Select(pondReminder => new PondRemiderResponse
@@ -289,7 +293,9 @@ namespace KoiGuardian.Api.Services
         public async Task<List<PondRemiderResponse>> GetRemindersByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken)
         {
             var pondReminders = await _reminderRepository.FindAsync(
-                rp => rp.Pond.OwnerId.Equals(ownerId.ToString()),
+                predicate: rp => rp.Pond.OwnerId.Equals(ownerId.ToString()),
+                include: query => query.Include(p => p.Pond),
+                orderBy: query => query.OrderBy(p => p.Pond.Name),
                 cancellationToken: cancellationToken);
 
             return pondReminders.Select(pondReminder => new PondRemiderResponse

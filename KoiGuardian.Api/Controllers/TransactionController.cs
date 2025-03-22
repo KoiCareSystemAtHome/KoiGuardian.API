@@ -39,5 +39,38 @@ namespace KoiGuardian.Api.Controllers
             return await service.GetTransactionOrderbyOwnerIdAsync(ownerid);
         }
 
+        [HttpGet("revenue-by-shop")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RevenueSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetRevenueByShopId(Guid shopid, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetRevenueByShopIdAsync(shopid, startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving revenue by shop: {ex.Message}");
+            }
+        }
+
+        [HttpGet("total-revenue")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RevenueSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetTotalRevenue(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetTotalRevenueAsync(startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving total revenue: {ex.Message}");
+            }
+        }
+
+
     }
 }

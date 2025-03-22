@@ -175,14 +175,24 @@ namespace KoiGuardian.Api.Controllers
                     var paymentResult = _vnpay.GetPaymentResult(Request.Query);
                     var resultDescription = $"{paymentResult.PaymentResponse.Description}. {paymentResult.TransactionStatus.Description}.";
 
+                   
+
                     if (paymentResult.IsSuccess)
-                    {
+                    { 
+                        // Lấy fe_return từ query
+                        var feReturnUrl = Request.Query["fe_return"].ToString();
                         var email = Request.Query["email"].ToString();
-                        var amount = float.Parse(Request.Query["vnp_Amount"])/100;
-                        var VnPayTransactionId =Request.Query["vnp_BankTranNo"].ToString();
+                        var amount = float.Parse(Request.Query["vnp_Amount"]) / 100;
+                        var VnPayTransactionId = Request.Query["vnp_BankTranNo"].ToString();
+
                         await _userService.UpdateAmount(email, amount, VnPayTransactionId);
-                        // Xử lý logic cập nhật đơn hàng dựa trên email và số tiền nạp vào
-                        return Ok(resultDescription);
+
+                        // Trả về cả resultDescription và feReturnUrl
+                        return Ok(new
+                        {
+                            Description = resultDescription,
+                            RedirectUrl = feReturnUrl
+                        });
                     }
 
                     return BadRequest(resultDescription);
@@ -196,8 +206,7 @@ namespace KoiGuardian.Api.Controllers
                     });
                 }
             }
-
-            return NotFound("Không tìm thấy thông tin thanh toán.");
+            return BadRequest("Không có query string");
         }
 
 

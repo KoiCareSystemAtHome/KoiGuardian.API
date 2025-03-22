@@ -94,7 +94,7 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(p => p.AddPolicy(MyAllowSpecificOrigins, builder =>
 {
     builder.WithOrigins(
-        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003")
+        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "exp://192.168.1.14:8081")
            .AllowAnyMethod()
            .AllowAnyHeader()
            .AllowCredentials(); // Add this line to allow credentials

@@ -25,7 +25,8 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("examination")]
-        public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
+        public async Task<FinalDiseaseTypePredictResponse> Examination
+            ([FromBody]List<DiseaseTypePredictRequest> symptoms)
         {
             return await service.Examination(symptoms);
         }

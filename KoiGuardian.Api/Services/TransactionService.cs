@@ -100,6 +100,7 @@ namespace KoiGuardian.Api.Services
                 TransactionId = t.TransactionId,
                 TransactionDate = t.TransactionDate,
                 TransactionType = t.TransactionType,
+                Amount = (decimal)t.Amount,
                 VnPayTransactionId = t.VnPayTransactionid
             }).ToList();
 

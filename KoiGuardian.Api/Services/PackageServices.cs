@@ -33,6 +33,7 @@ namespace KoiGuardian.Api.Services
                     PackageDescription = packageRequest.PackageDescription,
                     PackagePrice = packageRequest.PackagePrice,
                     Type = packageRequest.Type,
+                    Peiod = packageRequest.Peiod,
                     StartDate = packageRequest.StartDate,
                     EndDate = packageRequest.EndDate,
                 };
@@ -102,6 +103,7 @@ namespace KoiGuardian.Api.Services
                 package.PackageDescription = packageRequest.PackageDescription;
                 package.PackagePrice = packageRequest.PackagePrice;
                 package.Type = packageRequest.Type;
+                package.Peiod = packageRequest.Peiod;   
                 package.StartDate = packageRequest.StartDate;   
                 package.EndDate = packageRequest.EndDate;
 

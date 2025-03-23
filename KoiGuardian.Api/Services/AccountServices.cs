@@ -618,6 +618,7 @@ IImageUploadService imageUpload
            tranctionRepository.Insert(transaction);
 
         }
+        walletRepository.Update(wallet);
         await uow.SaveChangesAsync();
         return "Success";
 

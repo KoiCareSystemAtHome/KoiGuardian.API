@@ -16,6 +16,7 @@ namespace KoiGuardian.DataAccess.Db
         public string VnPayTransactionid { get; set; }
         public string UserId { get; set; }
         public Guid DocNo { get; set; }
+        public float Amount { get; set; }
 
         public virtual User User { get; set; }
     }

@@ -21,5 +21,6 @@ namespace KoiGuardian.DataAccess.Db
         public DateTime StartDate { get; set; }
 
         public DateTime EndDate { get; set; }
+        public float Peiod { get; set; }
     }
 }

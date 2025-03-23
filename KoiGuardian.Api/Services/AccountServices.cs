@@ -529,7 +529,7 @@ IImageUploadService imageUpload
 
         if (currentPackage != null && currentPackage.PackageId == packageId)
         {
-            if (currentPackage.PurchaseDate.AddMonths(1) > DateTime.UtcNow)
+            if (currentPackage.PurchaseDate.AddDays(package.Peiod) > DateTime.UtcNow)
             {
                 return "Your Account still has an active package.";
             }

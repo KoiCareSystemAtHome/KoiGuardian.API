@@ -15,6 +15,7 @@ namespace KoiGuardian.Models.Request
         public decimal PackagePrice { get; set; }
 
         public string Type { get; set; } = string.Empty;
+        public float Peiod { get; set; }
 
         public DateTime StartDate { get; set; }
 
@@ -35,6 +36,7 @@ namespace KoiGuardian.Models.Request
         public string Type { get; set; } = string.Empty;
 
         public DateTime StartDate { get; set; }
+        public float Peiod { get; set; }
 
         public DateTime EndDate { get; set; }
     }

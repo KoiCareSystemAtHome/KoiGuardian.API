@@ -383,6 +383,7 @@ public class OrderService(
                 {
                     TransactionId = Guid.NewGuid(),
                     TransactionDate = DateTime.UtcNow,
+                    Amount = order.Total,
                     TransactionType = TransactionType.Pending.ToString(),
                     VnPayTransactionid = "Order Paid (COD)",
                     UserId = order.UserId,

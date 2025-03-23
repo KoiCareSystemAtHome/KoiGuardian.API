@@ -498,6 +498,7 @@ IImageUploadService imageUpload
             TransactionId = Guid.NewGuid(),
             TransactionDate = DateTime.UtcNow,
             TransactionType = TransactionType.Success.ToString(),
+            Amount = amount,
             VnPayTransactionid = VnPayTransactionId,
             UserId = user.Id,
             DocNo = Guid.Parse(user.Id)
@@ -563,6 +564,7 @@ IImageUploadService imageUpload
             TransactionType = TransactionType.Success.ToString(),
             VnPayTransactionid = "Pay By Wallet",
             UserId = user.Id,
+            Amount = (float)package.PackagePrice,
             DocNo = package.PackageId
         });
 

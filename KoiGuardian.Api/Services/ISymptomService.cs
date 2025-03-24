@@ -1,4 +1,6 @@
 ﻿using KoiGuardian.Core.Repository;
+using KoiGuardian.Core.UnitOfWork;
+using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
@@ -9,6 +11,7 @@ namespace KoiGuardian.Api.Services;
 public interface ISymptomService
 {
     Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms);
+    Task<FinalDiseaseTypePredictResponse> Examination2();
     Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms);
     Task<List<PredictSymptoms>> GetByType(string? type);
 }
@@ -16,7 +19,8 @@ public interface ISymptomService
 public class SymptomService( 
     IRepository<PredictSymptoms> symptomRepository,
     IRepository<Disease> diseaseRepository,
-    IRepository<RelPredictSymptomDisease> relSymptomDiseaseRepository
+    IRepository<RelPredictSymptomDisease> relSymptomDiseaseRepository,
+    IUnitOfWork<KoiGuardianDbContext> uom
 
     ) : ISymptomService
 {
@@ -185,6 +189,31 @@ public class SymptomService(
             DiseaseName =  predictDisease.Name,
             Description = predictDisease.Description,
         };
+    }
+
+    public async Task<FinalDiseaseTypePredictResponse> Examination2()
+    {
+
+        var disease = await diseaseRepository.GetAllAsync();
+        var symtomps = await symptomRepository.GetAllAsync();
+
+        foreach(var d in disease)
+        {
+            foreach(var s in symtomps)
+            {
+                relSymptomDiseaseRepository.Insert(new RelPredictSymptomDisease()
+                {
+                    DiseaseId = d.DiseaseId,
+                    SymtompId = s.SymtompId,
+                    RelSymptomDiseaseId = Guid.NewGuid(),
+                    DiseaseLower = 0,
+                    DiseaseUpper = 100
+                });
+            }
+        }
+        await uom.SaveChangesAsync();
+
+        return new();
     }
 
     public async Task<List<PredictSymptoms>> GetByType(string? type)

@@ -30,5 +30,12 @@ namespace KoiGuardian.Api.Controllers
         {
             return await service.Examination(symptoms);
         }
+
+        [HttpPost("insert-sample-disease")]
+        public async Task<FinalDiseaseTypePredictResponse> hihi
+            ()
+        {
+            return await service.Examination2();
+        }
     }
 }

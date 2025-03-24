@@ -106,7 +106,11 @@ public class SymptomService(
             foreach (var symptomData in rel)
             {
                 var reqSymp = symptoms.FirstOrDefault( u => u.SymtompId == symptomData.SymtompId);
-                if (Enum.TryParse<SymptomUnit>(symptomData.PredictSymptoms.SymptomUnit, out var unit))
+                if(symptomData.PredictSymptoms == null)
+                {
+                    continue;
+                }
+                if (Enum.TryParse<SymptomUnit>(symptomData.PredictSymptoms?.SymptomUnit, out var unit))
                 {
                     switch (unit)
                     {

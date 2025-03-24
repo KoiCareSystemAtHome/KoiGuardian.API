@@ -155,74 +155,114 @@ namespace KoiGuardian.Api.Services
         public async Task<BlogResponse> UpdateBlogAsync(BlogUpdateRequest blogUpdateRequest, CancellationToken cancellationToken)
         {
             var blogResponse = new BlogResponse();
-            var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogUpdateRequest.BlogId), cancellationToken);
 
-            if (existingBlog == null)
+            if (blogUpdateRequest == null || blogUpdateRequest.BlogId == Guid.Empty)
             {
                 return new BlogResponse
                 {
-                    Status = "404",
-                    Message = "Blog not found."
+                    Status = "400",
+                    Message = "Invalid blog update request or missing BlogId."
                 };
-            }
-
-            // Update blog properties
-            existingBlog.Title = blogUpdateRequest.Title;
-            existingBlog.Content = blogUpdateRequest.Content;
-            existingBlog.Images = blogUpdateRequest.Images;
-            existingBlog.Tag = blogUpdateRequest.Tag;
-            existingBlog.IsApproved = blogUpdateRequest.IsApproved;
-            existingBlog.Type = blogUpdateRequest.Type;
-            existingBlog.ShopId = blogUpdateRequest.ShopId;
-           
-
-            _blogRepository.Update(existingBlog);
-
-            // Handle BlogProducts (upsert logic)
-            var existingBlogProducts = await _blogProductRepository.FindAsync(bp => bp.BlogId == existingBlog.BlogId, cancellationToken);
-            var existingProductIds = existingBlogProducts.Select(bp => bp.ProductId).ToList();
-            var newProductIds = blogUpdateRequest.ProductIds ?? new List<Guid>();
-
-            // Remove BlogProducts that are no longer in the request
-            foreach (var existingBlogProduct in existingBlogProducts)
-            {
-                if (!newProductIds.Contains(existingBlogProduct.ProductId))
-                {
-                    _blogProductRepository.Delete(existingBlogProduct);
-                }
-            }
-
-            // Add new BlogProducts that don't already exist
-            foreach (var productId in newProductIds)
-            {
-                if (!existingProductIds.Contains(productId))
-                {
-                    var blogProduct = new BlogProduct
-                    {
-                        BPId = Guid.NewGuid(), // Generate new unique ID
-                        BlogId = existingBlog.BlogId,
-                        ProductId = productId
-                    };
-                    _blogProductRepository.Insert(blogProduct);
-                }
             }
 
             try
             {
+                var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogUpdateRequest.BlogId), cancellationToken);
+                if (existingBlog == null)
+                {
+                    return new BlogResponse
+                    {
+                        Status = "404",
+                        Message = "Blog not found."
+                    };
+                }
+
+                if (blogUpdateRequest.ShopId != Guid.Empty && blogUpdateRequest.ShopId != existingBlog.ShopId)
+                {
+                    var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == blogUpdateRequest.ShopId, cancellationToken);
+                    if (!shopExists)
+                    {
+                        return new BlogResponse
+                        {
+                            Status = "400",
+                            Message = "Shop with the provided ShopId does not exist."
+                        };
+                    }
+                }
+
+                // Update only provided fields
+                existingBlog.Title = !string.IsNullOrEmpty(blogUpdateRequest.Title) ? blogUpdateRequest.Title : existingBlog.Title;
+                existingBlog.Content = !string.IsNullOrEmpty(blogUpdateRequest.Content) ? blogUpdateRequest.Content : existingBlog.Content;
+                existingBlog.Images = blogUpdateRequest.Images ?? existingBlog.Images;
+                existingBlog.Tag = "Pending";
+                existingBlog.IsApproved = false;
+                existingBlog.Type = !string.IsNullOrEmpty(blogUpdateRequest.Type) ? blogUpdateRequest.Type : existingBlog.Type;
+                existingBlog.ShopId = blogUpdateRequest.ShopId != Guid.Empty ? blogUpdateRequest.ShopId : existingBlog.ShopId;
+
+                // Ensure ReportedDate is UTC if it exists
+                if (existingBlog.ReportedDate.HasValue)
+                {
+                    existingBlog.ReportedDate = DateTime.SpecifyKind(existingBlog.ReportedDate.Value, DateTimeKind.Utc);
+                }
+
+                _blogRepository.Update(existingBlog);
+
+                if (blogUpdateRequest.ProductIds != null)
+                {
+                    var existingBlogProducts = await _blogProductRepository.FindAsync(bp => bp.BlogId == existingBlog.BlogId, cancellationToken);
+                    var existingProductIds = existingBlogProducts
+                        .Where(bp => bp.Product != null)
+                        .Select(bp => bp.ProductId)
+                        .ToList();
+                    var newProductIds = blogUpdateRequest.ProductIds;
+
+                    foreach (var existingBlogProduct in existingBlogProducts)
+                    {
+                        if (!newProductIds.Contains(existingBlogProduct.ProductId))
+                        {
+                            _blogProductRepository.Delete(existingBlogProduct);
+                        }
+                    }
+
+                    foreach (var productId in newProductIds)
+                    {
+                        if (!existingProductIds.Contains(productId))
+                        {
+                            var blogProduct = new BlogProduct
+                            {
+                                BPId = Guid.NewGuid(),
+                                BlogId = existingBlog.BlogId,
+                                ProductId = productId
+                            };
+                            _blogProductRepository.Insert(blogProduct);
+                        }
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-                blogResponse.Status = "200";
-                blogResponse.Message = "Blog updated successfully.";
+
+                return new BlogResponse
+                {
+                    Status = "200",
+                    Message = "Blog updated successfully."
+                };
+            }
+            catch (DbUpdateException dbEx)
+            {
+                return new BlogResponse
+                {
+                    Status = "500",
+                    Message = $"Database error updating blog: {dbEx.InnerException?.Message ?? dbEx.Message}"
+                };
             }
             catch (Exception ex)
             {
                 return new BlogResponse
                 {
                     Status = "500",
-                    Message = "Error updating blog: " + ex.Message
+                    Message = $"Error updating blog: {ex.Message}"
                 };
             }
-
-            return blogResponse;
         }
 
 

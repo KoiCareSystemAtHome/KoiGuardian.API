@@ -71,6 +71,70 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
+        [HttpGet("order-status-summary")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderStatusSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetOrderStatusSummary(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetOrderStatusSummaryAsync(startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving order status summary: {ex.Message}");
+            }
+        }
+
+        [HttpGet("order-status-summary-by-shop")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderStatusSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetOrderStatusSummaryByShopId(Guid shopid, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetOrderStatusSummaryByShopIdAsync(shopid, startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving order status summary by shop: {ex.Message}");
+            }
+        }
+
+        [HttpGet("product-sales-summary")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSalesSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetProductSalesSummary(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetProductSalesSummaryAsync(startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving product sales summary: {ex.Message}");
+            }
+        }
+
+        [HttpGet("product-sales-summary-by-shop")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSalesSummaryDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetProductSalesSummaryByShopId(Guid shopid, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await service.GetProductSalesSummaryByShopIdAsync(shopid, startDate, endDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving product sales summary by shop: {ex.Message}");
+            }
+        }
+
 
     }
 }

@@ -35,4 +35,33 @@ namespace KoiGuardian.Models.Response
         public DateTime ExpiryDate { get; set; }
         public decimal Amount { get; set; }
     }
+
+
+    public class OrderStatusSummaryDto
+    {
+        public int SuccessfulOrders { get; set; }
+        public int FailedOrders { get; set; }
+        public int PendingOrders { get; set; }
+        public int TotalOrders { get; set; }
+    }
+
+    public class ProductSalesSummaryDto
+    {
+        public List<ProductSalesByMonthDto> MonthlySales { get; set; } = new();
+        public int TotalFood { get; set; }
+        public int TotalProducts { get; set; }
+        public int TotalMedicines { get; set; }
+        public int TotalItemsSold { get; set; }
+    }
+
+    public class ProductSalesByMonthDto
+    {
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public int FoodCount { get; set; }
+        public int ProductCount { get; set; }
+        public int MedicineCount { get; set; }
+        public int TotalCount { get; set; }
+    }
+
 }

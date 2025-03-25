@@ -23,7 +23,8 @@ public class PondReminder
 
 public enum ReminderType
 {
-    Fish,
+    Maintenance,
+    RecurringMaintenance,
     Pond,
 
 }

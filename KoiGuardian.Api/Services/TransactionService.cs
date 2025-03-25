@@ -9,7 +9,7 @@ namespace KoiGuardian.Api.Services
     public interface ITransactionService
     {
         Task<List<TransactionDto>> GetTransactionbyShopIdAsync(Guid shopId);
-        Task<List<TransactionDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId);
+        Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId);
         Task<List<TransactionDto>> GetTransactionDespositbyOwnerIdAsync(Guid ownerId);
         Task<List<TransactionDto>> GetTransactionOrderbyOwnerIdAsync(Guid ownerId);
         Task<RevenueSummaryDto> GetTotalRevenueAsync(DateTime? startDate = null, DateTime? endDate = null);
@@ -51,7 +51,7 @@ namespace KoiGuardian.Api.Services
             return result;
         }
 
-        public async Task<List<TransactionDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId)
+        public async Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId)
         {
             var packages = await packageRepository.FindAsync(
                 x => true, // Lấy tất cả packages
@@ -67,12 +67,14 @@ namespace KoiGuardian.Api.Services
             var result = transactions.Select(t =>
             {
                 var package = packages.FirstOrDefault(p => p.PackageId == t.DocNo);
-                return new TransactionDto
+                return new TransactionPackageDto
                 {
                     TransactionId = t.TransactionId,
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.TransactionType,
-                    VnPayTransactionId = t.VnPayTransactionid,
+                    Description = t.VnPayTransactionid,
+                    ExpiryDate = package.EndDate.AddDays(package.Peiod),
+                    PakageName = package.PackageTitle,
                     Amount = package != null ? package.PackagePrice : 0m // Lấy PackagePrice
                 };
             }).ToList();

@@ -67,7 +67,7 @@ namespace KoiGuardian.Api.Services
                 {
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
-                    ReminderType = ReminderType.Pond,
+                    ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = "No data available for the pond. Maintenance required.",
                     MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
@@ -98,7 +98,7 @@ namespace KoiGuardian.Api.Services
                 {
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
-                    ReminderType = ReminderType.Pond,
+                    ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago).",
                     MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
@@ -184,7 +184,7 @@ namespace KoiGuardian.Api.Services
             {
                 PondReminderId = Guid.NewGuid(),
                 PondId = pondId,
-                ReminderType = ReminderType.Pond,
+                ReminderType = ReminderType.Maintenance,
                 Title = $"Maintenance for {earliestParamName}",
                 Description = $"Current value: {earliestValue} - {earliestDescription}. Maintenance required.",
                 MaintainDate = earliestMaintenanceDate.Value.ToUniversalTime(),
@@ -258,7 +258,7 @@ namespace KoiGuardian.Api.Services
                 {
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
-                    ReminderType = ReminderType.Pond,
+                    ReminderType = ReminderType.RecurringMaintenance,
                     Title = "Scheduled Maintenance",
                     Description = "Routine maintenance scheduled for the pond.",
                     MaintainDate = startDate.ToUniversalTime(),

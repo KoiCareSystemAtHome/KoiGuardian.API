@@ -23,4 +23,16 @@ namespace KoiGuardian.Models.Response
         public decimal OrderRevenue { get; set; } // Doanh thu từ order
         public decimal TotalRevenue { get; set; } // Tổng doanh thu (bao gồm 3% phí trên mỗi đơn hàng)
     }
+
+    public class TransactionPackageDto
+    {
+        public Guid TransactionId { get; set; }
+        public DateTime TransactionDate { get; set; }
+        public string TransactionType { get; set; }
+        public string Description { get; set; }
+        public string PakageName { get; set; }
+
+        public DateTime ExpiryDate { get; set; }
+        public decimal Amount { get; set; }
+    }
 }

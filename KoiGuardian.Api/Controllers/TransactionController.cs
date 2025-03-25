@@ -21,7 +21,7 @@ namespace KoiGuardian.Api.Controllers
 
 
         [HttpGet("package-transaction-by-owner")]
-        public async Task<List<TransactionDto>> GetTransactionPackagebyOwnerId(Guid ownerid)
+        public async Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerId(Guid ownerid)
         {
             return await service.GetTransactionPackagebyOwnerIdAsync(ownerid);
         }

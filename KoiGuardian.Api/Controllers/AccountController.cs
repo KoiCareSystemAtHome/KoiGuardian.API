@@ -105,9 +105,20 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("pay-package")]
-        public async Task<string> UpdateAccountPackage(string email, Guid packageId)
+        public async Task<IActionResult> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false)
         {
-            return await service.UpdateAccountPackage(email,packageId);
+            var result = await service.UpdateAccountPackage(email, packageId, forceRenew);
+
+            if (result.IsSuccess)
+            {
+                return Ok(new { Message = result.Message});
+            }
+
+            return BadRequest(new
+            {
+                Message = result.Message,
+                ExpirationDate = result.ExpirationDate?.ToString("dd/MM/yyyy HH:mm:ss UTC")
+            });
         }
 
         [HttpPost("pay-orders")]

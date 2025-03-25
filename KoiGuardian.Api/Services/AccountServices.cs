@@ -40,7 +40,7 @@ public interface IAccountServices
     Task<string> ChangePassword(string email, string oldPass, string newPass);
     Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
     Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId);
-    Task<string> UpdateAccountPackage(string email, Guid packageId);
+    Task<(string Message, bool IsSuccess, DateTime? ExpirationDate)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false);
     Task<string> UpdateAccountOrder(string email, List<Guid> orderIds);
     Task<string> ProcessPendingTransactions(DateTime inputDate);
     Task<List<User>> GetMember();
@@ -508,52 +508,58 @@ IImageUploadService imageUpload
         return string.Empty;
     }
 
-    public async Task<string> UpdateAccountPackage(string email, Guid packageId)
+    public async Task<(string Message, bool IsSuccess, DateTime? ExpirationDate)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false)
     {
         var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null || user.Status != UserStatus.Active)
         {
-            return "Account is not valid!";
+            return ("Account is not valid!", false, null);
         }
 
         var wallet = await walletRepository.GetAsync(u => u.UserId.Equals(user.Id), CancellationToken.None);
         if (wallet == null)
         {
-            return "Wallet is not valid!";
+            return ("Wallet is not valid!", false, null);
         }
 
         // Kiểm tra gói hiện tại của user
         var currentPackage = await ACrepository.GetAsync(u => u.AccountId.Equals(user.Id), CancellationToken.None);
         var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
 
-        if (currentPackage != null && currentPackage.PackageId == packageId)
+        if (currentPackage != null)
         {
-            if (currentPackage.PurchaseDate.AddDays(package.Peiod) > DateTime.UtcNow)
+            var expirationDate = currentPackage.PurchaseDate.AddDays(package.Peiod);
+            if (expirationDate > DateTime.UtcNow && !forceRenew)
             {
-                return "Your Account still has an active package.";
+                return ($"Your account still has an active package until {expirationDate:dd/MM/yyyy HH:mm:ss UTC}. Do you want to renew anyway?", false, expirationDate);
             }
         }
 
         if (package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
         {
-            return "Package is not valid!";
+            return ("Package is not valid!", false, null);
         }
 
         if ((decimal)wallet.Amount < package.PackagePrice)
         {
-            return "Your Balance is not enough";
+            return ("Your Balance is not enough", false, null);
         }
 
+        // Chỉ tiến hành mua nếu forceRenew = true hoặc không có gói cũ còn hạn
+        DateTime newPurchaseDate = DateTime.UtcNow;
+
+        // Trừ tiền và cập nhật gói
         wallet.Amount -= (float)package.PackagePrice;
         user.PackageId = packageId;
 
+        // Thêm gói mới
         ACrepository.Insert(new AccountPackage
         {
             AccountPackageid = Guid.NewGuid(),
             AccountId = user.Id,
             PackageId = packageId,
-            PurchaseDate = DateTime.UtcNow,
+            PurchaseDate = newPurchaseDate,
         });
 
         // Ghi nhận giao dịch
@@ -572,7 +578,7 @@ IImageUploadService imageUpload
         walletRepository.Update(wallet);
 
         await uow.SaveChangesAsync();
-        return "Success";
+        return ("Success", true, null);
     }
 
     public async Task<string> UpdateAccountOrder(string email, List<Guid> orderIds)

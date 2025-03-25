@@ -2,7 +2,9 @@
 using KoiGuardian.Core.UnitOfWork;
 using KoiGuardian.DataAccess;
 using KoiGuardian.DataAccess.Db;
+using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace KoiGuardian.Api.Services
 {
@@ -14,6 +16,10 @@ namespace KoiGuardian.Api.Services
         Task<List<TransactionDto>> GetTransactionOrderbyOwnerIdAsync(Guid ownerId);
         Task<RevenueSummaryDto> GetTotalRevenueAsync(DateTime? startDate = null, DateTime? endDate = null);
         Task<RevenueSummaryDto> GetRevenueByShopIdAsync(Guid shopId, DateTime? startDate = null, DateTime? endDate = null);
+        Task<OrderStatusSummaryDto> GetOrderStatusSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<OrderStatusSummaryDto> GetOrderStatusSummaryByShopIdAsync(Guid shopId, DateTime? startDate = null, DateTime? endDate = null);
+        Task<ProductSalesSummaryDto> GetProductSalesSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<ProductSalesSummaryDto> GetProductSalesSummaryByShopIdAsync(Guid shopId, DateTime? startDate = null, DateTime? endDate = null);
     }
 
     public class TransactionService(
@@ -233,5 +239,141 @@ namespace KoiGuardian.Api.Services
 
             return result;
         }
+
+        public async Task<OrderStatusSummaryDto> GetOrderStatusSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var result = new OrderStatusSummaryDto();
+
+            var startDateUtc = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+            var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+
+            var orders = await orderRepository.FindAsync(
+                predicate: o => (!startDateUtc.HasValue || o.CreatedDate >= startDateUtc.Value) &&
+                                (!endDateUtc.HasValue || o.CreatedDate <= endDateUtc.Value),
+                include: null, // Không cần Include vì chỉ dùng thông tin từ Order
+                orderBy: o => o.OrderByDescending(o => o.CreatedDate)
+            );
+
+            result.SuccessfulOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower());
+            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
+            result.PendingOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Pending.ToString().ToLower());
+            result.TotalOrders = orders.Count();
+
+            return result;
+        }
+
+        public async Task<OrderStatusSummaryDto> GetOrderStatusSummaryByShopIdAsync(Guid shopId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var result = new OrderStatusSummaryDto();
+
+            var startDateUtc = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+            var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+
+            var orders = await orderRepository.FindAsync(
+                predicate: o => o.ShopId == shopId &&
+                                (!startDateUtc.HasValue || o.CreatedDate >= startDateUtc.Value) &&
+                                (!endDateUtc.HasValue || o.CreatedDate <= endDateUtc.Value),
+                include: null, // Không cần Include vì chỉ dùng thông tin từ Order
+                orderBy: o => o.OrderByDescending(o => o.CreatedDate)
+            );
+
+            result.SuccessfulOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower());
+            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
+            result.PendingOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Pending.ToString().ToLower());
+            result.TotalOrders = orders.Count();
+
+            return result;
+        }
+
+        public async Task<ProductSalesSummaryDto> GetProductSalesSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var result = new ProductSalesSummaryDto();
+
+            var startDateUtc = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+            var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+
+            var orders = await orderRepository.FindAsync(
+                predicate: o => o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower() &&
+                                (!startDateUtc.HasValue || o.CreatedDate >= startDateUtc.Value) &&
+                                (!endDateUtc.HasValue || o.CreatedDate <= endDateUtc.Value),
+                include: o => o.Include(o => o.OrderDetail).ThenInclude(od => od.Product),
+                orderBy: o => o.OrderByDescending(o => o.CreatedDate)
+            );
+
+            // Tải dữ liệu vào bộ nhớ trước khi GroupBy để tránh lỗi CS1662
+            var orderDetails = orders.SelectMany(o => o.OrderDetail).ToList();
+
+            var monthlySales = orderDetails
+                .GroupBy(od => new
+                {
+                    Month = od.Order.CreatedDate.Month,
+                    Year = od.Order.CreatedDate.Year,
+                    Type = od.Product.Type
+                })
+                .Select(g => new ProductSalesByMonthDto
+                {
+                    Month = g.Key.Month,
+                    Year = g.Key.Year,
+                    FoodCount = g.Where(x => (int)x.Product.Type == 0).Sum(x => x.Quantity), // 0 = Food
+                    ProductCount = g.Where(x => (int)x.Product.Type == 1).Sum(x => x.Quantity), // 1 = Product
+                    MedicineCount = g.Where(x => (int)x.Product.Type == 2).Sum(x => x.Quantity), // 2 = Medicine
+                    TotalCount = g.Sum(x => x.Quantity)
+                }).ToList();
+
+            result.MonthlySales = monthlySales;
+            result.TotalFood = monthlySales.Sum(m => m.FoodCount);
+            result.TotalProducts = monthlySales.Sum(m => m.ProductCount);
+            result.TotalMedicines = monthlySales.Sum(m => m.MedicineCount);
+            result.TotalItemsSold = monthlySales.Sum(m => m.TotalCount);
+
+            return result;
+        }
+
+        public async Task<ProductSalesSummaryDto> GetProductSalesSummaryByShopIdAsync(Guid shopId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var result = new ProductSalesSummaryDto();
+
+            var startDateUtc = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+            var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
+
+            var orders = await orderRepository.FindAsync(
+                predicate: o => o.ShopId == shopId &&
+                                o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower() &&
+                                (!startDateUtc.HasValue || o.CreatedDate >= startDateUtc.Value) &&
+                                (!endDateUtc.HasValue || o.CreatedDate <= endDateUtc.Value),
+                include: o => o.Include(o => o.OrderDetail).ThenInclude(od => od.Product),
+                orderBy: o => o.OrderByDescending(o => o.CreatedDate)
+            );
+
+            // Tải dữ liệu vào bộ nhớ trước khi GroupBy để tránh lỗi CS1662
+            var orderDetails = orders.SelectMany(o => o.OrderDetail).ToList();
+
+            var monthlySales = orderDetails
+                .GroupBy(od => new
+                {
+                    Month = od.Order.CreatedDate.Month,
+                    Year = od.Order.CreatedDate.Year,
+                    Type = od.Product.Type
+                })
+                .Select(g => new ProductSalesByMonthDto
+                {
+                    Month = g.Key.Month,
+                    Year = g.Key.Year,
+                    FoodCount = g.Where(x => (int)x.Product.Type == 0).Sum(x => x.Quantity), // 0 = Food
+                    ProductCount = g.Where(x => (int)x.Product.Type == 1).Sum(x => x.Quantity), // 1 = Product
+                    MedicineCount = g.Where(x => (int)x.Product.Type == 2).Sum(x => x.Quantity), // 2 = Medicine
+                    TotalCount = g.Sum(x => x.Quantity)
+                }).ToList();
+
+            result.MonthlySales = monthlySales;
+            result.TotalFood = monthlySales.Sum(m => m.FoodCount);
+            result.TotalProducts = monthlySales.Sum(m => m.ProductCount);
+            result.TotalMedicines = monthlySales.Sum(m => m.MedicineCount);
+            result.TotalItemsSold = monthlySales.Sum(m => m.TotalCount);
+
+            return result;
+        }
+
+
     }
 }

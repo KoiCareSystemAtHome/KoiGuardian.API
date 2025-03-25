@@ -36,6 +36,7 @@ namespace KoiGuardian.Models.Response
         public decimal Amount { get; set; }
     }
 
+
     public class OrderStatusSummaryDto
     {
         public int SuccessfulOrders { get; set; }
@@ -62,4 +63,5 @@ namespace KoiGuardian.Models.Response
         public int MedicineCount { get; set; }
         public int TotalCount { get; set; }
     }
+
 }

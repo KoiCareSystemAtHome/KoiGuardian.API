@@ -224,7 +224,7 @@ namespace KoiGuardian.Api.Services
                 Message = "Disease retrieved successfully",
                 Medicines = disease?.MedicineDisease,
                 SickSymtomps = await _predictSymtopmsRepository
-                    .FindAsync(u => predictSymtoms.Select( u => u.SymtompId).Contains( u.SymtompId)),
+                    .FindAsync(u => predictSymtoms.Select( u => u.PredictSymptomsId).Contains( u.SymtompId)),
 
             };
         }
@@ -302,7 +302,7 @@ namespace KoiGuardian.Api.Services
         public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
         {
             var relations = await _relpredictSymtopmsDiseaseRepository
-                .FindAsync(u => symptoms.Select(u => u.SymtompId).Contains(u.SymtompId),
+                .FindAsync(u => symptoms.Select(u => u.SymtompId).Contains(u.PredictSymptomsId),
                     include: u => u.Include(u => u.PredictSymptoms)
                 , CancellationToken.None);
 
@@ -315,7 +315,7 @@ namespace KoiGuardian.Api.Services
                 var currentPoint = 0;
                 foreach (var symptomData in rel)
                 {
-                    var reqSymp = symptoms.FirstOrDefault(u => u.SymtompId == symptomData.SymtompId);
+                    var reqSymp = symptoms.FirstOrDefault(u => u.SymtompId == symptomData.PredictSymptomsId);
                     if (Enum.TryParse<SymptomUnit>(symptomData.PredictSymptoms.SymptomUnit, out var unit))
                     {
                         switch (unit)

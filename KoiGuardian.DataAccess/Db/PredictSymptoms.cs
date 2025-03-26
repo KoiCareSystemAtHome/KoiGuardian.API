@@ -16,4 +16,6 @@ public class PredictSymptoms
     public bool SymptomPriority { get; set; }
     public string SymptomUnit { get; set; }
     public string Type { get; set; }
+
+    public virtual IEnumerable<RelPredictSymptomDisease> RelPredictSymptomDiseases {  get; set; }
 }

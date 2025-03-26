@@ -97,7 +97,7 @@ public class SymptomService(
     public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
     {
         var relations = await relSymptomDiseaseRepository
-            .FindAsync( u => symptoms.Select(u => u.SymtompId).Contains( u.SymtompId),
+            .FindAsync( u => symptoms.Select(u => u.SymtompId).Contains( u.PredictSymptomsId),
                 include: u=> u.Include(u => u.PredictSymptoms)
             , CancellationToken.None);
 
@@ -109,7 +109,7 @@ public class SymptomService(
             var currentPoint = 0;
             foreach (var symptomData in rel)
             {
-                var reqSymp = symptoms.FirstOrDefault( u => u.SymtompId == symptomData.SymtompId);
+                var reqSymp = symptoms.FirstOrDefault( u => u.SymtompId == symptomData.PredictSymptomsId);
                 if(symptomData.PredictSymptoms == null)
                 {
                     continue;
@@ -204,7 +204,7 @@ public class SymptomService(
                 relSymptomDiseaseRepository.Insert(new RelPredictSymptomDisease()
                 {
                     DiseaseId = d.DiseaseId,
-                    SymtompId = s.SymtompId,
+                    PredictSymptomsId = s.SymtompId,
                     RelSymptomDiseaseId = Guid.NewGuid(),
                     DiseaseLower = 0,
                     DiseaseUpper = 100

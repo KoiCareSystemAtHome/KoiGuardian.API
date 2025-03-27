@@ -166,13 +166,9 @@ namespace KoiGuardian.Api.Services
             existingProduct.ManufactureDate = productRequest.ManufactureDate;
             existingProduct.ExpiryDate = productRequest.ExpiryDate;
             existingProduct.ShopId = productRequest.ShopId;
-
-            // Update image if provided
-            if (productRequest.Image != null)
-            {
-                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), productRequest.Image);
-                existingProduct.Image = newImage;
-            }
+            existingProduct.Image = productRequest.Image;
+           
+           
 
             // Update parameter impacts if provided
             if (productRequest.ParameterImpacts != null)
@@ -235,13 +231,9 @@ namespace KoiGuardian.Api.Services
             existingProduct.Brand = foodRequest.Brand;
             existingProduct.ManufactureDate = foodRequest.ManufactureDate;
             existingProduct.ExpiryDate = foodRequest.ExpiryDate;
-
-            // Update image on Product if provided
-            if (foodRequest.Image != null)
-            {
-                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), foodRequest.Image);
-                existingProduct.Image = newImage;
-            }
+            existingProduct.Image = foodRequest.Image;
+            
+           
 
             // Update parameter impacts on Product if provided
             if (foodRequest.ParameterImpacts != null)
@@ -308,13 +300,10 @@ namespace KoiGuardian.Api.Services
             existingProduct.Brand = medicineRequest.Brand;
             existingProduct.ManufactureDate = medicineRequest.ManufactureDate;
             existingProduct.ExpiryDate = medicineRequest.ExpiryDate;
-
+            existingProduct.Image = medicineRequest.Image;
+               
             // Update image on Product if provided
-            if (medicineRequest.Image != null)
-            {
-                var newImage = await _imageUploadService.UploadImageAsync("test", existingProduct.ProductId.ToString(), medicineRequest.Image);
-                existingProduct.Image = newImage;
-            }
+            
 
             // Update parameter impacts on Product if provided
             if (medicineRequest.ParameterImpacts != null)

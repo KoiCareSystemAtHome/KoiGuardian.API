@@ -42,7 +42,7 @@ namespace KoiGuardian.Api.Services
       string categoryName,
       CancellationToken cancellationToken);
 
-        Task<IEnumerable<ProductRequest>> GetAllProductsAsync(CancellationToken cancellationToken);
+        Task<IEnumerable<ProductGetRequest>> GetAllProductsAsync(CancellationToken cancellationToken);
         Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken);
         Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken);
 
@@ -440,22 +440,23 @@ namespace KoiGuardian.Api.Services
             return results;
         }
 
-        public async Task<IEnumerable<ProductRequest>> GetAllProductsAsync(CancellationToken cancellationToken)
+        public async Task<IEnumerable<ProductGetRequest>> GetAllProductsAsync(CancellationToken cancellationToken)
         {
             return await _productRepository
                 .GetQueryable()
-                .AsNoTracking()  // Keeps the performance optimization
-                .Include(p => p.Shop)    // Include Shop relationship
-                .Include(p => p.Category) // Include Category relationship
-                .Select(p => new ProductRequest
+                .AsNoTracking()  
+                .Include(p => p.Shop)    
+                .Include(p => p.Category) 
+                .Select(p => new ProductGetRequest
                 {
+                    ProductId = p.ProductId,
                     ProductName = p.ProductName,
                     Description = p.Description,
                     Price = p.Price,
                     StockQuantity = p.StockQuantity,
                     Image = p.Image,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name, // Get CategoryName from related entity
+                    CategoryName = p.Category.Name, 
                     Brand = p.Brand,
                     ManufactureDate = p.ManufactureDate,
                     ExpiryDate = p.ExpiryDate,
@@ -463,7 +464,7 @@ namespace KoiGuardian.Api.Services
                         ? new Dictionary<string, ParameterImpactType>()
                         : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     ShopId = p.ShopId,
-                    ShopName = p.Shop.ShopName, // Get ShopName from related entity
+                    ShopName = p.Shop.ShopName, 
                     Type = p.Type
                 })
                 .ToListAsync(cancellationToken);

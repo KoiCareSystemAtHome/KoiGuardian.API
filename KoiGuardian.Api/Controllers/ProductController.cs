@@ -14,7 +14,7 @@ namespace KoiGuardian.Api.Controllers
     {
 
         [HttpGet]
-        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+        public async Task<IEnumerable<ProductRequest>> GetAllProductsAsync(CancellationToken cancellationToken)
         {
             return await services.GetAllProductsAsync(cancellationToken);
         }

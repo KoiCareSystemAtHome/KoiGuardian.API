@@ -7,6 +7,7 @@ using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace KoiGuardian.Api.Services
       string categoryName,
       CancellationToken cancellationToken);
 
-        Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken);
+        Task<IEnumerable<ProductRequest>> GetAllProductsAsync(CancellationToken cancellationToken);
         Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken);
         Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken);
 
@@ -439,11 +440,32 @@ namespace KoiGuardian.Api.Services
             return results;
         }
 
-        public async Task<IEnumerable<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+        public async Task<IEnumerable<ProductRequest>> GetAllProductsAsync(CancellationToken cancellationToken)
         {
             return await _productRepository
                 .GetQueryable()
-                .AsNoTracking()  // For better performance since we're just reading
+                .AsNoTracking()  // Keeps the performance optimization
+                .Include(p => p.Shop)    // Include Shop relationship
+                .Include(p => p.Category) // Include Category relationship
+                .Select(p => new ProductRequest
+                {
+                    ProductName = p.ProductName,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    Image = p.Image,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category.Name, // Get CategoryName from related entity
+                    Brand = p.Brand,
+                    ManufactureDate = p.ManufactureDate,
+                    ExpiryDate = p.ExpiryDate,
+                    ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
+                    ShopId = p.ShopId,
+                    ShopName = p.Shop.ShopName, // Get ShopName from related entity
+                    Type = p.Type
+                })
                 .ToListAsync(cancellationToken);
         }
 

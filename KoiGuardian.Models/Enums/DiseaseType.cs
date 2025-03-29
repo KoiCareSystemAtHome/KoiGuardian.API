@@ -8,11 +8,13 @@ namespace KoiGuardian.Models.Enums
 {
     public enum DiseaseType
     {
-        Common,
-        environment,
-        food, 
-        virus,
-        bact,
-        Variety_only
-    }
+     
+        Common = 0,
+        Environment = 1,
+        Food = 2,
+        Virus = 3,
+        Bact = 4,
+        Variety_only = 5
+    
+}
 }

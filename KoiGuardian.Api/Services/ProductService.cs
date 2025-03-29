@@ -447,6 +447,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()  
                 .Include(p => p.Shop)    
                 .Include(p => p.Category) 
+                .Include(p => p.Feedbacks)
                 .Select(p => new ProductGetRequest
                 {
                     ProductId = p.ProductId,
@@ -460,11 +461,15 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     ManufactureDate = p.ManufactureDate,
                     ExpiryDate = p.ExpiryDate,
+                    
                     ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
                         ? new Dictionary<string, ParameterImpactType>()
                         : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     ShopId = p.ShopId,
-                    ShopName = p.Shop.ShopName, 
+                    ShopName = p.Shop.ShopName,
+                    FeedbackId = p.Feedbacks.FirstOrDefault() != null ? p.Feedbacks.FirstOrDefault().FeedbackId : Guid.Empty,
+                    Content = p.Feedbacks.FirstOrDefault() != null ? p.Feedbacks.FirstOrDefault().Content : null,
+
                     Type = p.Type
                 })
                 .ToListAsync(cancellationToken);
@@ -689,7 +694,9 @@ namespace KoiGuardian.Api.Services
 
                     // Feedback statistics
                     FeedbackCount = x.Product.Feedbacks.Count(),
-                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0
+                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0,
+                    FeedbackId = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().FeedbackId : Guid.Empty,
+                    Content = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().Content : null,
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
@@ -737,7 +744,10 @@ namespace KoiGuardian.Api.Services
 
                     // Feedback statistics
                     FeedbackCount = x.Product.Feedbacks.Count(),
-                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0
+                    AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0,
+                    FeedbackId = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().FeedbackId : Guid.Empty,
+                    Content = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().Content : null,
+
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);

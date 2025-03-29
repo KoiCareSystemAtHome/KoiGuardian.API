@@ -35,6 +35,10 @@ namespace KoiGuardian.Models.Response
         // Feedback data
         public int FeedbackCount { get; set; }
         public double AverageRating { get; set; }
+
+        public Guid FeedbackId { get; set; }
+
+        public string Content { get; set; }
     }
 
 

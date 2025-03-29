@@ -74,6 +74,10 @@ namespace KoiGuardian.Models.Request
 
         public string ShopName { get; set; }
 
+        public Guid FeedbackId { get; set; }
+
+        public string Content { get; set; }
+
         public ProductType Type { get; set; }
 
     }

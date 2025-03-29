@@ -46,7 +46,7 @@ public class KoiDiseaseService
             {
                 KoiDiseaseProfileId = Guid.NewGuid(),
                 DiseaseID = request.DiseaseID,
-                MedicineId = request.MedicineId,
+                MedicineId = request.MedicineId ?? Guid.Empty,
                 FishId = request.FishId,
                 Createddate = DateTime.UtcNow,
                 EndDate = request.EndDate,

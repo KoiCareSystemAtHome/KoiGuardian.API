@@ -3,7 +3,7 @@
 public class DiseaseProfileRequest
 {
     public Guid DiseaseID { get; set; }
-    public Guid MedicineId { get; set; }
+    public Guid? MedicineId { get; set; }
     public Guid FishId { get; set; }
     public DateTime EndDate { get; set; }
     public string Status { get; set; }

@@ -24,7 +24,7 @@ namespace KoiGuardian.Models.Request
 
         public Guid CategoryId { get; set; }
 
-        public string CategoryName { get; set; }
+        
 
         public string Brand { get; set; }
 
@@ -37,7 +37,7 @@ namespace KoiGuardian.Models.Request
 
         public Guid ShopId { get; set; }
 
-        public string ShopName { get; set; }
+        
 
         public ProductType Type { get; set; }
 

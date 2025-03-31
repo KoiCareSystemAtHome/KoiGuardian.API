@@ -46,7 +46,7 @@ public class FoodCalculatorService
         var foodTotal = 0f;
         var often = new List<string>();
         var noteList = new List<string>();
-
+        float totalweight = 0;
         foreach (var koi in pond.Fish)
         {
             var koiPercent = 0f;
@@ -74,7 +74,7 @@ public class FoodCalculatorService
 
             var koiweight = await koiParamRepository.GetQueryable()
                 .OrderByDescending(u=> u.CalculatedDate).FirstOrDefaultAsync();
-
+            totalweight += koiweight.Weight;
             foodTotal = foodTotal + (koiPercent * koiweight?.Weight ?? 0);
             
         }
@@ -94,6 +94,8 @@ public class FoodCalculatorService
                 .GroupBy(x => x)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày",
+            NumberOfFish = pond.Fish.Count(),
+            TotalFishWeight  = totalweight,
             AddtionalInstruction = noteList
         };
     }

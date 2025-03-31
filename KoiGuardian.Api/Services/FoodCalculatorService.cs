@@ -154,7 +154,27 @@ public class FoodCalculatorService
         if (food!= null && fishDateSince < 30)
         {
             note = note + " \n Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.";
-            food = (IList<Food>?) food.Where(u => u.Product.FoodIsFloat == true);
+            food =  food.Where(u => u.Product.FoodIsFloat == true).ToList();
+        }
+
+        if(food.Count() == 0)
+        {
+            note = note + "\n Vì trong hồ cá" +
+                " của bạn có bao gồm cá có độ tuổi > " + minFishAge + " \n" ;
+            if(minFishAge < 30)
+            {
+                note += "Bo bo, artemia, lòng đỏ trứng luộc nghiền, bột cá mịn,...";
+            }else if(minFishAge < 90)
+            {
+                note += "Cám Koi kích thước nhỏ (dưới 1mm), giun đỏ, trùn chỉ, ấu trùng côn trùng,...";
+            }else if(minFishAge < 180)
+            {
+                note += "Viên thức ăn cỡ nhỏ (1-2mm), rau xanh xay nhuyễn, tôm băm nhỏ,...";
+            }
+            else
+            {
+                note += "Thức ăn viên cỡ lớn (trên 3mm), tôm, cá nhỏ, trái cây, rau củ (dưa leo, bí đỏ, rong biển),...";
+            }
         }
 
         return new

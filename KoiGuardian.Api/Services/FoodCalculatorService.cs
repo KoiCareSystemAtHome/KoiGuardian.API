@@ -156,31 +156,38 @@ public class FoodCalculatorService
             note = note + " \n Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.";
             food =  food.Where(u => u.Product.FoodIsFloat == true).ToList();
         }
-
+        var image = "";
         if(food.Count() == 0)
         {
             note = note + "\n Vì trong hồ cá" +
-                " của bạn có bao gồm cá có độ tuổi > " + minFishAge + " \n" ;
+                " của bạn có bao gồm cá có độ tuổi > " + minFishAge + " \n Cá nên ăn \n" ;
             if(minFishAge < 30)
             {
                 note += "Bo bo, artemia, lòng đỏ trứng luộc nghiền, bột cá mịn,...";
-            }else if(minFishAge < 90)
+                image = "https://shopheo.com/wp-content/uploads/2022/03/artemia.jpg";
+            }
+            else if(minFishAge < 90)
             {
                 note += "Cám Koi kích thước nhỏ (dưới 1mm), giun đỏ, trùn chỉ, ấu trùng côn trùng,...";
-            }else if(minFishAge < 180)
+                image = "https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-m07igv3l2q5p7d.webp";
+            }
+            else if(minFishAge < 180)
             {
                 note += "Viên thức ăn cỡ nhỏ (1-2mm), rau xanh xay nhuyễn, tôm băm nhỏ,...";
+                image = "https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-luzqkfh5ias2fe.webp";
             }
             else
             {
                 note += "Thức ăn viên cỡ lớn (trên 3mm), tôm, cá nhỏ, trái cây, rau củ (dưa leo, bí đỏ, rong biển),...";
+                image = "https://nonbo.net.vn/wp-content/uploads/2022/07/ad-jpd-tang-truong-tang-mau-01.jpg";
             }
         }
 
         return new
         {
             Foods = food,
-            Note = note
+            Note = note,
+            Image = image
         };
     }
 }

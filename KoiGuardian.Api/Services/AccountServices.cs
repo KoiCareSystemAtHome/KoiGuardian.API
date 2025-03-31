@@ -193,6 +193,12 @@ IImageUploadService imageUpload
             ValidUntil = DateTime.UtcNow.AddMinutes(5),
         };
 
+        var exist = await userRepository.GetAsync(x => x.Email.Equals(registrationRequestDto.Email), CancellationToken.None);
+        if(exist != null)
+        {
+            return "Email has been used";
+        }
+
         var avatar = await imageUpload.UploadImageAsync("User", user.Id, registrationRequestDto.Avatar);
 
         try

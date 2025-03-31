@@ -62,7 +62,9 @@ public class FoodCalculatorService
             var test = await koiProfileRepository.GetAllAsync();
             var treatmentAmount = await koiProfileRepository.GetQueryable().Where(
                  u => koi.KoiID == koi.KoiID
-                 && u.EndDate <= DateTime.UtcNow).Include(u => u.Disease).FirstOrDefaultAsync();
+                 && u.EndDate <= DateTime.UtcNow).Include(u => u.Disease)
+                 .OrderByDescending( u => u.Createddate )
+                 .FirstOrDefaultAsync();
 
             if (treatmentAmount != null)
             {

@@ -45,7 +45,7 @@ public class KoiDiseaseService
             var data = new KoiDiseaseProfile
             {
                 KoiDiseaseProfileId = Guid.NewGuid(),
-                DiseaseID = request.DiseaseID,
+                DiseaseId = request.DiseaseID,
                 MedicineId = request.MedicineId ?? Guid.Empty,
                 FishId = request.FishId,
                 Createddate = DateTime.UtcNow,
@@ -94,11 +94,11 @@ public class KoiDiseaseService
 
             foreach (var profile in activeProfiles)
             {
-                if (profile.DiseaseID == null) continue;
+                if (profile.DiseaseId == null) continue;
 
                 // Get all medicine-disease relationships for this disease
                 var medicineDiseases = await medicineDiseaseRepo.FindAsync(
-                    md => md.DiseaseId == profile.DiseaseID
+                    md => md.DiseaseId == profile.DiseaseId
                 );
 
                 foreach (var medicineDisease in medicineDiseases)
@@ -190,7 +190,7 @@ public class KoiDiseaseService
             }
             if (request.DiseaseID.HasValue)
             {
-                profile.DiseaseID = request.DiseaseID.Value;
+                profile.DiseaseId = request.DiseaseID.Value;
             }
 
             // Cập nhật ghi chú nếu có

@@ -94,10 +94,34 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Fetch salt parameter
-            var saltParamQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
+            // Calculate current volume based on water change percentage
+            double currentVolume = request.WaterChangePercent > 0
+                ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
+                : pond.MaxVolume;
+
+            if (request.WaterChangePercent == 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = request.PondId,
+                    TotalSalt = 0,
+                    AdditionalInstruction = new List<string> { "Hồ không có nước, không thể tính toán." }
+                };
+            }
+            else if (request.WaterChangePercent > 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = request.PondId,
+                    TotalSalt = 0,
+                    AdditionalInstruction = new List<string> { "Mực nước hiện tại không hợp lý, vui lòng kiểm tra lại." }
+                };
+            }
+
+            // Fetch salt parameter and current salt value
+            var saltParameterQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
                 .Include(p => p.Parameter);
-            var saltParameter = await saltParamQuery.FirstOrDefaultAsync();
+            var saltParameter = await saltParameterQuery.FirstOrDefaultAsync();
 
             if (saltParameter?.Parameter == null)
             {
@@ -109,14 +133,13 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Get current salt value for the pond
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
                 .Include(p => p.Parameter);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-
             double currentSaltConcentration = currentSaltValue?.Value ?? 0;
 
+            // Validate standard salt level
             if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel.ToLower(), out double standardSalt))
             {
                 return new CalculateSaltResponse
@@ -129,6 +152,7 @@ namespace KoiGuardian.Api.Services
 
             var additionalNotes = new List<string>();
 
+            // Handle high salt level warning
             if (request.StandardSaltLevel.ToLower() == "high")
             {
                 additionalNotes.Add("Nếu có cá bệnh truyền nhiễm, nên tách hồ để tránh ảnh hưởng đến các con cá khác.");
@@ -165,23 +189,29 @@ namespace KoiGuardian.Api.Services
 
             // Calculate required salt with disease adjustment
             double requiredSaltPercent = standardSalt + saltModifyPercent;
-            double currentVolume = request.WaterChangePercent > 0
-                ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
-                : pond.MaxVolume;
             double targetSaltWeightKg = currentVolume * requiredSaltPercent;
             double additionalSaltNeeded = targetSaltWeightKg - currentSaltConcentration;
 
-            // Convert thresholds from kg to mg/L for comparison
-            double? warningLowerMgPerL = (saltParameter.Parameter.WarningLowwer * 1_000_000) / currentVolume;
-            double? warningUpperMgPerL = (saltParameter.Parameter.WarningUpper * 1_000_000) / currentVolume;
-            double? dangerLowerMgPerL = (saltParameter.Parameter.DangerLower * 1_000_000) / currentVolume;
-            double? dangerUpperMgPerL = (saltParameter.Parameter.DangerUpper * 1_000_000) / currentVolume;
+            // Convert thresholds from kg to mg/L
+            double? warningLowerMgPerL = saltParameter.Parameter.WarningLowwer.HasValue
+                ? (saltParameter.Parameter.WarningLowwer * 1_000_000) / currentVolume
+                : null;
+            double? warningUpperMgPerL = saltParameter.Parameter.WarningUpper.HasValue
+                ? (saltParameter.Parameter.WarningUpper * 1_000_000) / currentVolume
+                : null;
+            double? dangerLowerMgPerL = saltParameter.Parameter.DangerLower.HasValue
+                ? (saltParameter.Parameter.DangerLower * 1_000_000) / currentVolume
+                : null;
+            double? dangerUpperMgPerL = saltParameter.Parameter.DangerUpper.HasValue
+                ? (saltParameter.Parameter.DangerUpper * 1_000_000) / currentVolume
+                : null;
 
-            // Calculate water adjustment and threshold messages
+            // Calculate water adjustment and thresholds
             var (additionalWaterNeeded, thresholdMessages) = await CalculateWaterAdjustmentAndThresholds(
-                request.PondId,
+                pond,
+                currentSaltConcentration,
                 targetSaltWeightKg,
-                request.WaterChangePercent,
+                currentVolume,
                 warningLowerMgPerL,
                 warningUpperMgPerL,
                 dangerLowerMgPerL,
@@ -221,75 +251,34 @@ namespace KoiGuardian.Api.Services
         }
 
         private async Task<(double additionalWaterNeeded, List<string> messages)> CalculateWaterAdjustmentAndThresholds(
-      Guid pondId,
-      double targetSaltConcentration,
-      double waterChangePercent,
-      double? warningLowerMgPerL,
-      double? warningUpperMgPerL,
-      double? dangerLowerMgPerL,
-      double? dangerUpperMgPerL)
+    Pond pond,
+    double currentSaltConcentration,
+    double targetSaltWeightKg,
+    double currentVolume,
+    double? warningLowerMgPerL,
+    double? warningUpperMgPerL,
+    double? dangerLowerMgPerL,
+    double? dangerUpperMgPerL)
         {
             var messages = new List<string>();
             double additionalWaterNeeded = 0;
 
-            // Fetch pond data
-            var pondQuery = _pondRepository.GetQueryable(p => p.PondID == pondId);
-            var pond = await pondQuery.FirstOrDefaultAsync();
+            double saltConcentrationMgPerL = (currentSaltConcentration * 1_000_000) / currentVolume; // Convert to mg/L
 
-            if (pond == null)
+            // Calculate additional water needed if current salt exceeds target
+            if (currentSaltConcentration > targetSaltWeightKg && targetSaltWeightKg > 0)
             {
-                messages.Add("Không tìm thấy hồ.");
-                return (additionalWaterNeeded, messages);
-            }
-
-            // Calculate current volume based on water change percentage
-            double currentVolume = waterChangePercent > 0
-                ? pond.MaxVolume * (1 - waterChangePercent / 100)
-                : pond.MaxVolume;
-
-            if (waterChangePercent == 100)
-            {
-                messages.Add("Hồ không có nước, không thể tính toán.");
-                return (additionalWaterNeeded, messages);
-            }
-            else if (waterChangePercent > 100)
-            {
-                messages.Add("Mực nước hiện tại không hợp lý, vui lòng kiểm tra lại.");
-                return (additionalWaterNeeded, messages);
-            }
-
-            // Fetch current salt value for the pond
-            var saltParamQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
-                .Include(p => p.Parameter);
-            var saltParameter = await saltParamQuery.FirstOrDefaultAsync();
-
-            if (saltParameter?.Parameter == null)
-            {
-                messages.Add("Không tìm thấy thông số muối trong các thông số tiêu chuẩn.");
-                return (additionalWaterNeeded, messages);
-            }
-
-            var currentSaltQuery = _pondParamRepository.GetQueryable(
-                p => p.PondId == pondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
-                .Include(p => p.Parameter);
-            var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-
-            double currentSaltConcentration = currentSaltValue?.Value ?? 0;
-            double saltConcentrationMgPerL = (currentSaltConcentration * 1_000_000) / currentVolume; // Chuyển đổi sang mg/L để so sánh
-
-            // Tính lượng nước cần thêm nếu muối hiện tại vượt mục tiêu
-            if (currentSaltConcentration > targetSaltConcentration && targetSaltConcentration > 0)
-            {
-                double newTotalVolume = currentSaltConcentration / (targetSaltConcentration / currentVolume);
+                double newTotalVolume = currentSaltConcentration / (targetSaltWeightKg / currentVolume);
                 additionalWaterNeeded = newTotalVolume - currentVolume;
             }
 
-            // So sánh với các ngưỡng và thêm thông điệp
-            if (saltConcentrationMgPerL < warningLowerMgPerL)
+            // Compare with thresholds and add messages
+            if (warningLowerMgPerL.HasValue && saltConcentrationMgPerL < warningLowerMgPerL)
             {
                 messages.Add("Nồng độ muối dưới mức ngưỡng cảnh báo thấp.");
             }
-            else if (saltConcentrationMgPerL > warningUpperMgPerL && saltConcentrationMgPerL <= dangerUpperMgPerL)
+            else if (warningUpperMgPerL.HasValue && dangerUpperMgPerL.HasValue &&
+                     saltConcentrationMgPerL > warningUpperMgPerL && saltConcentrationMgPerL <= dangerUpperMgPerL)
             {
                 if (additionalWaterNeeded > 0)
                 {
@@ -297,11 +286,11 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
-            if (saltConcentrationMgPerL < dangerLowerMgPerL)
+            if (dangerLowerMgPerL.HasValue && saltConcentrationMgPerL < dangerLowerMgPerL)
             {
                 messages.Add("Nồng độ muối dưới mức ngưỡng nguy hiểm thấp. Cá có thể gặp rủi ro.");
             }
-            else if (saltConcentrationMgPerL > dangerUpperMgPerL)
+            else if (dangerUpperMgPerL.HasValue && saltConcentrationMgPerL > dangerUpperMgPerL)
             {
                 if (additionalWaterNeeded > 0)
                 {

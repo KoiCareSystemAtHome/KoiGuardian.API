@@ -81,6 +81,13 @@ public class SymptomService(
         var causeGroupType = typeFinal.Key.Split('_').Last().ToLower();
 
         var symptompReturn = await symptomRepository.FindAsync(u => u.Type.ToLower() == causeGroupType);
+        if (typeFinal.Value < 2) {
+            return new DiseaseTypePredictResponse()
+            {
+                CauseGroupType = "Cá ăn quá no",
+                SymptomPredicts = []
+            };
+        }
         return new DiseaseTypePredictResponse()
         {
             CauseGroupType = causeGroupType,

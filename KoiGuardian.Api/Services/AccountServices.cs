@@ -394,9 +394,12 @@ IImageUploadService imageUpload
 
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                     var result = await _userManager.ResetPasswordAsync(user, token, newPass);
+                    if (result.Errors.Count() > 0)
+                        return JsonSerializer.Serialize(result.Errors);
                 }
 
             }
+            
             return "success";
         }
         catch (Exception ex)

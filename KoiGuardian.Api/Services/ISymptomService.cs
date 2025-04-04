@@ -36,8 +36,12 @@ public class SymptomService(
             {
 
             }
+            else
+            {
+             groupDatas.Add(symptomData.Type, 0);
 
-            groupDatas.Add(symptomData.Type, 0);
+            }
+
 
             if (Enum.TryParse<SymptomUnit>(symptomData.SymptomUnit, out var unit))
             {

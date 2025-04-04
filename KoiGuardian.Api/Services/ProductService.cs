@@ -343,7 +343,7 @@ namespace KoiGuardian.Api.Services
                 .Include(p => p.Category)
                 .Include(p => p.Shop)
                 .Include(p => p.Feedbacks)
-                /* .ThenInclude(f => f.Member)*/
+                .ThenInclude(f => f.Member)
                 .FirstOrDefaultAsync(p => p.ProductId == productId, cancellationToken);
 
             if (product == null)
@@ -375,7 +375,7 @@ namespace KoiGuardian.Api.Services
                 Feedbacks = product.Feedbacks?.Select(f => new FeedbackInfo
                 {
                     FeedbackId = f.FeedbackId,
-                    /*MemberName = f.Member?.UserName,*/
+                    MemberName = f.Member?.UserName,
                     Rate = f.Rate,
                     Content = f.Content
                 }).ToList()

@@ -96,7 +96,7 @@ builder.Services.AddCors(p => p.AddPolicy(MyAllowSpecificOrigins, builder =>
     builder.WithOrigins(
         "http://localhost:3000", "http://localhost:3001", 
         "http://localhost:3002", "http://localhost:3003",
-        "exp://192.168.1.14:8081", "https://koiguardian.vercel.app/")
+        "exp://192.168.1.14:8081", "https://koiguardian.vercel.app", "http://koiguardian.vercel.app")
            .AllowAnyMethod()
            .AllowAnyHeader()
            .AllowCredentials(); // Add this line to allow credentials

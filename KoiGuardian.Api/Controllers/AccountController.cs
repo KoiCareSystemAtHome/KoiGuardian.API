@@ -83,7 +83,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("Updateprofile")]
-        public async Task<string> UpdateProfile(UpdateProfileRequest request)
+        public async Task<string> UpdateProfile([FromBody]UpdateProfileRequest request)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
 

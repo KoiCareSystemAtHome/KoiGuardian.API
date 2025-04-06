@@ -13,7 +13,7 @@ namespace KoiGuardian.Models.Request
         public string Name { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public AddressDto address { get; set; }
-        public TimeOnly? UserReminder { get; set; }
+        public DateTime UserReminder { get; set; }
 
         public IFormFile? Avatar { get; set; } 
     }

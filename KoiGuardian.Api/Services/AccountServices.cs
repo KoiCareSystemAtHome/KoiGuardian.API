@@ -13,6 +13,7 @@ using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Text.Json;
 using static KoiGuardian.Models.Enums.CommonEnums;
 
@@ -469,7 +470,7 @@ IImageUploadService imageUpload
 
         // Update user details
         user.UserName = request.Name;
-        user.UserReminder = request.UserReminder;
+        user.UserReminder = TimeOnly.FromDateTime( request.UserReminder);
 
         // Update member details
         member.Gender = request.Gender;

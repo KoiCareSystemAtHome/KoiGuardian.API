@@ -30,7 +30,7 @@ namespace KoiGuardian.Api.Services
             IRepository<MedicineDisease> _medicineDiseaseRepository,
             IRepository<PredictSymptoms> _predictSymtopmsRepository,
             IRepository<Symptom> _symtopmsRepository,
-            IRepository<RelPredictSymptomDisease> _predictdeseaseSymtopmsRepository,
+            IRepository<RelSymptomDisease> _relsymptompdeseaseSymtopmsRepository,
             IRepository<RelPredictSymptomDisease> _relpredictSymtopmsDiseaseRepository,
             IUnitOfWork<KoiGuardianDbContext> _unitOfWork) : IDiseaseService
     {
@@ -170,7 +170,7 @@ namespace KoiGuardian.Api.Services
         {
             var diseases = await _diseaseRepository.GetQueryable()
                 .Include(d => d.MedicineDisease)
-                    .ThenInclude(md => md.Medince) // Đảm bảo truy xuất đầy đủ thông tin thuốc
+                    .ThenInclude(md => md.Medince) 
                 .ToListAsync(cancellationToken);
 
             return diseases.Select(disease => new DiseaseResponse
@@ -185,8 +185,8 @@ namespace KoiGuardian.Api.Services
                 Medicines = disease.MedicineDisease?.Select(md => new MedicineDTO
                 {
                     MedicineId = md.Medince.MedicineId,
-                    Name = md.Medince.Medicinename,  // Đảm bảo lấy đúng tên thuốc
-                }).ToList<object>() ?? new List<object>() // Tránh giá trị null
+                    Name = md.Medince.Medicinename, 
+                }).ToList<object>() ?? new List<object>()
             }).ToList();
         }
 
@@ -207,7 +207,7 @@ namespace KoiGuardian.Api.Services
                     Message = "Disease not found"
                 };
             }
-            var predictSymtoms = await _predictdeseaseSymtopmsRepository.FindAsync(
+            var predictSymtoms = await _relsymptompdeseaseSymtopmsRepository.FindAsync(
                     u => u.DiseaseId == disease.DiseaseId);
 
 
@@ -223,8 +223,16 @@ namespace KoiGuardian.Api.Services
                 Status = "200",
                 Message = "Disease retrieved successfully",
                 Medicines = disease?.MedicineDisease,
-                SickSymtomps = await _predictSymtopmsRepository
-                    .FindAsync(u => predictSymtoms.Select( u => u.PredictSymptomsId).Contains( u.SymtompId)),
+                SickSymtomps =(
+                    await _relpredictSymtopmsDiseaseRepository
+                    .FindAsync( u => u.DiseaseId == diseaseId,
+                        include : u => u.Include( u => u.PredictSymptoms)))
+                    .Select( u => u.PredictSymptoms),
+                SideEffect = (
+                    await _relsymptompdeseaseSymtopmsRepository
+                    .FindAsync(u => u.DiseaseId == diseaseId,
+                        include: u => u.Include(u => u.Symptom)))
+                    .Select(u => u.Symptom),
 
             };
         }

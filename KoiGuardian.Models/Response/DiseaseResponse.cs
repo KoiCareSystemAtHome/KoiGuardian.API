@@ -22,6 +22,7 @@ namespace KoiGuardian.Models.Response
         public string Image {  get; set; }
         public object? Medicines { get; set; }
         public object? SickSymtomps { get; set; }
+        public object? SideEffect { get; set; }
     }
 
    

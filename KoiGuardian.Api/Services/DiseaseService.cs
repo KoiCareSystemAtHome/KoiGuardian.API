@@ -209,7 +209,25 @@ namespace KoiGuardian.Api.Services
             }
             var predictSymtoms = await _relsymptompdeseaseSymtopmsRepository.FindAsync(
                     u => u.DiseaseId == disease.DiseaseId);
-
+            var sick = (await _relpredictSymtopmsDiseaseRepository
+                    .FindAsync(u => u.DiseaseId == diseaseId,
+                        include: u => u.Include(u => u.PredictSymptoms)))
+                    .Select(u => new
+                    {
+                        Id = u.PredictSymptomsId,
+                        DiseaseUpper = u.DiseaseUpper,
+                        DiseaseLower = u.DiseaseLower
+                    }).ToList();
+            var effect = (
+                    await _relsymptompdeseaseSymtopmsRepository
+                    .FindAsync(u => u.DiseaseId == diseaseId,
+                        include: u => u.Include(u => u.Symptom)))
+                    .Select(u => new
+                    {
+                        Id = u.SymtompId,
+                        DiseaseUpper = u.DiseaseUpper,
+                        DiseaseLower = u.DiseaseLower
+                    }).ToList();
 
             return new DiseaseResponse
             {
@@ -223,16 +241,8 @@ namespace KoiGuardian.Api.Services
                 Status = "200",
                 Message = "Disease retrieved successfully",
                 Medicines = disease?.MedicineDisease,
-                SickSymtomps =(
-                    await _relpredictSymtopmsDiseaseRepository
-                    .FindAsync( u => u.DiseaseId == diseaseId,
-                        include : u => u.Include( u => u.PredictSymptoms)))
-                    .Select( u => u.PredictSymptoms),
-                SideEffect = (
-                    await _relsymptompdeseaseSymtopmsRepository
-                    .FindAsync(u => u.DiseaseId == diseaseId,
-                        include: u => u.Include(u => u.Symptom)))
-                    .Select(u => u.Symptom),
+                SickSymtomps =sick,
+                SideEffect = effect,
 
             };
         }

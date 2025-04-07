@@ -1,7 +1,10 @@
-﻿namespace KoiGuardian.DataAccess.Db;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace KoiGuardian.DataAccess.Db;
 
 public class RelSymptomDisease
 {
+    [Key]
     public Guid RelSymptomDiseaseId { get; set; }
     public Guid DiseaseId { get; set; }
     public Guid SymtompId { get; set; }

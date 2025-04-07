@@ -202,7 +202,9 @@ namespace KoiGuardian.Api.Services
             {
                 return "Param not found";
             }
+            param.ValidUntil = null;
             _pondParameterRepository.Update(param);
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return "success";
         }

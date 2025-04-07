@@ -63,84 +63,55 @@ namespace KoiGuardian.Api.Services
                     }
 
                     var parameterName = worksheet.Cells[row, 2].GetValue<string>();
-                    var parameterTypeString = worksheet.Cells[row, 3].GetValue<string>();
-                    if (!Enum.TryParse(parameterTypeString, out ParameterType parameterType))
-                    {
-                        response.status = "400";
-                        response.message = $"Invalid ParameterType format in row {row}, column 3.";
-                        return response;
-                    }  
-                        
-                        var isActive = worksheet.Cells[row, 4].GetValue<bool>();
-                        var measurementInstruction = worksheet.Cells[row, 5].GetValue<string>();
-                        var age = worksheet.Cells[row, 6].GetValue<int>();
-                        var unitName = worksheet.Cells[row, 7].GetValue<string>();
-                        var warningUpper = worksheet.Cells[row, 8].GetValue<double?>();
-                        var warningLower = worksheet.Cells[row, 9].GetValue<double?>();
-                        var dangerUpper = worksheet.Cells[row, 10].GetValue<double?>();
-                        var dangerLower = worksheet.Cells[row, 11].GetValue<double?>();
-                        var validUntil = worksheet.Cells[row, 12].GetValue<DateTime?>();
+                    var type = worksheet.Cells[row, 3].GetValue<string>();
+                    var unitName = worksheet.Cells[row, 4].GetValue<string>();
+                    var warningUpper = worksheet.Cells[row, 5].GetValue<double?>();
+                    var warningLower = worksheet.Cells[row, 6].GetValue<double?>();
+                    var dangerUpper = worksheet.Cells[row, 7].GetValue<double?>();
+                    var dangerLower = worksheet.Cells[row, 8].GetValue<double?>();
+                    var isActive = worksheet.Cells[row, 9].GetValue<bool>();
+                    var measurementInstruction = worksheet.Cells[row, 10].GetValue<string>();
+                    var warningAcceptantDay = worksheet.Cells[row, 11].GetValue<int>();
+                    var dangerAcceptantDay = worksheet.Cells[row, 12].GetValue<int>();
+                    var validUntil = worksheet.Cells[row, 13].GetValue<DateTime?>();
 
-                    if (parameterType == ParameterType.Fish)
+                    var pondParameter = await _pondParameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
+                    if (pondParameter == null)
                     {
-                       
-
-                        var parameter = await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
-                        if (parameter == null)
+                        pondParameter = new PondStandardParam
                         {
-                            parameter = new KoiStandardParam
-                            {
-                                ParameterID = parameterId,
-                                CreatedAt = DateTime.UtcNow,
-                                IsActive = isActive,
-                                MeasurementInstruction = measurementInstruction,
-                                Age = age
-                            };
-                            _parameterRepository.Insert(parameter);
-                        }
-                        else
-                        {
-                            parameter.IsActive = isActive;
-                            parameter.MeasurementInstruction = measurementInstruction;
-                            parameter.Age = age;
-                            _parameterRepository.Update(parameter);
-                        }
+                            ParameterID = parameterId,
+                            Name = parameterName,
+                            Type = type,
+                            UnitName = unitName,
+                            WarningUpper = warningUpper,
+                            WarningLowwer = warningLower,
+                            DangerUpper = dangerUpper,
+                            DangerLower = dangerLower,
+                            IsActive = isActive,
+                            MeasurementInstruction = measurementInstruction,
+                            WarningAcceptantDay = warningAcceptantDay,
+                            DangerAcceptantDay = dangerAcceptantDay,
+                            ValidUntil = validUntil,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _pondParameterRepository.Insert(pondParameter);
                     }
-                    else if (parameterType == ParameterType.Pond)
+                    else
                     {
-                        var pondParameter = await _pondParameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
-                        if (pondParameter == null)
-                        {
-                            pondParameter = new PondStandardParam
-                            {
-                                ParameterID = parameterId,
-                                Name = parameterName,
-                                Type = parameterType.ToString(),
-                                UnitName = unitName,
-                                WarningUpper = warningUpper,
-                                WarningLowwer = warningLower,
-                                DangerUpper = dangerUpper,
-                                DangerLower = dangerLower,
-                                IsActive = isActive,
-                                MeasurementInstruction = measurementInstruction,
-                                //ValidUntil = validUntil,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _pondParameterRepository.Insert(pondParameter);
-                        }
-                        else
-                        {
-                            pondParameter.Name = parameterName;
-                            pondParameter.UnitName = unitName;
-                            pondParameter.WarningUpper = warningUpper;
-                            pondParameter.WarningLowwer = warningLower;
-                            pondParameter.DangerUpper = dangerUpper;
-                            pondParameter.DangerLower = dangerLower;
-                            pondParameter.IsActive = isActive;
-                            pondParameter.MeasurementInstruction = measurementInstruction;
-                            pondParameter.ValidUntil = validUntil;
-                            _pondParameterRepository.Update(pondParameter);
-                        }
+                        pondParameter.Name = parameterName;
+                        pondParameter.Type = type;
+                        pondParameter.UnitName = unitName;
+                        pondParameter.WarningUpper = warningUpper;
+                        pondParameter.WarningLowwer = warningLower;
+                        pondParameter.DangerUpper = dangerUpper;
+                        pondParameter.DangerLower = dangerLower;
+                        pondParameter.IsActive = isActive;
+                        pondParameter.MeasurementInstruction = measurementInstruction;
+                        pondParameter.WarningAcceptantDay = warningAcceptantDay;
+                        pondParameter.DangerAcceptantDay = dangerAcceptantDay;
+                        pondParameter.ValidUntil = validUntil;
+                        _pondParameterRepository.Update(pondParameter);
                     }
                 }
 
@@ -156,10 +127,11 @@ namespace KoiGuardian.Api.Services
 
             return response;
         }
+    
 
 
 
-        public async Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken)
+    public async Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken)
         {
             return await _parameterRepository.GetAsync(p => p.ParameterID == parameterId, cancellationToken);
 

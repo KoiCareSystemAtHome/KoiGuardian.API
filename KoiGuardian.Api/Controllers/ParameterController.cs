@@ -49,6 +49,17 @@ namespace KoiGuardian.Api.Controllers
             return await _parameterService.getAll(type, cancellationToken);
         }
 
+        [HttpPost("edit-pond-param")]
+        public async Task<string> EditPondParam(PondStandardParam type, CancellationToken cancellationToken)
+        {
+            return await _parameterService.EditPondParam(type, cancellationToken);
+        }
 
+
+        [HttpPost("edit-fish-param")]
+        public async Task<string> EditFishParam(KoiStandardParam type, CancellationToken cancellationToken)
+        {
+            return await _parameterService.EditFishParam(type, cancellationToken);
+        }
     }
 }

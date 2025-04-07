@@ -14,6 +14,8 @@ namespace KoiGuardian.Api.Services
         Task<ParameterResponse> UpsertFromExcel(IFormFile file, CancellationToken cancellationToken);
         Task<KoiStandardParam> getAll(Guid parameterId, CancellationToken cancellationToken);
         Task<List<object>> getAll(string parameterType,CancellationToken cancellationToken);
+        Task<string> EditPondParam(PondStandardParam parameterType,CancellationToken cancellationToken);
+        Task<string> EditFishParam(KoiStandardParam parameterType,CancellationToken cancellationToken);
     }
 
     public class ParameterService : IParameterService
@@ -191,6 +193,30 @@ namespace KoiGuardian.Api.Services
 
 
             
+        }
+
+        public async Task<string> EditPondParam(PondStandardParam parameterType, CancellationToken cancellationToken)
+        {
+            var param = (await _pondParameterRepository.FindAsync(u => u.ParameterID == parameterType.ParameterID)).FirstOrDefault();
+            if (param != null)
+            {
+                return "Param not found";
+            }
+            _pondParameterRepository.Update(param);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return "success";
+        }
+
+        public async Task<string> EditFishParam(KoiStandardParam parameterType, CancellationToken cancellationToken)
+        {
+            var param = (await _parameterRepository.FindAsync(u => u.ParameterID == parameterType.ParameterID)).FirstOrDefault();
+            if (param != null)
+            {
+                return "Param not found";
+            }
+            _parameterRepository.Update(param);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return "success";
         }
     }
 }

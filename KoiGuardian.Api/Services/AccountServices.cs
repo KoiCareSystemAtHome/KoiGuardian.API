@@ -472,22 +472,25 @@ IImageUploadService imageUpload
             shop.BizLicences = request.BizLicense;
             shop.ShopAddress = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
             shopRepository.Update(shop);
+        }else
+        {
+            // Update member details
+            member.Gender = request.Gender;
+            member.Address = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
+            // Upload avatar if provided
+            if (request.Avatar != null)
+            {
+                member.Avatar = request.Avatar;
+            }
+            memberRepository.Update(member);
+
         }
 
         // Update user details
         user.UserName = request.Name;
         user.UserReminder = TimeOnly.FromDateTime( request.UserReminder);
 
-        // Update member details
-        member.Gender = request.Gender;
-        member.Address = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
 
-        // Upload avatar if provided
-        if (request.Avatar != null)
-        {
-            member.Avatar = request.Avatar;
-        }
-        memberRepository.Update(member);
         await uow.SaveChangesAsync();
 
         return "Profile updated successfully!";

@@ -168,7 +168,9 @@ IImageUploadService imageUpload
             Gender = mem?.Gender ?? "",
             Address = mem?.Address ?? "",
             ShopId = shop?.ShopId.ToString() ?? "",
-            GHNid = shop?.GHNId ??""
+            GHNid = shop?.GHNId ??"",
+            ShopDescription = shop?.ShopDescription ?? "",
+            BzLicense = shop?.BizLicences ?? ""
         };
 
         LoginResponse loginResponse = new()

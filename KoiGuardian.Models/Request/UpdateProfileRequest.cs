@@ -15,6 +15,6 @@ namespace KoiGuardian.Models.Request
         public AddressDto address { get; set; }
         public DateTime UserReminder { get; set; }
 
-        public IFormFile? Avatar { get; set; } 
+        public string? Avatar { get; set; } 
     }
 }

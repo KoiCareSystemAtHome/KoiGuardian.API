@@ -479,7 +479,7 @@ IImageUploadService imageUpload
         // Upload avatar if provided
         if (request.Avatar != null)
         {
-            member.Avatar = await imageUpload.UploadImageAsync("User", user.Id, request.Avatar);
+            member.Avatar = request.Avatar;
         }
         memberRepository.Update(member);
         await uow.SaveChangesAsync();

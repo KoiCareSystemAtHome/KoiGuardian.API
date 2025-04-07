@@ -16,5 +16,7 @@ namespace KoiGuardian.Models.Request
         public DateTime UserReminder { get; set; }
 
         public string? Avatar { get; set; } 
+        public string? ShopDescription { get; set; } 
+        public string? BizLicense { get; set; }
     }
 }

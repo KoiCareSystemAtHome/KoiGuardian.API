@@ -465,7 +465,13 @@ IImageUploadService imageUpload
 
         if (member == null)
         {
-            return "Member profile not found!";
+            var shop = await shopRepository.GetAsync(
+            m => m.UserId != null && m.UserId.Equals(user.Id),
+            CancellationToken.None);
+            shop.ShopDescription = request.ShopDescription;
+            shop.BizLicences = request.BizLicense;
+            shop.ShopAddress = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
+            shopRepository.Update(shop);
         }
 
         // Update user details

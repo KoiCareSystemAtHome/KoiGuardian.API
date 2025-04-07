@@ -4,8 +4,24 @@ public class EmailTemplate
 {
     public static string Register(int code)
     {
-        return "Here is your code to confirm account: " + code;
+        return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Confirm Your Account</title>
+</head>
+<body style=""margin: 0; padding: 0; font-family: Arial, sans-serif; background-image: url('https://i.pinimg.com/736x/fa/bd/06/fabd0640dd36345c72cee1f18f618917.jpg'); background-size: cover; background-repeat: no-repeat;"">
+    <div style=""background-color: rgba(255, 255, 255, 0.9); max-width: 600px; margin: 50px auto; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2);"">
+        <h2 style=""text-align: center; color: #333;"">Confirm Your Account</h2>
+        <p style=""text-align: center; font-size: 16px; color: #555;"">Here is your code to confirm your account:</p>
+        <p style=""text-align: center; font-size: 32px; font-weight: bold; color: #007BFF;"">{code}</p>
+        <p style=""text-align: center; color: #999; font-size: 12px;"">This code will expire in 10 minutes.</p>
+    </div>
+</body>
+</html>";
     }
+
 
     public static string CodeForResetPass(int code)
     {

@@ -400,6 +400,10 @@ IImageUploadService imageUpload
                     if (result.Errors.Count() > 0)
                         return JsonSerializer.Serialize(result.Errors);
                 }
+                else
+                {
+                    return "Code invalid";
+                }
 
             }
             

@@ -240,8 +240,8 @@ IImageUploadService imageUpload
                        ShopAddress = registrationRequestDto.Address,
                        IsActivate = false,
                        BizLicences = " ",
-                       UserId = userToReturn.Id
-
+                       UserId = userToReturn.Id,
+                       ShopAvatar = avatar,
                     });
                 }
 

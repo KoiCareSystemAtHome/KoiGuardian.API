@@ -125,6 +125,7 @@ namespace KoiGuardian.Api.Services
                         ShopName = shop.ShopName,
                         ShopRate = shop.ShopRate,
                         ShopDescription = shop.ShopDescription,
+                        ShopAvatar = shop.ShopAvatar ?? "",
                         ShopAddress = new AddressDto
                         {
                             DistrictName = shopRequest.ShopAddress.ProvinceName,

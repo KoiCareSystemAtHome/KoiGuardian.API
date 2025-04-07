@@ -163,7 +163,7 @@ IImageUploadService imageUpload
             ID = user.Id,
             Name = user.UserName ?? string.Empty,
             PackageID = user.PackageId,
-            Avatar = mem?.Avatar ?? "",
+            Avatar = mem?.Avatar ??  shop?.ShopAvatar ?? "",
             Status = user.Status.ToString(),
             Gender = mem?.Gender ?? "",
             Address = mem?.Address ?? "",
@@ -473,6 +473,7 @@ IImageUploadService imageUpload
             if (shop == null)
             { return "Accoutn not found"; }    
             shop.ShopDescription = request.ShopDescription ?? "";
+            shop.ShopAvatar = request.Avatar;
             shop.BizLicences = request.BizLicense ?? "";
             shop.ShopAddress = request.address != null ? JsonSerializer.Serialize(request.address) : string.Empty;
             shopRepository.Update(shop);

@@ -3,7 +3,10 @@ using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using KoiGuardian.Api.Services;
 using System;
-using KoiGuardian.DataAccess.Db;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace KoiGuardian.Api.Controllers
 {
@@ -17,64 +20,99 @@ namespace KoiGuardian.Api.Controllers
         {
             _saltCalculatorService = saltCalculatorService;
         }
-        [HttpPost("calculate")]
-        public async Task<CalculateSaltResponse> CalculateSalt([FromBody] CalculateSaltRequest request)
-        {
-            return await _saltCalculatorService.CalculateSalt(request);
-        }
-        [HttpPost("addition-process")]
-        public async Task<SaltAdditionProcessResponse> GetSaltAdditionProcess([FromQuery] Guid pondId)
-        {
-            return await _saltCalculatorService.GetSaltAdditionProcess(pondId);
-        }
 
-        [HttpPost("notifications")]
-        public async Task<List<Notification>> GetSaltNotifications([FromQuery] Guid pondId)
-        {
-            return await _saltCalculatorService.GetSaltNotifications(pondId);
-        }
-        [HttpPost("adjust-start-time")]
-        public async Task<bool> AdjustSaltAdditionStartTime([FromBody] AdjustSaltStartTimeRequest request)
-        {
-            return await _saltCalculatorService.AdjustSaltAdditionStartTime(
-                request.PondId,
-                request.NewStartTime);
-        }
-        [HttpPost("create-notifications")]
-        public async Task<IActionResult> CreateSaltNotifications([FromBody] NotificationRequest request)
+        [HttpPost("calculate")]
+        public async Task<IActionResult> CalculateSalt([FromBody] CalculateSaltRequest request)
         {
             try
             {
-                // Validate the request
                 if (request == null || request.PondId == Guid.Empty)
                 {
                     return BadRequest(new { Message = "Invalid request: PondId is required" });
                 }
 
-                if (request.StartTime < DateTime.UtcNow)
+                var response = await _saltCalculatorService.CalculateSalt(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
                 {
-                    return BadRequest(new { Message = "Start time cannot be in the past" });
+                    Success = false,
+                    Message = $"An error occurred while calculating salt: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPost("addition-process")]
+        public async Task<IActionResult> GetSaltAdditionProcess([FromQuery] Guid pondId)
+        {
+            try
+            {
+                if (pondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Invalid request: PondId is required" });
                 }
 
-                // Call the service to create notifications
-                bool success = await _saltCalculatorService.CreateSaltNotificationsForUser(request);
+                var response = await _saltCalculatorService.GetSaltAdditionProcess(pondId);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = $"An error occurred while getting salt addition process: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpGet("reminders")]
+        public async Task<IActionResult> GetSaltReminders([FromQuery] Guid pondId)
+        {
+            try
+            {
+                if (pondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Invalid request: PondId is required" });
+                }
+
+                var reminders = await _saltCalculatorService.GetSaltReminders(pondId);
+                return Ok(reminders);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = $"An error occurred while retrieving reminders: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPost("adjust-start-time")]
+        public async Task<IActionResult> AdjustSaltAdditionStartTime([FromBody] AdjustSaltStartTimeRequest request)
+        {
+            try
+            {
+                if (request == null || request.PondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Invalid request: PondId is required" });
+                }
+
+                bool success = await _saltCalculatorService.AdjustSaltAdditionStartTime(
+                    request.PondId,
+                    request.NewStartTime);
 
                 if (!success)
                 {
-                    return BadRequest(new
-                    {
-                        Message = "Failed to create notifications. Ensure salt calculation exists and additional salt is needed."
-                    });
+                    return BadRequest(new { Message = "Failed to adjust start time. Ensure reminders exist for this pond." });
                 }
-
-                // Get the newly created notifications
-                var notifications = await _saltCalculatorService.GetSaltNotifications(request.PondId);
 
                 return Ok(new
                 {
                     Success = true,
-                    Message = "Salt addition notifications created successfully",
-                    Notifications = notifications
+                    Message = "Salt addition start time adjusted successfully"
                 });
             }
             catch (Exception ex)
@@ -82,7 +120,71 @@ namespace KoiGuardian.Api.Controllers
                 return StatusCode(500, new
                 {
                     Success = false,
-                    Message = $"An error occurred while creating notifications: {ex.Message}"
+                    Message = $"An error occurred while adjusting start time: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPost("generate-salt-reminders")]
+        public async Task<IActionResult> GenerateSaltAdditionReminders([FromBody] GenerateSaltRemindersRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (request == null || request.PondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Yêu cầu không hợp lệ: PondId là bắt buộc" });
+                }
+
+                // Kiểm tra chu kỳ phải là 12 hoặc 24 giờ
+                if (request.CycleHours != 12 && request.CycleHours != 24)
+                {
+                    return BadRequest(new { Message = "Chu kỳ chỉ có thể là 12 hoặc 24 giờ" });
+                }
+
+                var reminders = await _saltCalculatorService.GenerateSaltAdditionRemindersAsync(
+                    request.PondId,
+                    request.CycleHours,
+                    cancellationToken);
+
+                if (reminders == null || !reminders.Any())
+                {
+                    return Ok(new
+                    {
+                        Success = true,
+                        Message = "Không cần thêm muối hoặc không tạo được reminder.",
+                        Reminders = new List<SaltReminderRequest>()
+                    });
+                }
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Đã tạo thành công các reminder thêm muối",
+                    Reminders = reminders
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = $"Đã xảy ra lỗi khi tạo reminders: {ex.Message}"
                 });
             }
         }
@@ -115,7 +217,7 @@ namespace KoiGuardian.Api.Controllers
                 return Ok(new
                 {
                     Success = true,
-                    Message = $"Successfully set salt amount to {request.AddedSaltKg} kg for pond {request.PondId}"
+                    Message = $"Successfully updated salt amount by adding {request.AddedSaltKg} kg for pond {request.PondId}"
                 });
             }
             catch (Exception ex)
@@ -128,10 +230,59 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
+        [HttpPost("save-reminders")]
+        public async Task<IActionResult> SaveSelectedReminders([FromBody] SaveSaltRemindersRequest request)
+        {
+            try
+            {
+                if (request == null || request.PondId == Guid.Empty)
+                {
+                    return BadRequest(new { Message = "Invalid request: PondId is required" });
+                }
 
+                if (request.Reminders == null || !request.Reminders.Any())
+                {
+                    return BadRequest(new { Message = "No reminders selected to save" });
+                }
 
+                bool success = await _saltCalculatorService.SaveSelectedSaltReminders(request);
+                if (!success)
+                {
+                    return BadRequest(new
+                    {
+                        Message = "Failed to save reminders. Ensure the pond exists and salt calculation is valid."
+                    });
+                }
 
+                var savedReminders = await _saltCalculatorService.GetSaltReminders(request.PondId);
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Selected salt reminders saved successfully",
+                    Reminders = savedReminders
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = $"An error occurred while saving reminders: {ex.Message}"
+                });
+            }
+        }
+        [HttpPut("reminders/update-maintain-date")]
+        public async Task<IActionResult> UpdateMaintainDate([FromBody] UpdateSaltReminderRequest request)
+        {
+            var success = await _saltCalculatorService.UpdateSaltReminderDateAsync(request);
 
+            if (!success)
+            {
+                return BadRequest("Yêu cầu không hợp lệ hoặc không tìm thấy reminder.");
+            }
+
+            return Ok("Cập nhật thời gian bảo trì thành công.");
+        }
 
     }
 }

@@ -90,40 +90,7 @@ namespace KoiGuardian.Api.Controllers
             }
         }
 
-        [HttpPost("adjust-start-time")]
-        public async Task<IActionResult> AdjustSaltAdditionStartTime([FromBody] AdjustSaltStartTimeRequest request)
-        {
-            try
-            {
-                if (request == null || request.PondId == Guid.Empty)
-                {
-                    return BadRequest(new { Message = "Invalid request: PondId is required" });
-                }
-
-                bool success = await _saltCalculatorService.AdjustSaltAdditionStartTime(
-                    request.PondId,
-                    request.NewStartTime);
-
-                if (!success)
-                {
-                    return BadRequest(new { Message = "Failed to adjust start time. Ensure reminders exist for this pond." });
-                }
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = "Salt addition start time adjusted successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    Success = false,
-                    Message = $"An error occurred while adjusting start time: {ex.Message}"
-                });
-            }
-        }
+       
 
         [HttpPost("generate-salt-reminders")]
         public async Task<IActionResult> GenerateSaltAdditionReminders([FromBody] GenerateSaltRemindersRequest request, CancellationToken cancellationToken)

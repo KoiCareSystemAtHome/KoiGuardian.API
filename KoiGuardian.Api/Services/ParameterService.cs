@@ -170,7 +170,7 @@ namespace KoiGuardian.Api.Services
         public async Task<string> EditPondParam(PondStandardParam parameterType, CancellationToken cancellationToken)
         {
             var param = (await _pondParameterRepository.FindAsync(u => u.ParameterID == parameterType.ParameterID)).FirstOrDefault();
-            if (param != null)
+            if (param == null)
             {
                 return "Param not found";
             }
@@ -184,7 +184,7 @@ namespace KoiGuardian.Api.Services
         public async Task<string> EditFishParam(KoiStandardParam parameterType, CancellationToken cancellationToken)
         {
             var param = (await _parameterRepository.FindAsync(u => u.ParameterID == parameterType.ParameterID)).FirstOrDefault();
-            if (param != null)
+            if (param == null)
             {
                 return "Param not found";
             }

@@ -174,8 +174,19 @@ namespace KoiGuardian.Api.Services
             {
                 return "Param not found";
             }
+            param.Name = parameterType.Name;
+            param.Type = parameterType.Type;
+            param.UnitName = parameterType.UnitName;
+            param.WarningUpper = parameterType.WarningUpper;
+            param.WarningLowwer = parameterType.WarningLowwer;
+            param.DangerLower = parameterType.DangerLower;
+            param.DangerUpper = parameterType.DangerUpper;
+            param.IsActive = parameterType.IsActive;
+            param.MeasurementInstruction = parameterType.MeasurementInstruction;
+            param.WarningAcceptantDay = parameterType.WarningAcceptantDay;
+            param.DangerAcceptantDay = parameterType.DangerAcceptantDay;
             param.ValidUntil = null;
-            _pondParameterRepository.Update(param);
+            _pondParameterRepository.Update(parameterType);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return "success";

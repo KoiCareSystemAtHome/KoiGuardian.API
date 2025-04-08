@@ -15,6 +15,7 @@ namespace KoiGuardian.DataAccess.Db
         public string Physique { get; set; }
         public string Breeder { get; set; }
         public int Age { get; set; } // số tháng tuổi
+        public string Notes { get; set; } = "[]";// số tháng tuổi
 
         public virtual Pond? Pond { get; set; }
         public virtual Variety? Variety { get; set; }

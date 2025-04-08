@@ -27,12 +27,41 @@ namespace KoiGuardian.Models.Request
         public double TargetSaltWeightKg { get; set; }
     }
 
+    public class SaltReminderRequest
+    {
+        public Guid PondId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public DateTime MaintainDate { get; set; }
+    }
+
+    public class GenerateSaltRemindersRequest
+    {
+        public Guid PondId { get; set; }
+      
+        public int CycleHours { get; set; }   
+    }
+
+    public class SaveSaltRemindersRequest
+    {
+        public Guid PondId { get; set; }
+        public List<SaltReminderRequest> Reminders { get; set; } = new List<SaltReminderRequest>();
+    }
+
+    public class UpdateSaltReminderRequest
+    {
+        public Guid PondReminderId { get; set; }
+        public DateTime NewMaintainDate { get; set; }
+    }
+
+    // Existing request model for adjusting start time
     public class AdjustSaltStartTimeRequest
     {
         public Guid PondId { get; set; }
         public DateTime NewStartTime { get; set; }
     }
 
+    // Existing request model for updating salt amount
     public class UpdateSaltAmountRequest
     {
         public Guid PondId { get; set; }

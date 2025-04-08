@@ -190,7 +190,7 @@ namespace KoiGuardian.Api.Services
                         Weight = r.Weight,
                         Size = r.Size
                     }).ToList(),
-                    Notes = JsonSerializer.Deserialize<List<string>>(fish.Notes) ;
+                    Notes = JsonSerializer.Deserialize<List<string>>(fish.Notes)
 
                 };
             }

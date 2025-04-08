@@ -369,7 +369,8 @@ namespace KoiGuardian.Api.Services
                     CalculatedDate = r.CalculatedDate,
                     Weight = r.Weight,
                     Size = r.Size
-                }).ToList()
+                }).ToList(),
+                Notes = JsonSerializer.Deserialize<List<string>>(f.Notes)
             }).ToList();
 
             return fishDtos;
@@ -387,7 +388,14 @@ namespace KoiGuardian.Api.Services
             notes.Add(note);
             fish.Notes = JsonSerializer.Serialize(notes);
             _fishRepository.Update(fish);
-            await _unitOfWork.SaveChangesAsync();
+            try
+            {
+                fish.InPondSince = DateTime.SpecifyKind(fish.InPondSince, DateTimeKind.Utc);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex) {
+                return false;
+            }
 
 
             return true;

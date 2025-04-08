@@ -26,5 +26,6 @@ namespace KoiGuardian.Models.Response
         public object? Variety { get; set; }
         public object? DiseaseTracking { get; set; }
         public List<FishReportInfo> fishReportInfos { get; set; }
+        public List<string> Notes { get; set; }
     }
 }

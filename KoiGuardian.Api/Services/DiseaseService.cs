@@ -195,9 +195,10 @@ namespace KoiGuardian.Api.Services
 
         public async Task<DiseaseResponse> GetDiseaseById(Guid diseaseId, CancellationToken cancellationToken)
         {
-            var disease = await _diseaseRepository
-                .GetQueryable()
-                .FirstOrDefaultAsync(d => d.DiseaseId == diseaseId, cancellationToken);
+            var disease = (await _diseaseRepository.
+                FindAsync(d => d.DiseaseId == diseaseId, 
+                include : u => u.Include( u => u.MedicineDisease).ThenInclude( u => u.Medince))
+                ).FirstOrDefault();
 
             if (disease == null)
             {
@@ -242,7 +243,13 @@ namespace KoiGuardian.Api.Services
                 SaltModifyPercent = disease?.SaltModifyPercent ?? 0,
                 Status = "200",
                 Message = "Disease retrieved successfully",
-                Medicines = disease?.MedicineDisease,
+                Medicines = disease?.MedicineDisease?.Select( u => new
+                {
+                    MedicineId = u.MedinceId,
+                    ProductId = u.Medince?.ProductId,
+                    Name = u.Medince?.Medicinename,
+                    DosageForm = u.Medince?.DosageForm,
+                }),
                 SickSymtomps =sick,
                 SideEffect = effect,
 

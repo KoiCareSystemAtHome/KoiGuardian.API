@@ -20,6 +20,9 @@ namespace KoiGuardian.Models.Response
         public DateTime CreateDate { get; set; }
         public string Image { get; set; }
         public float MaxVolume { get; set; }
-        public List<FishDto> Fish { get; set; }
+        public float FishAmount { get; set; }
+        //public List<FishDto> Fish { get; set; }
+        public string Status { get; set; }
+        public string StatusDescription { get; set; }
     }
 }

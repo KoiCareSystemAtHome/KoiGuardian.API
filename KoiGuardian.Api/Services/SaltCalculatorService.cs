@@ -18,7 +18,7 @@ namespace KoiGuardian.Api.Services
         Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request);
         Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId);
         Task<List<PondReminder>> GetSaltReminders(Guid pondId);
-        Task<bool> AdjustSaltAdditionStartTime(Guid pondId, DateTime newStartTime);
+   
         Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
         Task<bool> SaveSelectedSaltReminders(SaveSaltRemindersRequest request);
         Task<List<SaltReminderRequest>> GenerateSaltAdditionRemindersAsync(Guid pondId, int cycleHours, CancellationToken cancellationToken);
@@ -323,56 +323,14 @@ namespace KoiGuardian.Api.Services
         {
             var remindersQuery = _reminderRepository.GetQueryable(r =>
                 r.PondId == pondId &&
-                r.ReminderType == ReminderType.RecurringMaintenance &&
+                r.ReminderType == ReminderType.Pond &&
                 r.Title == "Thêm muối")
                 .OrderBy(r => r.MaintainDate);
 
             return await remindersQuery.ToListAsync();
         }
 
-        public async Task<bool> AdjustSaltAdditionStartTime(Guid pondId, DateTime newStartTime)
-        {
-            var pond = await _pondRepository.GetQueryable(p => p.PondID == pondId).FirstOrDefaultAsync();
-            if (pond == null) return false;
-
-            var existingReminders = await GetSaltReminders(pondId);
-            if (!existingReminders.Any()) return false;
-
-            double additionalSaltNeeded = existingReminders.Sum(r => double.Parse(r.Description.Split("Thêm ")[1].Split(" kg")[0]));
-            int numberOfAdditions = existingReminders.Count;
-            double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
-            int hoursInterval = (int)(existingReminders[1].MaintainDate - existingReminders[0].MaintainDate).TotalHours;
-
-            foreach (var reminder in existingReminders)
-            {
-                _reminderRepository.Delete(reminder);
-            }
-
-            var newReminders = new List<PondReminder>();
-            for (int i = 0; i < numberOfAdditions; i++)
-            {
-                DateTime maintainDate = newStartTime.AddHours(hoursInterval * i);
-                newReminders.Add(new PondReminder
-                {
-                    PondReminderId = Guid.NewGuid(),
-                    PondId = pondId,
-                    ReminderType = ReminderType.RecurringMaintenance,
-                    Title = "Thông báo thêm muối",
-                    Description = $"Thêm {saltPerAddition:F2} kg muối (Step {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                    MaintainDate = maintainDate.ToUniversalTime(),
-                    SeenDate = DateTime.MinValue.ToUniversalTime()
-                });
-            }
-
-            foreach (var reminder in newReminders)
-            {
-                _reminderRepository.Insert(reminder);
-            }
-            await _unitOfWork.SaveChangesAsync();
-
-            return true;
-        }
-
+      
         public async Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
         {
             try

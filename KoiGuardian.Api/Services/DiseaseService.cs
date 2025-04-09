@@ -216,7 +216,8 @@ namespace KoiGuardian.Api.Services
                     {
                         Id = u.PredictSymptomsId,
                         DiseaseUpper = u.DiseaseUpper,
-                        DiseaseLower = u.DiseaseLower
+                        DiseaseLower = u.DiseaseLower,
+                        Description = u.PredictSymptoms?.Name ?? ""
                     }).ToList();
             var effect = (
                     await _relsymptompdeseaseSymtopmsRepository
@@ -226,7 +227,8 @@ namespace KoiGuardian.Api.Services
                     {
                         Id = u.SymtompId,
                         DiseaseUpper = u.DiseaseUpper,
-                        DiseaseLower = u.DiseaseLower
+                        DiseaseLower = u.DiseaseLower,
+                        Description = u.Symptom?.Name ?? ""
                     }).ToList();
 
             return new DiseaseResponse

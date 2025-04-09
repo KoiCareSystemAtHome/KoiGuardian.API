@@ -231,7 +231,9 @@ namespace KoiGuardian.Api.Services
                     var order = await _orderRepository.GetAsync(x => x.OrderId.Equals(transaction.DocNo),cancellationToken);
                     if(order != null && wallet != null)
                     {
+                        order.Status = OrderStatus.Fail.ToString();
                         wallet.Amount += order.Total;
+                        _orderRepository.Update(order);
                         _walletRepository.Update(wallet);
                     }
                 }

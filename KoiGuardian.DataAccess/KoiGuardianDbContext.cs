@@ -27,7 +27,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<Fish> Fishes { get; set; } = null!;
     public virtual DbSet<NormFoodAmount> NormFoodAmount { get; set; } = null!;
     public virtual DbSet<Pond> Ponds { get; set; } = null!;
-    //public virtual DbSet<RelSymptomDisease> RelSymptomDisease { get; set; } = null!;
+    public virtual DbSet<RelSymptomDisease> RelSymptomDisease { get; set; } = null!;
 
     public virtual DbSet<KoiStandardParam> KoiStandardParams { get; set; } = null!;
     public virtual DbSet<KoiReport> KoiReport { get; set; } = null!;
@@ -49,7 +49,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
     public virtual DbSet<PondReminder> PondReminders { get; set; } = null!;
     public virtual DbSet<RelSymptomDisease> RelSymptomDiseases { get; set; } = null!;
     public virtual DbSet<Symptom> Symptoms { get; set; } = null!;
-    public virtual DbSet<MedicineDisease> MedicineDisease { get; set; } = null!;
+    //public virtual DbSet<MedicineDisease> MedicineDisease { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

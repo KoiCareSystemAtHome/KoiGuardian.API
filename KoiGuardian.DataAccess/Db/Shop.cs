@@ -13,6 +13,7 @@ namespace KoiGuardian.DataAccess.Db
         public string BizLicences { get; set; }
         public string UserId { get; set; }
         public string GHNId { get; set; }
+        public string? ShopAvatar { get; set; }
 
 
 

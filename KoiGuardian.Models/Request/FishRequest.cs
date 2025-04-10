@@ -43,6 +43,7 @@ namespace KoiGuardian.Models.Request
         public VarietyInfo Variety { get; set; }
         public PondInfo Pond { get; set; }
         public List<FishReportInfo> fishReportInfos { get; set; }
+        public List<string> Notes { get; set; }
     }
 
     public class VarietyInfo

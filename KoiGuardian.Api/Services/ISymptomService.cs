@@ -17,16 +17,18 @@ public interface ISymptomService
 }
 
 public class SymptomService( 
-    IRepository<PredictSymptoms> symptomRepository,
+    IRepository<PredictSymptoms> predictSymptomRepository,
+    IRepository<Symptom> symptomRepository,
     IRepository<Disease> diseaseRepository,
-    IRepository<RelPredictSymptomDisease> relSymptomDiseaseRepository,
+    IRepository<RelPredictSymptomDisease> relPredictSymptomDiseaseRepository,
+    IRepository<RelSymptomDisease> relSymptomDiseaseRepository,
     IUnitOfWork<KoiGuardianDbContext> uom
 
     ) : ISymptomService
 {
     public async Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms)
     {
-        var symptomDatas = await symptomRepository.FindAsync( 
+        var symptomDatas = await predictSymptomRepository.FindAsync( 
             u => symptoms.Select(u => u.SymtompId).Contains(u.SymtompId));
         var groupDatas = new Dictionary<string, int>();
         foreach (var symptomData in symptomDatas)
@@ -36,8 +38,12 @@ public class SymptomService(
             {
 
             }
+            else
+            {
+             groupDatas.Add(symptomData.Type, 0);
 
-            groupDatas.Add(symptomData.Type, 0);
+            }
+
 
             if (Enum.TryParse<SymptomUnit>(symptomData.SymptomUnit, out var unit))
             {
@@ -80,7 +86,14 @@ public class SymptomService(
         var typeFinal = groupDatas.OrderByDescending(u => u.Value).FirstOrDefault();
         var causeGroupType = typeFinal.Key.Split('_').Last().ToLower();
 
-        var symptompReturn = await symptomRepository.FindAsync(u => u.Type.ToLower() == causeGroupType);
+        var symptompReturn = await predictSymptomRepository.FindAsync(u => u.Type.ToLower() == causeGroupType);
+        if (typeFinal.Value < 2) {
+            return new DiseaseTypePredictResponse()
+            {
+                CauseGroupType = "Cá ăn quá no",
+                SymptomPredicts = []
+            };
+        }
         return new DiseaseTypePredictResponse()
         {
             CauseGroupType = causeGroupType,
@@ -96,7 +109,7 @@ public class SymptomService(
 
     public async Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms)
     {
-        var relations = await relSymptomDiseaseRepository
+        var relations = await relPredictSymptomDiseaseRepository
             .FindAsync( u => symptoms.Select(u => u.SymtompId).Contains( u.PredictSymptomsId),
                 include: u=> u.Include(u => u.PredictSymptoms)
             , CancellationToken.None);
@@ -194,24 +207,33 @@ public class SymptomService(
     public async Task<FinalDiseaseTypePredictResponse> Examination2()
     {
 
-        var disease = await diseaseRepository.GetAllAsync();
-        var symtomps = await symptomRepository.GetAllAsync();
+        var diseaseList = await diseaseRepository.GetAllAsync();
+        var symptomList = await symptomRepository.GetAllAsync();
+        var random = new Random();
 
-        foreach(var d in disease)
+        foreach (var d in diseaseList)
         {
-            foreach(var s in symtomps)
+            // Lấy 3 symptom ngẫu nhiên, không trùng lặp
+            var randomSymptomSample = symptomList
+                .OrderBy(x => random.Next())
+                .Take(3)
+                .ToList();
+
+            foreach (var s in randomSymptomSample)
             {
-                relSymptomDiseaseRepository.Insert(new RelPredictSymptomDisease()
+                relSymptomDiseaseRepository.Insert(new RelSymptomDisease()
                 {
                     DiseaseId = d.DiseaseId,
-                    PredictSymptomsId = s.SymtompId,
+                    SymtompId = s.SymtompId,
                     RelSymptomDiseaseId = Guid.NewGuid(),
                     DiseaseLower = 0,
                     DiseaseUpper = 100
                 });
             }
         }
+
         await uom.SaveChangesAsync();
+
 
         return new();
     }
@@ -221,11 +243,11 @@ public class SymptomService(
         type = type ?? SymptomType.Common.ToString();
         if (type.ToLower() == SymptomType.Common.ToString().ToLower())
         {
-            return (await symptomRepository
+            return (await predictSymptomRepository
             .FindAsync(u => u.Type.Contains(type ?? SymptomType.Common.ToString()), CancellationToken.None)).ToList();
         }
 
-        return (await symptomRepository
+        return (await predictSymptomRepository
             .FindAsync(u => u.Type.ToLower()  == type.ToLower(), CancellationToken.None)).ToList();
     }
 

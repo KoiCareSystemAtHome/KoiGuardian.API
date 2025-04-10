@@ -29,6 +29,7 @@ namespace KoiGuardian.Models.Request
         public AddressDto ShopAddress { get; set; }
         public bool IsActivate { get; set; }
         public string BizLicences { get; set; }
+        public string? ShopAvatar { get; set; }
         public List<ProductDetailsRequest> Products { get; set; }
 
 

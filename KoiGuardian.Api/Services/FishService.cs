@@ -6,6 +6,9 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace KoiGuardian.Api.Services
@@ -15,6 +18,7 @@ namespace KoiGuardian.Api.Services
         Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<FishResponse> UpdateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken);
         Task<FishDetailResponse> GetFishByIdAsync(Guid koiId, CancellationToken cancellationToken);
+        Task<bool> AddNote(Guid koiId, string note);
         Task<List<FishDto>> GetFishByOwnerId(Guid Owner,CancellationToken cancellation);
         Task<List<FishDetailResponse>> GetAllFishAsync(string? name = null, CancellationToken cancellationToken = default);
 
@@ -99,7 +103,7 @@ namespace KoiGuardian.Api.Services
                 InPondSince = fishRequest.InPondSince,
                 Price = fishRequest.Price,
                 Image = fishRequest.Image,
-                
+                Notes = "[]"
 
             };
 
@@ -185,7 +189,9 @@ namespace KoiGuardian.Api.Services
                         CalculatedDate = r.CalculatedDate,
                         Weight = r.Weight,
                         Size = r.Size
-                    }).ToList()
+                    }).ToList(),
+                    Notes = JsonSerializer.Deserialize<List<string>>(fish.Notes)
+
                 };
             }
             catch (Exception ex)
@@ -363,11 +369,36 @@ namespace KoiGuardian.Api.Services
                     CalculatedDate = r.CalculatedDate,
                     Weight = r.Weight,
                     Size = r.Size
-                }).ToList()
+                }).ToList(),
+                Notes = JsonSerializer.Deserialize<List<string>>(f.Notes)
             }).ToList();
 
             return fishDtos;
         }
 
+        public async Task<bool> AddNote(Guid koiId, string note)
+        {
+            var fishes = await _fishRepository.FindAsync(u => u.KoiID == koiId);
+            var fish = fishes.FirstOrDefault();
+            if (fish == null) {
+                return false;
+            }
+
+            var notes = JsonSerializer.Deserialize<List<string>>(fish.Notes);
+            notes.Add(note);
+            fish.Notes = JsonSerializer.Serialize(notes);
+            _fishRepository.Update(fish);
+            try
+            {
+                fish.InPondSince = DateTime.SpecifyKind(fish.InPondSince, DateTimeKind.Utc);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex) {
+                return false;
+            }
+
+
+            return true;
+        }
     }
 }

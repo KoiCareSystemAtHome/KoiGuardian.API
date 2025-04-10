@@ -16,4 +16,6 @@ public class UserDto
     public string Address { get; set; } = string.Empty;
     public string ShopId { get; set; } = string.Empty;
     public string GHNid {  get; set; } = string.Empty;
+    public string ShopDescription {  get; set; } = string.Empty;
+    public string BzLicense {  get; set; } = string.Empty;
 }

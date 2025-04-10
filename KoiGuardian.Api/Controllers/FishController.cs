@@ -43,5 +43,12 @@ namespace KoiGuardian.Api.Controllers
            return await fishService.GetFishByIdAsync(koiId, cancellationToken);
            
         }
+
+        [HttpPost("note")]
+        public async Task<bool> AddNote(Guid koiId, string note)
+        {
+            return await fishService.AddNote(koiId, note);
+
+        }
     }
 }

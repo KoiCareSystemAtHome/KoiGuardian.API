@@ -29,6 +29,7 @@ namespace KoiGuardian.Api.Services
         IRepository<Pond> pondRepository,
         IRepository<PondStandardParam> pondStandardparameterRepository,
         IRepository<RelPondParameter> relPondparameterRepository,
+        IRepository<PondStandardParam> parameterRepository,
         IRepository<Product> productRepository,
         KoiGuardianDbContext _dbContext,
         IImageUploadService imageUpload,
@@ -308,6 +309,8 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<PondDto>> GetAllPondByOwnerId(Guid ownerId, CancellationToken cancellationToken = default)
         {
+            const int DaysSinceLastUpdateThreshold = 14;
+
             // Lấy danh sách ao thuộc về chủ sở hữu
             var pondEntities = await pondRepository.FindAsync(
                 predicate: pond => pond.OwnerId.Equals(ownerId.ToString()),
@@ -315,27 +318,106 @@ namespace KoiGuardian.Api.Services
                 orderBy: query => query.OrderBy(p => p.Name),
                 cancellationToken: cancellationToken
             );
-            pondEntities.ToList();
+            var ponds = pondEntities.ToList();
 
-            // Ánh xạ sang DTO
-            var pondDtos = pondEntities.Select(p => new PondDto
+            // Tạo DTOs
+            var pondDtos = new List<PondDto>();
+
+            foreach (var pond in ponds)
             {
-                PondID = p.PondID,
-                Name = p.Name,
-                OwnerId = p.OwnerId,
-                CreateDate = p.CreateDate,
-                Image = p.Image,
-                MaxVolume = p.MaxVolume,
-                Fish = p.Fish.Select(f => new FishDto
+                // Load lần đo gần nhất của các parameter cho hồ
+                var pondParameters = await relPondparameterRepository.FindAsync(
+                    rp => rp.PondId == pond.PondID,
+                    orderBy: query => query.OrderByDescending(rp => rp.CalculatedDate),
+                    cancellationToken: cancellationToken
+                );
+                var latestParameters = pondParameters
+                    .GroupBy(rp => rp.ParameterID)
+                    .Select(g => g.First()) // Lấy lần đo gần nhất cho mỗi parameter
+                    .ToList();
+
+                string status = "Normal";
+                string statusDescription = "";
+
+                if (latestParameters.Any())
                 {
-                    KoiID = f.KoiID,
-                    Name = f.Name,
-                    Image = f.Image,
-                    Price = f.Price,
-                    Sex = f.Sex,
-                    Age = f.Age,
-                }).ToList()
-            }).ToList();
+                    // Load master data parameters
+                    var parameterIds = latestParameters.Select(rp => rp.ParameterID).ToList();
+                    var parameters = await parameterRepository.FindAsync( // Sử dụng _parameterRepository
+                        p => parameterIds.Contains(p.ParameterID),
+                        cancellationToken: cancellationToken
+                    );
+                    var parameterLookup = parameters.ToDictionary(p => p.ParameterID);
+
+                    // Kiểm tra lần cập nhật cuối cùng
+                    var latestUpdate = latestParameters.Max(rp => rp.CalculatedDate);
+                    var daysSinceLastUpdate = (DateTime.UtcNow - latestUpdate).Days;
+
+                    if (daysSinceLastUpdate > DaysSinceLastUpdateThreshold)
+                    {
+                        status = "Warning";
+                        statusDescription = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago)";
+                    }
+                    else
+                    {
+                        // Kiểm tra lần đo gần nhất của từng parameter
+                        foreach (var param in latestParameters)
+                        {
+                            if (!parameterLookup.TryGetValue(param.ParameterID, out var parameter) || parameter.DangerUpper == null)
+                                continue;
+
+                            var currentValue = param.Value;
+                            var maxSafeDensity = (double)parameter.DangerUpper;
+                            var warningUpper = parameter.WarningUpper;
+
+                            if (currentValue >= maxSafeDensity)
+                            {
+                                status = "Danger";
+                                statusDescription = $"{parameter.Name} chạm ngưỡng nguy hiểm ({currentValue}/{maxSafeDensity})";
+                                break; // Nguy hiểm thì dừng luôn
+                            }
+                            else if (warningUpper.HasValue && currentValue > warningUpper.Value)
+                            {
+                                if (status != "Danger") // Chỉ cập nhật nếu chưa là Danger
+                                {
+                                    status = "Warning";
+                                    statusDescription = $"{parameter.Name} vượt ngưỡng cảnh báo ({currentValue}/{warningUpper.Value})";
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    status = "Warning";
+                    statusDescription = "No data available for the pond";
+                }
+
+                // Tạo DTO cho hồ
+                var pondDto = new PondDto
+                {
+                    PondID = pond.PondID,
+                    Name = pond.Name,
+                    OwnerId = pond.OwnerId,
+                    CreateDate = pond.CreateDate,
+                    Image = pond.Image,
+                    MaxVolume = pond.MaxVolume,
+                    Status = status, // Trạng thái
+                    StatusDescription = statusDescription, // Mô tả chi tiết
+                    FishAmount = pond.Fish.Count(),
+                    /*Fish = pond.Fish.Select(f => new FishDto
+                    {
+                        KoiID = f.KoiID,
+                        Name = f.Name,
+                        Image = f.Image,
+                        Price = f.Price,
+                        Sex = f.Sex,
+                        Age = f.Age,
+                    }).ToList()*/
+                };
+
+                pondDtos.Add(pondDto);
+            }
 
             return pondDtos;
         }

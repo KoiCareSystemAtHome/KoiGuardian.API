@@ -31,7 +31,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<string> Register(RegistrationRequestDto model)
+        public async Task<AccountResponse> Register(RegistrationRequestDto model)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
            // model.Avatar = avatar;
@@ -53,7 +53,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPut("activate")]
-        public async Task<string> ActivateAccount(string email, int code)
+        public async Task<AccountResponse> ActivateAccount(string email, int code)
         {
             return await service.ActivateAccount(email,code);
         }
@@ -83,7 +83,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("Updateprofile")]
-        public async Task<string> UpdateProfile(UpdateProfileRequest request)
+        public async Task<string> UpdateProfile([FromBody]UpdateProfileRequest request)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
 

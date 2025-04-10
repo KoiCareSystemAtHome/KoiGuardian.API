@@ -10,7 +10,16 @@ public class SendMail
     {
         try
         {
-            MailMessage msg = new MailMessage(ConstantValue.emailSender, to, subject, body);
+            var msg = new MailMessage(ConstantValue.emailSender, to, subject, body)
+            {
+                IsBodyHtml = true
+            };
+
+            if (!string.IsNullOrEmpty(attachFile))
+            {
+                Attachment attachment = new Attachment(attachFile);
+                msg.Attachments.Add(attachment);
+            }
 
             using (var client = new SmtpClient(ConstantValue.hostEmail, ConstantValue.portEmail))
             {

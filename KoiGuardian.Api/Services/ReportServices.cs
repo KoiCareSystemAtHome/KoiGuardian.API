@@ -193,7 +193,7 @@ namespace KoiGuardian.Api.Services
         {
             ReportResponse reportResponse = new ReportResponse();
             var report = await _reportRepository.GetAsync(x => x.ReportId == request.ReportId, CancellationToken.None);
-            var transaction = await _transactionRepository.GetAsync(x => x.DocNo.Equals(report.OrderId.ToString()), CancellationToken.None);
+            var transaction = await _transactionRepository.GetAsync(x => x.DocNo.Equals(report.OrderId), CancellationToken.None);
             if (report == null)
             {
                 reportResponse.message = "Report not exist!!!";
@@ -228,10 +228,12 @@ namespace KoiGuardian.Api.Services
                     transaction.TransactionType = TransactionType.Cancel.ToString();
                     _transactionRepository.Update(transaction);
                     var wallet = await _walletRepository.GetAsync(x => x.UserId.Equals(transaction.UserId),cancellationToken);
-                    var order = await _orderRepository.GetAsync(x => x.OrderId.Equals(transaction.DocNo.ToString()),cancellationToken);
+                    var order = await _orderRepository.GetAsync(x => x.OrderId.Equals(transaction.DocNo),cancellationToken);
                     if(order != null && wallet != null)
                     {
+                        order.Status = OrderStatus.Fail.ToString();
                         wallet.Amount += order.Total;
+                        _orderRepository.Update(order);
                         _walletRepository.Update(wallet);
                     }
                 }

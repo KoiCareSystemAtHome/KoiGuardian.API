@@ -46,6 +46,10 @@ namespace KoiGuardian.Api.Services
         Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken);
         Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken);
 
+        Task<IEnumerable<ProductSearchResponse>> GetProductsByShopIdAsync(Guid shopId, CancellationToken cancellationToken);
+
+        Task<IEnumerable<ProductSearchResponse>> GetProductsByCategoryNameAsync(string categoryName, CancellationToken cancellationToken);
+
 
     }
 
@@ -748,6 +752,83 @@ namespace KoiGuardian.Api.Services
                     FeedbackId = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().FeedbackId : Guid.Empty,
                     Content = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().Content : null,
 
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return results;
+        }
+
+        public async Task<IEnumerable<ProductSearchResponse>> GetProductsByShopIdAsync(Guid shopId, CancellationToken cancellationToken)
+        {
+            // Kiểm tra xem ShopId có tồn tại không
+            var shopExists = await _shopRepository.GetAsync(x => x.ShopId == shopId, cancellationToken);
+            if (shopExists == null)
+            {
+                return Enumerable.Empty<ProductSearchResponse>(); // Trả về danh sách rỗng nếu Shop không tồn tại
+            }
+
+            var query = _productRepository.GetQueryable()
+                .Where(p => p.ShopId == shopId)
+                .Include(p => p.Category);
+
+            var results = await query
+                .Select(p => new ProductSearchResponse
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    Brand = p.Brand,
+                    ManufactureDate = p.ManufactureDate,
+                    ExpiryDate = p.ExpiryDate,
+                    Type = p.Type,
+                    ParameterImpactment = p.ParameterImpactment,
+                    Image = p.Image,
+                    Category = new CategoryInfo
+                    {
+                        CategoryId = p.Category.CategoryId,
+                        Name = p.Category.Name
+                    }
+                })
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return results;
+        }
+
+        public async Task<IEnumerable<ProductSearchResponse>> GetProductsByCategoryNameAsync(string categoryName, CancellationToken cancellationToken)
+        {
+            // Nếu categoryName rỗng hoặc null, trả về danh sách rỗng
+            if (string.IsNullOrWhiteSpace(categoryName))
+            {
+                return Enumerable.Empty<ProductSearchResponse>();
+            }
+
+            var query = _productRepository.GetQueryable()
+                .Include(p => p.Category)
+                .Where(p => p.Category.Name.ToLower().Contains(categoryName.ToLower()));
+
+            var results = await query
+                .Select(p => new ProductSearchResponse
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.Description,
+                    Price = p.Price,
+                    StockQuantity = p.StockQuantity,
+                    Brand = p.Brand,
+                    ManufactureDate = p.ManufactureDate,
+                    ExpiryDate = p.ExpiryDate,
+                    Type = p.Type,
+                    ParameterImpactment = p.ParameterImpactment,
+                    Image = p.Image,
+                    Category = new CategoryInfo
+                    {
+                        CategoryId = p.Category.CategoryId,
+                        Name = p.Category.Name
+                    }
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);

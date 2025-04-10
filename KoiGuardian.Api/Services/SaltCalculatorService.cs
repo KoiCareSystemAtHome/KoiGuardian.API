@@ -70,22 +70,30 @@ namespace KoiGuardian.Api.Services
                 {
                     PondId = request.PondId,
                     TotalSalt = 0,
-                    ExcessSalt = 0, // Khởi tạo mặc định
                     AdditionalInstruction = new List<string> { "Không tìm thấy hồ." }
                 };
             }
 
-            double currentVolume = pond.MaxVolume;
-            double addedWaterPercent = request.WaterChangePercent / 100;
+            double currentVolume = request.WaterChangePercent > 0
+                ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
+                : pond.MaxVolume;
 
-            if (request.WaterChangePercent < 0)
+            if (request.WaterChangePercent == 100)
             {
                 return new CalculateSaltResponse
                 {
                     PondId = request.PondId,
                     TotalSalt = 0,
-                    ExcessSalt = 0,
-                    AdditionalInstruction = new List<string> { "Phần trăm nước thêm vào không thể âm, vui lòng kiểm tra lại." }
+                    AdditionalInstruction = new List<string> { "Hồ không có nước, không thể tính toán." }
+                };
+            }
+            else if (request.WaterChangePercent > 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = request.PondId,
+                    TotalSalt = 0,
+                    AdditionalInstruction = new List<string> { "Mực nước hiện tại không hợp lý, vui lòng kiểm tra lại." }
                 };
             }
 
@@ -99,7 +107,6 @@ namespace KoiGuardian.Api.Services
                 {
                     PondId = request.PondId,
                     TotalSalt = 0,
-                    ExcessSalt = 0,
                     AdditionalInstruction = new List<string> { "Không tìm thấy thông số muối trong các thông số tiêu chuẩn." }
                 };
             }
@@ -108,10 +115,7 @@ namespace KoiGuardian.Api.Services
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
                 .Include(p => p.Parameter);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-            double originalSaltConcentration = currentSaltValue?.Value ?? 0;
-
-            double originalVolume = Math.Round(currentVolume / (1 + addedWaterPercent), 2);
-            double currentSaltConcentration = Math.Round(originalSaltConcentration * (originalVolume / currentVolume), 2);
+            double currentSaltConcentration = currentSaltValue?.Value ?? 0;
 
             if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel.ToLower(), out double standardSalt))
             {
@@ -119,7 +123,6 @@ namespace KoiGuardian.Api.Services
                 {
                     PondId = request.PondId,
                     TotalSalt = 0,
-                    ExcessSalt = 0,
                     AdditionalInstruction = new List<string> { "Mức muối tiêu chuẩn không hợp lệ. Giá trị được chấp nhận: Low, Medium, High." }
                 };
             }
@@ -159,22 +162,20 @@ namespace KoiGuardian.Api.Services
             }
 
             double requiredSaltPercent = standardSalt + saltModifyPercent;
-            double targetSaltWeightKg = Math.Round(currentVolume * requiredSaltPercent, 2);
-            double saltDifference = Math.Round(targetSaltWeightKg - currentSaltConcentration, 2);
-            double saltNeeded = saltDifference > 0 ? saltDifference : 0;
-            double excessSalt = saltDifference < 0 ? Math.Abs(saltDifference) : 0;
+            double targetSaltWeightKg = currentVolume * requiredSaltPercent;
+            double additionalSaltNeeded = targetSaltWeightKg - currentSaltConcentration;
 
             double? warningLowerMgPerL = saltParameter.Parameter.WarningLowwer.HasValue
-                ? Math.Round((saltParameter.Parameter.WarningLowwer.Value * 1_000_000) / currentVolume, 2)
+                ? (saltParameter.Parameter.WarningLowwer * 1_000_000) / currentVolume
                 : null;
             double? warningUpperMgPerL = saltParameter.Parameter.WarningUpper.HasValue
-                ? Math.Round((saltParameter.Parameter.WarningUpper.Value * 1_000_000) / currentVolume, 2)
+                ? (saltParameter.Parameter.WarningUpper * 1_000_000) / currentVolume
                 : null;
             double? dangerLowerMgPerL = saltParameter.Parameter.DangerLower.HasValue
-                ? Math.Round((saltParameter.Parameter.DangerLower.Value * 1_000_000) / currentVolume, 2)
+                ? (saltParameter.Parameter.DangerLower * 1_000_000) / currentVolume
                 : null;
             double? dangerUpperMgPerL = saltParameter.Parameter.DangerUpper.HasValue
-                ? Math.Round((saltParameter.Parameter.DangerUpper.Value * 1_000_000) / currentVolume, 2)
+                ? (saltParameter.Parameter.DangerUpper * 1_000_000) / currentVolume
                 : null;
 
             var (additionalWaterNeeded, thresholdMessages) = await CalculateWaterAdjustmentAndThresholds(
@@ -183,32 +184,27 @@ namespace KoiGuardian.Api.Services
 
             additionalNotes.AddRange(thresholdMessages);
 
-            if (excessSalt > 0)
+            if (additionalSaltNeeded < 0)
             {
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltConcentration:F2} kg) vượt quá mục tiêu ({targetSaltWeightKg:F2} kg).");
-                additionalNotes.Add($"Muối dư: {excessSalt:F2} kg.");
                 if (currentVolume + additionalWaterNeeded > pond.MaxVolume)
                 {
-                    double excessVolume = Math.Round((currentVolume + additionalWaterNeeded) - pond.MaxVolume, 2);
-                    additionalNotes.Add($"Cảnh báo: Thêm {Math.Round(additionalWaterNeeded, 2):F2} lít nước sẽ vượt quá dung tích hồ {excessVolume:F2} lít.");
+                    double excessVolume = (currentVolume + additionalWaterNeeded) - pond.MaxVolume;
+                    additionalNotes.Add($"Cảnh báo: Thêm {additionalWaterNeeded:F2} lít nước sẽ vượt quá dung tích hồ {excessVolume:F2} lít.");
                 }
             }
-            else if (saltNeeded > 0)
+            else if (additionalSaltNeeded > 0)
             {
-                additionalNotes.Add($"Cần thêm: {saltNeeded:F2} kg muối.");
+                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối.");
                 additionalNotes.Add($"Lượng muối hiện tại: {currentSaltConcentration:F2} kg.");
                 additionalNotes.Add($"Lượng muối mục tiêu: {targetSaltWeightKg:F2} kg.");
             }
-            else
-            {
-                additionalNotes.Add($"Lượng muối hiện tại ({currentSaltConcentration:F2} kg) đã đạt mục tiêu ({targetSaltWeightKg:F2} kg).");
-            }
 
             var suggestedReminders = new List<SuggestedSaltReminderResponse>();
-            if (saltNeeded > 0)
+            if (additionalSaltNeeded > 0)
             {
-                int numberOfAdditions = saltNeeded <= 0.5 ? 2 : 3;
-                double saltPerAddition = Math.Round(saltNeeded / numberOfAdditions, 2);
+                int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
+                double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
                 int hoursInterval = 12;
 
                 DateTime startTime = DateTime.UtcNow;
@@ -219,7 +215,7 @@ namespace KoiGuardian.Api.Services
                     {
                         TemporaryId = Guid.NewGuid(),
                         Title = "Salt Addition Reminder",
-                        Description = $"Add {saltPerAddition:F2} kg of salt (Step {i + 1}/{numberOfAdditions}). Total: {saltNeeded:F2} kg.",
+                        Description = $"Add {saltPerAddition:F2} kg of salt (Step {i + 1}/{numberOfAdditions}). Total: {additionalSaltNeeded:F2} kg.",
                         MaintainDate = maintainDate.ToUniversalTime()
                     });
                 }
@@ -230,10 +226,10 @@ namespace KoiGuardian.Api.Services
                 PondId = request.PondId,
                 TotalSalt = targetSaltWeightKg,
                 CurrentSalt = currentSaltConcentration,
-                SaltNeeded = saltNeeded,
-                ExcessSalt = excessSalt,
-                WaterNeeded = Math.Round(additionalWaterNeeded, 2),
+                SaltNeeded = additionalSaltNeeded,
+                WaterNeeded = additionalWaterNeeded,
                 AdditionalInstruction = additionalNotes,
+                
             };
 
             _saltCalculationCache[request.PondId] = response;

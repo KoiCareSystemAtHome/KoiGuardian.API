@@ -14,6 +14,7 @@ using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using static KoiGuardian.Models.Enums.CommonEnums;
 
@@ -670,18 +671,37 @@ IImageUploadService imageUpload
         wallet.Amount -= totalAmount;
         foreach (var order in orders)
         {
-            var transaction = new Transaction
+            // Tìm transaction hiện có dựa trên DocNo
+            var transaction = await tranctionRepository.GetAsync(t => t.DocNo == order.OrderId, CancellationToken.None);
+
+            if (transaction == null)
             {
-                TransactionId = Guid.NewGuid(),
-                TransactionDate = DateTime.UtcNow,
-                TransactionType = TransactionType.Pending.ToString(),
-                VnPayTransactionid = "Order Paid By Wallet", 
-                UserId = user.Id,
-                DocNo = order.OrderId, 
+                // Nếu không tìm thấy transaction, có thể return lỗi hoặc bỏ qua tùy yêu cầu
+                continue; // Hoặc return "Transaction not found for order " + order.OrderId;
+            }
+
+            // Tạo payment info object
+            var paymentInfo = new PaymentInfo
+            {
+                Amount = (decimal)order.Total,
+                Date = DateTime.UtcNow,
+                Description = $"Thanh toán cho hóa đơn {order.OrderId}"
             };
 
-           orderRepository.Update(order);
-           tranctionRepository.Insert(transaction);
+            var jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            string paymentJson = JsonSerializer.Serialize(paymentInfo, jsonOptions);
+
+            // Cập nhật Payment trong transaction hiện có
+            transaction.Payment = paymentJson;
+            transaction.TransactionDate = DateTime.UtcNow; // Cập nhật thời gian nếu cần
+
+            orderRepository.Update(order);
+            tranctionRepository.Update(transaction); // Sửa typo từ tranctionRepository
 
         }
         walletRepository.Update(wallet);

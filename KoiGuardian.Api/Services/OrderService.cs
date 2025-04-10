@@ -7,6 +7,7 @@ using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 
@@ -45,6 +46,8 @@ public class OrderService(
                 return new List<OrderResponse> { OrderResponse.Error("Invalid request data") };
             }
 
+
+
             string addressNote = JsonSerializer.Serialize(new
             {
                 ProvinceName = request.Address.ProvinceName,
@@ -78,8 +81,16 @@ public class OrderService(
                     var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
                     if (product != null)
                     {
+                        if (product.StockQuantity < detail.Quantity)
+                        {
+                            return new List<OrderResponse> { OrderResponse.Error("Số Lượng Hàng Không Hợp lệ") };
+                        }
+                        product.StockQuantity -=  detail.Quantity; 
+                        /*productRepository.Update(product);*/
                         total += product.Price * detail.Quantity; // Tính tổng giá trị sản phẩm
-                    }
+                       
+                    } 
+                    
                 }
 
                 var order = new Order
@@ -88,7 +99,7 @@ public class OrderService(
                     ShopId = shopId,
                     UserId = request.AccountId,
                     ShipType = request.ShipType,
-                    oder_code = $"ORD-{DateTime.UtcNow.Ticks}", // Sinh mã đơn hàng
+                    oder_code = $"{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}", // Sinh mã đơn hàng
                     Status = request.Status,
                     ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
                     Total = (float)total, // Gán tổng giá trị
@@ -98,8 +109,18 @@ public class OrderService(
                     UpdatedDate = DateTime.MaxValue,
                     OrderDetail = new List<OrderDetail>()
                 };
-
                 orderRepository.Insert(order);
+                var transaction = new Transaction
+                {
+                    TransactionId = Guid.NewGuid(),
+                    TransactionDate = DateTime.UtcNow,
+                    TransactionType = TransactionType.Pending.ToString(),
+                    VnPayTransactionid = "Order Paid",
+                    UserId = request.AccountId,
+                    DocNo = order.OrderId,
+                };
+                transactionRepository.Insert(transaction);
+                
 
                 foreach (var detail in orderDetails)
                 {
@@ -299,7 +320,15 @@ public class OrderService(
                     TransactionId = transaction.TransactionId,
                     TransactionDate = transaction.TransactionDate,
                     TransactionType = transaction.TransactionType,
-                    VnPayTransactionId = transaction.VnPayTransactionid
+                    VnPayTransactionId = transaction.VnPayTransactionid,
+                    Payment = !string.IsNullOrEmpty(transaction.Payment)
+                ? JsonSerializer.Deserialize<PaymentInfo>(transaction.Payment)
+                : null,
+
+                    Refund = !string.IsNullOrEmpty(transaction.Refund)
+                ? JsonSerializer.Deserialize<RefundInfo>(transaction.Refund)
+                : null,
+
                 } : null,
 
                 ReportDetail = u.Report != null ? new ReportDetailResponse 
@@ -375,27 +404,55 @@ public class OrderService(
             var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
             string status = request.Status.ToLower();
 
-            if (status == OrderStatus.Complete.ToString().ToLower() && transaction == null)
+            if (status == OrderStatus.Complete.ToString().ToLower() && transaction.Payment == null)
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
-                transactionRepository.Insert(new Transaction
+                var paymentInfo = new PaymentInfo
                 {
-                    TransactionId = Guid.NewGuid(),
-                    TransactionDate = DateTime.UtcNow,
-                    Amount = order.Total,
-                    TransactionType = TransactionType.Pending.ToString(),
-                    VnPayTransactionid = "Order Paid (COD)",
-                    UserId = order.UserId,
-                    DocNo = order.OrderId,
-                });
+                    Amount = (decimal)order.Total,
+                    Date = DateTime.UtcNow,
+                    Description = $"Thanh toán cho hóa đơn {order.OrderId}"
+                };
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                };
+                string paymentJson = JsonSerializer.Serialize(paymentInfo, jsonOptions);
+                transaction.Payment = paymentJson;
+                transactionRepository.Update(transaction);
+                /* transactionRepository.Insert(new Transaction
+                 {
+                     TransactionId = Guid.NewGuid(),
+                     TransactionDate = DateTime.UtcNow,
+                     Amount = order.Total,
+                     TransactionType = TransactionType.Pending.ToString(),
+                     VnPayTransactionid = "Order Paid (COD)",
+                     UserId = order.UserId,
+                     DocNo = order.OrderId,
+                 });*/
             }
-            else if (status == OrderStatus.Fail.ToString().ToLower() && transaction != null
+            else if (status == OrderStatus.Fail.ToString().ToLower() && transaction.Refund == null && transaction.Payment !=null
                      && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
+
+                var RefundInfo = new RefundInfo
+                {
+                    Amount = (decimal)order.Total,
+                    Date = DateTime.UtcNow,
+                    Description = $"Hoàn Tiền cho hóa đơn {order.OrderId}"
+                };
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                };
+                string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
+                transaction.Refund = refundJson;
                 transactionRepository.Update(transaction);
 
                 var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(order.UserId), CancellationToken.None);

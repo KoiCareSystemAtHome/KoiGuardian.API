@@ -5,6 +5,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Enums;
 using KoiGuardian.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace KoiGuardian.Api.Services
 {
@@ -50,7 +51,14 @@ namespace KoiGuardian.Api.Services
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.TransactionType,
                     VnPayTransactionId = t.VnPayTransactionid,
-                    Amount = order != null ? (decimal)order.Total : 0m // Lấy Total từ Order
+                    Amount = order != null ? (decimal)order.Total : 0m ,// Lấy Total từ Order
+                    Payment = !string.IsNullOrEmpty(t.Payment)
+                ? JsonSerializer.Deserialize<PaymentInfo>(t.Payment)
+                : null,
+
+                    Refund = !string.IsNullOrEmpty(t.Refund)
+                ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
+                : null,
                 };
             }).ToList();
 
@@ -110,6 +118,7 @@ namespace KoiGuardian.Api.Services
                 TransactionType = t.TransactionType,
                 Amount = (decimal)t.Amount,
                 VnPayTransactionId = t.VnPayTransactionid
+                
             }).ToList();
 
             return result;
@@ -136,8 +145,16 @@ namespace KoiGuardian.Api.Services
                     TransactionId = t.TransactionId,
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.TransactionType,
+                    DocNo = t.DocNo,
                     VnPayTransactionId = t.VnPayTransactionid,
-                    Amount = order != null ? (decimal)order.Total : 0m // Lấy Total từ Order
+                    Amount = order != null ? (decimal)order.Total : 0m, // Lấy Total từ Order
+                    Payment = !string.IsNullOrEmpty(t.Payment)
+                ? JsonSerializer.Deserialize<PaymentInfo>(t.Payment)
+                : null,
+
+                    Refund = !string.IsNullOrEmpty(t.Refund)
+                ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
+                : null,
                 };
             }).ToList();
 

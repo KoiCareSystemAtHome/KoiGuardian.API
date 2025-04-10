@@ -10,9 +10,12 @@ namespace KoiGuardian.Models.Response
     {
         public Guid TransactionId { get; set; }
         public DateTime TransactionDate { get; set; }
+        public Guid DocNo { get; set; }
         public string TransactionType { get; set; }
         public string VnPayTransactionId { get; set; }
         public decimal Amount { get; set; }
+        public PaymentInfo Payment { get; set; }
+        public RefundInfo Refund { get; set; }
     }
 
     public class RevenueSummaryDto
@@ -62,6 +65,20 @@ namespace KoiGuardian.Models.Response
         public int ProductCount { get; set; }
         public int MedicineCount { get; set; }
         public int TotalCount { get; set; }
+    }
+
+    public class PaymentInfo
+    {
+        public decimal Amount { get; set; }  // Sử dụng decimal thay cho float để chính xác hơn với tiền tệ
+        public DateTime Date { get; set; }
+        public string Description { get; set; }
+    }
+
+    public class RefundInfo
+    {
+        public decimal Amount { get; set; }  // Sử dụng decimal thay cho float để chính xác hơn với tiền tệ
+        public DateTime Date { get; set; }
+        public string Description { get; set; }
     }
 
 }

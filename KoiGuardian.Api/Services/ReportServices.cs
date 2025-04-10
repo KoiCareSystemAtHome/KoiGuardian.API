@@ -8,6 +8,7 @@ using KoiGuardian.Models.Enums;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 
 namespace KoiGuardian.Api.Services
 {
@@ -232,7 +233,25 @@ namespace KoiGuardian.Api.Services
                     if(order != null && wallet != null)
                     {
                         order.Status = OrderStatus.Fail.ToString();
+                        order.UpdatedDate = DateTime.UtcNow;
+                        transaction.TransactionType = TransactionType.Cancel.ToString() ;
+
+                        var RefundInfo = new RefundInfo
+                        {
+                            Amount = (decimal)order.Total,
+                            Date = DateTime.UtcNow,
+                            Description = $"Hoàn Tiền cho hóa đơn {order.OrderId}"
+                        };
+                        var jsonOptions = new JsonSerializerOptions
+                        {
+                            WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
+                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                        };
+                        string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
+
+                        transaction.Refund = refundJson;
                         wallet.Amount += order.Total;
+                        _transactionRepository.Update(transaction);
                         _orderRepository.Update(order);
                         _walletRepository.Update(wallet);
                     }

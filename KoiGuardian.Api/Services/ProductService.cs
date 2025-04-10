@@ -365,6 +365,7 @@ namespace KoiGuardian.Api.Services
                 ManufactureDate = product.ManufactureDate,
                 ExpiryDate = product.ExpiryDate,
                 Type = product.Type,
+                Rate = product.Rate,
                 ParameterImpactment = product.ParameterImpactment,
                 Category = new CategoryInfo
                 {

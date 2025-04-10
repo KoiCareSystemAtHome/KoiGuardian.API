@@ -47,6 +47,7 @@ namespace KoiGuardian.Api.Services
                 cancellationToken: cancellationToken
             );
 
+
             if (product == null)
             {
                 response.Status = "404";
@@ -79,6 +80,10 @@ namespace KoiGuardian.Api.Services
             // Insert feedback into the repository
             _feedbackRepository.Insert(feedback);
 
+            product.Rate = (product.Rate * product.OrderNumber + feedbackRequest.Rate) / (product.OrderNumber + 1);
+
+            product.OrderNumber = product.OrderNumber +1;
+            _productRepository.Update(product);
             try
             {
                 // Save changes

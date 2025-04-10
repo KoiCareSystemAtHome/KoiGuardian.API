@@ -31,6 +31,7 @@ namespace KoiGuardian.Models.Response
         public List<FeedbackInfo> Feedbacks { get; set; }
 
         public ProductType Type { get; set; }
+        public float Rate { get; set; }
     }
 
     public class CategoryInfo

@@ -26,13 +26,13 @@ public interface IAccountServices
 
     Task<bool> AssingRole(User user, string roleName, CancellationToken cancellation);
 
-    Task<string> Register(string baseurl, RegistrationRequestDto model, CancellationToken cancellationToken);
+    Task<AccountResponse> Register(string baseurl, RegistrationRequestDto model, CancellationToken cancellationToken);
 
     Task<AccountDashboardResponse> AccountDashboard(DateTime? dateTime, DateTime? endDate);
 
     Task<List<UserDto>> Filter(AccountFilterRequest request);
 
-    Task<string> ActivateAccount(string email, int code);
+    Task<AccountResponse> ActivateAccount(string email, int code);
 
     Task<bool> ResendCode(string email);
 
@@ -182,7 +182,7 @@ IImageUploadService imageUpload
         return loginResponse;
     }
 
-    public async Task<string> Register(string baseUrl, RegistrationRequestDto registrationRequestDto, CancellationToken cancellationToken)
+    public async Task<AccountResponse> Register(string baseUrl, RegistrationRequestDto registrationRequestDto, CancellationToken cancellationToken)
     {
 
         var user = new User()
@@ -199,7 +199,11 @@ IImageUploadService imageUpload
         var exist = await userRepository.GetAsync(x => x.Email.Equals(registrationRequestDto.Email), CancellationToken.None);
         if(exist != null)
         {
-            return "Email has been used";
+            return new AccountResponse
+            {
+                Status = "500",
+                Message = "Email has been used",
+            };
         }
 
         var avatar = await imageUpload.UploadImageAsync("User", user.Id, registrationRequestDto.Avatar);
@@ -268,36 +272,60 @@ IImageUploadService imageUpload
                 string sendMail = SendMail.SendEmail(user.Email, "Code for register", EmailTemplate.Register(user.Code), "");
                 if (sendMail != "")
                 {
-                    return "Please check you email to verify your account for using others further features.";
+                    return new AccountResponse
+                    {
+                        Status = "500",
+                        Message = "Please check you email to verify your account for using others further features.",
+                    };
                 }
 
             }
-            return result.Errors?.FirstOrDefault()?.Description ?? string.Empty;
+            return new AccountResponse
+            {
+                Status = "200",
+                Message = "Success",
+            };
 
         }
         catch (Exception e)
         {
-            return e.Message;
+            return new AccountResponse
+            {
+                Status = "500",
+                Message = e.Message,
+            };
         };
     }
 
-    public async Task<string> ActivateAccount(string email, int code)
+    public async Task<AccountResponse> ActivateAccount(string email, int code)
     {
         var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null)
         {
-            return "User is not found";
+            return new AccountResponse
+            {
+                Status = "500",
+                Message = "User is not found",
+            };
         }
 
         if (user.Code != code)
         {
-            return "Code is invalid";
+            return  new AccountResponse
+            {
+                Status = "500",
+                Message = "Code is invalid",
+            };
         }
 
         if (user.ValidUntil < DateTime.UtcNow)
         {
-            return "Code is expired, please resend it";
+            return new AccountResponse
+            {
+                Status = "500",
+                Message = "Code is expired, please resend it",
+            };
         }
 
         string sendMail = SendMail.SendEmail(user.Email ?? "", "KoiGuardin thank you", EmailTemplate.VerifySuccess(user.UserName ?? ""), "");
@@ -306,7 +334,11 @@ IImageUploadService imageUpload
         userRepository.Update(user);
         await uow.SaveChangesAsync(CancellationToken.None);
 
-        return "success";
+        return new AccountResponse
+        {
+            Status = "200",
+            Message = "Success",
+        };
     }
 
     public async Task<bool> ResendCode(string email)

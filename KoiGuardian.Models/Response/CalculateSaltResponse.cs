@@ -14,6 +14,8 @@ namespace KoiGuardian.Models.Response
         public double CurrentSalt { get; set; }
         public double SaltNeeded { get; set; }
         public double WaterNeeded { get; set; }
+
+        public double ExcessSalt { get; set; }
         public List<string> AdditionalInstruction { get; set; }
         
     }

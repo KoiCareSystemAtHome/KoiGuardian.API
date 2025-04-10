@@ -135,5 +135,18 @@ namespace KoiGuardian.Api.Controllers
         {
             return await services.GetAllMedicineAsync(cancellationToken);
         }
+
+        [HttpGet("shop/{shopId}/products")]
+        public async Task<IActionResult> GetProductsByShopId(Guid shopId, CancellationToken cancellationToken)
+        {
+            var products = await services.GetProductsByShopIdAsync(shopId, cancellationToken);
+            return Ok(products);
+        }
+        [HttpGet("category/{categoryName}")]
+        public async Task<IActionResult> GetProductsByCategoryName(string categoryName, CancellationToken cancellationToken)
+        {
+            var products = await services.GetProductsByCategoryNameAsync(categoryName, cancellationToken);
+            return Ok(products);
+        }
     }
 }

@@ -69,7 +69,7 @@ namespace KoiGuardian.Api.Services
                 return new CalculateSaltResponse
                 {
                     PondId = request.PondId,
-                    TotalSalt = 0,
+                    TotalSalt = 0.00,
                     AdditionalInstruction = new List<string> { "Không tìm thấy hồ." }
                 };
             }
@@ -83,17 +83,8 @@ namespace KoiGuardian.Api.Services
                 return new CalculateSaltResponse
                 {
                     PondId = request.PondId,
-                    TotalSalt = 0,
+                    TotalSalt = 0.00,
                     AdditionalInstruction = new List<string> { "Hồ không có nước, không thể tính toán." }
-                };
-            }
-            else if (request.WaterChangePercent > 100)
-            {
-                return new CalculateSaltResponse
-                {
-                    PondId = request.PondId,
-                    TotalSalt = 0,
-                    AdditionalInstruction = new List<string> { "Mực nước hiện tại không hợp lý, vui lòng kiểm tra lại." }
                 };
             }
 
@@ -106,7 +97,7 @@ namespace KoiGuardian.Api.Services
                 return new CalculateSaltResponse
                 {
                     PondId = request.PondId,
-                    TotalSalt = 0,
+                    TotalSalt = 0.00,
                     AdditionalInstruction = new List<string> { "Không tìm thấy thông số muối trong các thông số tiêu chuẩn." }
                 };
             }
@@ -122,7 +113,7 @@ namespace KoiGuardian.Api.Services
                 return new CalculateSaltResponse
                 {
                     PondId = request.PondId,
-                    TotalSalt = 0,
+                    TotalSalt = 0.00,
                     AdditionalInstruction = new List<string> { "Mức muối tiêu chuẩn không hợp lệ. Giá trị được chấp nhận: Low, Medium, High." }
                 };
             }
@@ -162,20 +153,22 @@ namespace KoiGuardian.Api.Services
             }
 
             double requiredSaltPercent = standardSalt + saltModifyPercent;
-            double targetSaltWeightKg = currentVolume * requiredSaltPercent;
-            double additionalSaltNeeded = targetSaltWeightKg - currentSaltConcentration;
+            double targetSaltWeightKg = Math.Round(currentVolume * requiredSaltPercent, 2);
+            double saltDifference = Math.Round(targetSaltWeightKg - currentSaltConcentration, 2);
+            double additionalSaltNeeded = saltDifference > 0 ? saltDifference : 0.00;
+            double excessSalt = saltDifference < 0 ? Math.Abs(saltDifference) : 0.00;
 
             double? warningLowerMgPerL = saltParameter.Parameter.WarningLowwer.HasValue
-                ? (saltParameter.Parameter.WarningLowwer * 1_000_000) / currentVolume
+                ? Math.Round((saltParameter.Parameter.WarningLowwer.Value * 1_000_000) / currentVolume, 2)
                 : null;
             double? warningUpperMgPerL = saltParameter.Parameter.WarningUpper.HasValue
-                ? (saltParameter.Parameter.WarningUpper * 1_000_000) / currentVolume
+                ? Math.Round((saltParameter.Parameter.WarningUpper.Value * 1_000_000) / currentVolume, 2)
                 : null;
             double? dangerLowerMgPerL = saltParameter.Parameter.DangerLower.HasValue
-                ? (saltParameter.Parameter.DangerLower * 1_000_000) / currentVolume
+                ? Math.Round((saltParameter.Parameter.DangerLower.Value * 1_000_000) / currentVolume, 2)
                 : null;
             double? dangerUpperMgPerL = saltParameter.Parameter.DangerUpper.HasValue
-                ? (saltParameter.Parameter.DangerUpper * 1_000_000) / currentVolume
+                ? Math.Round((saltParameter.Parameter.DangerUpper.Value * 1_000_000) / currentVolume, 2)
                 : null;
 
             var (additionalWaterNeeded, thresholdMessages) = await CalculateWaterAdjustmentAndThresholds(
@@ -184,12 +177,13 @@ namespace KoiGuardian.Api.Services
 
             additionalNotes.AddRange(thresholdMessages);
 
-            if (additionalSaltNeeded < 0)
+            if (excessSalt > 0)
             {
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltConcentration:F2} kg) vượt quá mục tiêu ({targetSaltWeightKg:F2} kg).");
+                additionalNotes.Add($"Lượng muối dư: {excessSalt:F2} kg.");
                 if (currentVolume + additionalWaterNeeded > pond.MaxVolume)
                 {
-                    double excessVolume = (currentVolume + additionalWaterNeeded) - pond.MaxVolume;
+                    double excessVolume = Math.Round((currentVolume + additionalWaterNeeded) - pond.MaxVolume, 2);
                     additionalNotes.Add($"Cảnh báo: Thêm {additionalWaterNeeded:F2} lít nước sẽ vượt quá dung tích hồ {excessVolume:F2} lít.");
                 }
             }
@@ -204,9 +198,9 @@ namespace KoiGuardian.Api.Services
             if (additionalSaltNeeded > 0)
             {
                 int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
-                double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
-                int hoursInterval = 12;
+                double saltPerAddition = Math.Round(additionalSaltNeeded / numberOfAdditions, 2);
 
+                int hoursInterval = 12;
                 DateTime startTime = DateTime.UtcNow;
                 for (int i = 0; i < numberOfAdditions; i++)
                 {
@@ -225,11 +219,11 @@ namespace KoiGuardian.Api.Services
             {
                 PondId = request.PondId,
                 TotalSalt = targetSaltWeightKg,
-                CurrentSalt = currentSaltConcentration,
+                CurrentSalt = Math.Round(currentSaltConcentration, 2),
                 SaltNeeded = additionalSaltNeeded,
-                WaterNeeded = additionalWaterNeeded,
+                ExcessSalt = excessSalt, // Thêm thuộc tính mới
+                WaterNeeded = Math.Round(additionalWaterNeeded, 2),
                 AdditionalInstruction = additionalNotes,
-                
             };
 
             _saltCalculationCache[request.PondId] = response;

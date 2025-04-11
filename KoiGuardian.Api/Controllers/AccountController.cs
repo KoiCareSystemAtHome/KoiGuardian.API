@@ -105,19 +105,43 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("pay-package")]
-        public async Task<IActionResult> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false)
+        public async Task<IActionResult> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false, bool confirmPurchase = false)
         {
-            var result = await service.UpdateAccountPackage(email, packageId, forceRenew);
+            if (string.IsNullOrWhiteSpace(email) || packageId == Guid.Empty)
+            {
+                return BadRequest(new
+                {
+                    Message = "Email and PackageId are required."
+                });
+            }
+
+            var result = await service.UpdateAccountPackage(email, packageId, forceRenew, confirmPurchase);
 
             if (result.IsSuccess)
             {
-                return Ok(new { Message = result.Message});
+                return Ok(new
+                {
+                    Message = result.Message,
+                    DiscountedPrice = result.DiscountedPrice != null ? $"{result.DiscountedPrice:F2}" : null
+                });
+            }
+
+            if (result.ConfirmationRequired)
+            {
+                return Ok(new
+                {
+                    Message = result.Message,
+                    ExpirationDate = result.ExpirationDate?.ToString("dd/MM/yyyy HH:mm:ss UTC"),
+                    DiscountedPrice = result.DiscountedPrice != null ? $"{result.DiscountedPrice:F2}" : null,
+                    ConfirmationRequired = true
+                });
             }
 
             return BadRequest(new
             {
                 Message = result.Message,
-                ExpirationDate = result.ExpirationDate?.ToString("dd/MM/yyyy HH:mm:ss UTC")
+                ExpirationDate = result.ExpirationDate?.ToString("dd/MM/yyyy HH:mm:ss UTC"),
+                DiscountedPrice = result.DiscountedPrice != null ? $"{result.DiscountedPrice:F2}" : null
             });
         }
 

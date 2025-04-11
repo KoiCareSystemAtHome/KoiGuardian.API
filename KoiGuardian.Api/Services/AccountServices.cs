@@ -42,7 +42,7 @@ public interface IAccountServices
     Task<string> ChangePassword(string email, string oldPass, string newPass);
     Task<string> UpdateProfile(string baseUrl, UpdateProfileRequest request);
     Task<string> UpdateAmount(string email, float amount, string VnPayTransactionId);
-    Task<(string Message, bool IsSuccess, DateTime? ExpirationDate)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false);
+    Task<(string Message, bool IsSuccess, DateTime? ExpirationDate, decimal? DiscountedPrice, bool ConfirmationRequired)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false, bool confirmPurchase = false);
     Task<string> UpdateAccountOrder(string email, List<Guid> orderIds);
     Task<string> ProcessPendingTransactions(DateTime inputDate);
     Task<List<User>> GetMember();
@@ -569,61 +569,129 @@ IImageUploadService imageUpload
         return string.Empty;
     }
 
-    public async Task<(string Message, bool IsSuccess, DateTime? ExpirationDate)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false)
+    public async Task<(string Message, bool IsSuccess, DateTime? ExpirationDate, decimal? DiscountedPrice, bool ConfirmationRequired)> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false, bool confirmPurchase = false)
     {
         var user = await userRepository.GetAsync(u => (u.Email ?? string.Empty).Equals(email.ToLower()), CancellationToken.None);
 
         if (user == null || user.Status != UserStatus.Active)
         {
-            return ("Account is not valid!", false, null);
+            return ("Account is not valid!", false, null, null, false);
         }
 
         var wallet = await walletRepository.GetAsync(u => u.UserId.Equals(user.Id), CancellationToken.None);
         if (wallet == null)
         {
-            return ("Wallet is not valid!", false, null);
+            return ("Wallet is not valid!", false, null, null, false);
         }
 
-        // Kiểm tra gói hiện tại của user
+        // Lấy thông tin gói hiện tại và gói mới
         var currentPackage = await ACrepository.GetAsync(u => u.AccountId.Equals(user.Id), CancellationToken.None);
         var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
 
+        if (package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
+        {
+            return ("Package is not valid!", false, null, null, false);
+        }
+
+        // Kiểm tra gói hiện tại
         if (currentPackage != null)
         {
-            var expirationDate = currentPackage.PurchaseDate.AddDays(package.Peiod);
-            if (expirationDate > DateTime.UtcNow && !forceRenew)
+            var currentPackageDetails = await packageRepository.GetAsync(u => u.PackageId.Equals(currentPackage.PackageId), CancellationToken.None);
+            if (currentPackageDetails != null)
             {
-                return ($"Your account still has an active package until {expirationDate:dd/MM/yyyy HH:mm:ss UTC}. Do you want to renew anyway?", false, expirationDate);
+                // Kiểm tra giá gói mới so với gói hiện tại
+                if (package.PackagePrice < currentPackageDetails.PackagePrice)
+                {
+                    return ("Downgrading to a lower-priced package is not supported!", false, null, null, false);
+                }
+
+                var expirationDate = currentPackage.PurchaseDate.AddDays(currentPackageDetails.Peiod);
+                if (expirationDate > DateTime.UtcNow && !forceRenew)
+                {
+                    // Tính số ngày còn lại của gói hiện tại
+                    var remainingDays = (expirationDate - DateTime.UtcNow).TotalDays;
+                    if (remainingDays < 0) remainingDays = 0;
+
+                    // Tính giá trị còn lại của gói hiện tại
+                    var pricePerDay = (float)currentPackageDetails.PackagePrice / currentPackageDetails.Peiod;
+                    var remainingValue = (decimal)(pricePerDay * remainingDays);
+
+                    // Tính số tiền giảm giá (80% giá trị còn lại)
+                    var discountValue = remainingValue * 0.8m;
+                    var discountedPrice = package.PackagePrice - discountValue;
+
+                    if (discountedPrice < 0) discountedPrice = 0; // Đảm bảo giá không âm
+
+                    if (!confirmPurchase)
+                    {
+                        // Lần đầu gửi, thông báo số ngày còn lại và giá đã giảm
+                        return ($"Your current package is active until {expirationDate:dd/MM/yyyy HH:mm:ss UTC} ({remainingDays:F2} days left). You can upgrade to the new package for {discountedPrice:F2} (original: {package.PackagePrice:F2}, discounted: {discountValue:F2}). Confirm to proceed?",
+                                false, expirationDate, discountedPrice, true);
+                    }
+
+                    // Kiểm tra số dư ví
+                    if ((decimal)wallet.Amount < discountedPrice)
+                    {
+                        return ("Your balance is not enough for the discounted price!", false, null, null, false);
+                    }
+
+                    // Tiến hành nâng cấp gói
+                    DateTime newPurchaseDate = DateTime.UtcNow;
+
+                    // Trừ tiền và cập nhật gói
+                    wallet.Amount -= (float)discountedPrice;
+                    user.PackageId = packageId;
+
+                    // Thêm gói mới
+                    ACrepository.Insert(new AccountPackage
+                    {
+                        AccountPackageid = Guid.NewGuid(),
+                        AccountId = user.Id,
+                        PackageId = packageId,
+                        PurchaseDate = newPurchaseDate,
+                    });
+
+                    // Ghi nhận giao dịch với ghi chú giảm giá
+                    tranctionRepository.Insert(new Transaction
+                    {
+                        TransactionId = Guid.NewGuid(),
+                        TransactionDate = DateTime.UtcNow,
+                        TransactionType = TransactionType.Success.ToString(),
+                        VnPayTransactionid = $"Pay By Wallet - Discounted {discountValue:F2} from original {package.PackagePrice:F2}",
+                        UserId = user.Id,
+                        Amount = (float)discountedPrice,
+                        DocNo = package.PackageId
+                    });
+
+                    // Cập nhật ví
+                    walletRepository.Update(wallet);
+
+                    await uow.SaveChangesAsync();
+                    return ("Package upgraded successfully!", true, null, discountedPrice, false);
+                }
             }
         }
 
-        if (package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
-        {
-            return ("Package is not valid!", false, null);
-        }
-
+        // Trường hợp không có gói hiện tại
         if ((decimal)wallet.Amount < package.PackagePrice)
         {
-            return ("Your Balance is not enough", false, null);
+            return ("Your balance is not enough!", false, null, null, false);
         }
 
-        // Chỉ tiến hành mua nếu forceRenew = true hoặc không có gói cũ còn hạn
-        DateTime newPurchaseDate = DateTime.UtcNow;
+        // Mua gói mới như bình thường
+        DateTime purchaseDate = DateTime.UtcNow;
 
-        // Trừ tiền và cập nhật gói
         wallet.Amount -= (float)package.PackagePrice;
         user.PackageId = packageId;
 
-        // Thêm gói mới
         ACrepository.Insert(new AccountPackage
         {
             AccountPackageid = Guid.NewGuid(),
             AccountId = user.Id,
             PackageId = packageId,
-            PurchaseDate = newPurchaseDate,
+            PurchaseDate = purchaseDate,
         });
 
-        // Ghi nhận giao dịch
         tranctionRepository.Insert(new Transaction
         {
             TransactionId = Guid.NewGuid(),
@@ -635,11 +703,10 @@ IImageUploadService imageUpload
             DocNo = package.PackageId
         });
 
-        // Cập nhật lại ví
         walletRepository.Update(wallet);
 
         await uow.SaveChangesAsync();
-        return ("Success", true, null);
+        return ("Success", true, null, package.PackagePrice, false);
     }
 
     public async Task<string> UpdateAccountOrder(string email, List<Guid> orderIds)

@@ -134,8 +134,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(p => p.StockQuantity).IsRequired();
             entity.Property(p => p.CategoryId).HasMaxLength(100);
             entity.Property(p => p.Brand).HasMaxLength(100);
-            entity.Property(p => p.ManufactureDate).HasColumnType("datetime");
-            entity.Property(p => p.ExpiryDate).HasColumnType("datetime");
+            entity.Property(p => p.Weight).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<BlogProduct>(entity =>

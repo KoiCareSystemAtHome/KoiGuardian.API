@@ -23,8 +23,7 @@ namespace KoiGuardian.Models.Response
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public string Brand { get; set; }
-        public DateTime ManufactureDate { get; set; }
-        public DateTime ExpiryDate { get; set; }
+        public float Weight { get; set; }
         public string ParameterImpactment { get; set; }
         public CategoryInfo Category { get; set; }
         public ShopInfo Shop { get; set; }
@@ -62,8 +61,7 @@ namespace KoiGuardian.Models.Response
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public string Brand { get; set; }
-        public DateTime? ManufactureDate { get; set; }
-        public DateTime? ExpiryDate { get; set; }
+        public float? Weight { get; set; }
         public string ParameterImpactment { get; set; }
         public string Image { get; set; }
         // Include only necessary Category information
@@ -85,8 +83,7 @@ namespace KoiGuardian.Models.Response
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; }
         public string Brand { get; set; }
-        public DateTime ManufactureDate { get; set; }
-        public DateTime ExpiryDate { get; set; }
+        public float Weight { get; set; }
         public string ParameterImpactment { get; set; }
         public Guid ShopId { get; set; }
         public string ShopName { get; set; }

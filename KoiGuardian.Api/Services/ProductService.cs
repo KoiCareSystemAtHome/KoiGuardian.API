@@ -111,8 +111,7 @@ namespace KoiGuardian.Api.Services
                 StockQuantity = productRequest.StockQuantity,
                 CategoryId = productRequest.CategoryId,
                 Brand = productRequest.Brand,
-                ManufactureDate = productRequest.ManufactureDate,
-                ExpiryDate = productRequest.ExpiryDate,
+                Weight = productRequest.Weight,
                 Type = (ProductType)Convert.ToInt32(ProductType.Pond_Equipment),
                 Image = productRequest.Image,
                 ShopId = productRequest.ShopId
@@ -168,8 +167,7 @@ namespace KoiGuardian.Api.Services
             existingProduct.StockQuantity = productRequest.StockQuantity;
             existingProduct.CategoryId = productRequest.CategoryId;
             existingProduct.Brand = productRequest.Brand;
-            existingProduct.ManufactureDate = productRequest.ManufactureDate;
-            existingProduct.ExpiryDate = productRequest.ExpiryDate;
+            existingProduct.Weight = productRequest.Weight;
             existingProduct.ShopId = productRequest.ShopId;
             existingProduct.Image = productRequest.Image;
            
@@ -234,8 +232,7 @@ namespace KoiGuardian.Api.Services
             existingProduct.StockQuantity = foodRequest.StockQuantity;
             existingProduct.CategoryId = foodRequest.CategoryId;
             existingProduct.Brand = foodRequest.Brand;
-            existingProduct.ManufactureDate = foodRequest.ManufactureDate;
-            existingProduct.ExpiryDate = foodRequest.ExpiryDate;
+            existingProduct.Weight = foodRequest.Weight;
             existingProduct.Image = foodRequest.Image;
             
            
@@ -303,8 +300,7 @@ namespace KoiGuardian.Api.Services
             existingProduct.StockQuantity = medicineRequest.StockQuantity;
             existingProduct.CategoryId = medicineRequest.CategoryId;
             existingProduct.Brand = medicineRequest.Brand;
-            existingProduct.ManufactureDate = medicineRequest.ManufactureDate;
-            existingProduct.ExpiryDate = medicineRequest.ExpiryDate;
+            existingProduct.Weight = medicineRequest.Weight;
             existingProduct.Image = medicineRequest.Image;
                
             // Update image on Product if provided
@@ -362,8 +358,7 @@ namespace KoiGuardian.Api.Services
                 Price = product.Price,
                 StockQuantity = product.StockQuantity,
                 Brand = product.Brand,
-                ManufactureDate = product.ManufactureDate,
-                ExpiryDate = product.ExpiryDate,
+                Weight = product.Weight,
                 Type = product.Type,
                 Rate = product.Rate,
                 ParameterImpactment = product.ParameterImpactment,
@@ -428,8 +423,7 @@ namespace KoiGuardian.Api.Services
                     Price = p.Price,
                     StockQuantity = p.StockQuantity,
                     Brand = p.Brand,
-                    ManufactureDate = p.ManufactureDate,
-                    ExpiryDate = p.ExpiryDate,
+                    Weight = p.Weight,
                     Type = p.Type,
                     ParameterImpactment = p.ParameterImpactment,
                     Image = p.Image,
@@ -464,8 +458,7 @@ namespace KoiGuardian.Api.Services
                     CategoryId = p.CategoryId,
                     CategoryName = p.Category.Name, 
                     Brand = p.Brand,
-                    ManufactureDate = p.ManufactureDate,
-                    ExpiryDate = p.ExpiryDate,
+                    Weight = p.Weight,
                     
                     ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
                         ? new Dictionary<string, ParameterImpactType>()
@@ -503,8 +496,7 @@ namespace KoiGuardian.Api.Services
                 StockQuantity = foodRequest.StockQuantity,
                 CategoryId = foodRequest.CategoryId,
                 Brand = foodRequest.Brand,
-                ManufactureDate = foodRequest.ManufactureDate,
-                ExpiryDate = foodRequest.ExpiryDate,
+                Weight = foodRequest.Weight,
                 ShopId = foodRequest.ShopId,
                 Image = foodRequest.Image,
 
@@ -561,8 +553,7 @@ namespace KoiGuardian.Api.Services
                 StockQuantity = medicineRequest.StockQuantity,
                 CategoryId = medicineRequest.CategoryId,
                 Brand = medicineRequest.Brand,
-                ManufactureDate = medicineRequest.ManufactureDate,
-                ExpiryDate = medicineRequest.ExpiryDate,
+                Weight = medicineRequest.Weight,
                 ShopId = medicineRequest.ShopId,
                 Image = medicineRequest.Image,
                 Type = (ProductType)Convert.ToInt32(ProductType.Medicine) // Đặt loại sản phẩm là Medicine
@@ -640,8 +631,7 @@ namespace KoiGuardian.Api.Services
                     Price = p.Price,
                     StockQuantity = p.StockQuantity,
                     Brand = p.Brand,
-                    ManufactureDate = p.ManufactureDate,
-                    ExpiryDate = p.ExpiryDate,
+                    Weight = p.Weight,
                     Type = p.Type,
                     ParameterImpactment = p.ParameterImpactment,
                     Image = p.Image,
@@ -682,8 +672,7 @@ namespace KoiGuardian.Api.Services
                     CategoryId = x.Product.CategoryId,
                     CategoryName = x.Product.Category.Name,
                     Brand = x.Product.Brand,
-                    ManufactureDate = x.Product.ManufactureDate,
-                    ExpiryDate = x.Product.ExpiryDate,
+                    Weight = x.Product.Weight,
                     ParameterImpactment = x.Product.ParameterImpactment,
                     ShopId = x.Product.ShopId,
                     ShopName = x.Product.Shop.ShopName,
@@ -734,8 +723,7 @@ namespace KoiGuardian.Api.Services
                     CategoryId = x.Product.CategoryId,
                     CategoryName = x.Product.Category.Name,
                     Brand = x.Product.Brand,
-                    ManufactureDate = x.Product.ManufactureDate,
-                    ExpiryDate = x.Product.ExpiryDate,
+                    Weight = x.Product.Weight,
                     ParameterImpactment = x.Product.ParameterImpactment,
                     ShopId = x.Product.ShopId,
                     ShopName = x.Product.Shop.ShopName,
@@ -782,8 +770,7 @@ namespace KoiGuardian.Api.Services
                     Price = p.Price,
                     StockQuantity = p.StockQuantity,
                     Brand = p.Brand,
-                    ManufactureDate = p.ManufactureDate,
-                    ExpiryDate = p.ExpiryDate,
+                    Weight = p.Weight,
                     Type = p.Type,
                     ParameterImpactment = p.ParameterImpactment,
                     Image = p.Image,
@@ -820,8 +807,7 @@ namespace KoiGuardian.Api.Services
                     Price = p.Price,
                     StockQuantity = p.StockQuantity,
                     Brand = p.Brand,
-                    ManufactureDate = p.ManufactureDate,
-                    ExpiryDate = p.ExpiryDate,
+                    Weight = p.Weight,
                     Type = p.Type,
                     ParameterImpactment = p.ParameterImpactment,
                     Image = p.Image,

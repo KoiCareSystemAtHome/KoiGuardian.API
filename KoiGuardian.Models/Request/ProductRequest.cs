@@ -28,9 +28,8 @@ namespace KoiGuardian.Models.Request
 
         public string Brand { get; set; }
 
-        public DateTime ManufactureDate { get; set; }
+        public float Weight { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
 
         [JsonConverter(typeof(ParameterImpactConverter))]
         public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
@@ -63,9 +62,8 @@ namespace KoiGuardian.Models.Request
 
         public string Brand { get; set; }
 
-        public DateTime ManufactureDate { get; set; }
+        public float Weight { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
 
         [JsonConverter(typeof(ParameterImpactConverter))]
         public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
@@ -101,9 +99,8 @@ namespace KoiGuardian.Models.Request
 
         public string Brand { get; set; }
 
-        public DateTime ManufactureDate { get; set; }
+        public float Weight { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
 
         [JsonConverter(typeof(ParameterImpactConverter))]
         public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
@@ -130,9 +127,8 @@ namespace KoiGuardian.Models.Request
 
         public string Brand { get; set; }
 
-        public DateTime ManufactureDate { get; set; }
+        public float Weight { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
 
         [JsonConverter(typeof(ParameterImpactConverter))]
         public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }

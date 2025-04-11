@@ -18,8 +18,7 @@ namespace KoiGuardian.Models.Response
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; }
         public string Brand { get; set; }
-        public DateTime ManufactureDate { get; set; }
-        public DateTime ExpiryDate { get; set; }
+        public float Weight { get; set; }
         public string ParameterImpactment { get; set; }
         public Guid ShopId { get; set; }
         public string ShopName { get; set; }

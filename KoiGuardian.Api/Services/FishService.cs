@@ -252,9 +252,18 @@ namespace KoiGuardian.Api.Services
 
             existingFish.Image = fishRequest.Image;
 
-            
 
-             _relKoiparameterRepository.Insert(new KoiReport()
+
+            // Kiểm tra xem đã có KoiReport nào trong cùng ngày (ngày/tháng/năm) với KoiId này chưa
+            var today = DateTime.UtcNow.Date; // Lấy ngày hiện tại (chỉ lấy ngày/tháng/năm, bỏ giờ/phút/giây)
+            var existingKoiReport = await _relKoiparameterRepository.GetAsync(
+                x => x.KoiId == existingFish.KoiID && x.CalculatedDate.Date == today,
+                cancellationToken);
+
+            if (existingKoiReport == null)
+            {
+                // Chỉ insert KoiReport nếu chưa có bản ghi nào trong cùng ngày/tháng/năm
+                _relKoiparameterRepository.Insert(new KoiReport()
                 {
                     KoiReportId = Guid.NewGuid(),
                     KoiId = existingFish.KoiID,
@@ -262,7 +271,7 @@ namespace KoiGuardian.Api.Services
                     Weight = fishRequest.weight,
                     Size = fishRequest.size,
                 });
-            
+            }
 
             _fishRepository.Update(existingFish);
 

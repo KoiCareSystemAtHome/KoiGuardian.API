@@ -30,6 +30,7 @@ namespace KoiGuardian.DataAccess.Db
         Confirm,
         Complete,
         Inprogress,
-        Fail
+        Fail,
+        Cancel
     }
 }

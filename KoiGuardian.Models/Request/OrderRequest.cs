@@ -68,3 +68,10 @@ public class UpdateOrderShipTypeRequest
     public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
     public string ShipType { get; set; }  // Trạng thái đơn hàng
 }
+
+public class RejectOrderRequest
+{
+    public Guid OrderId { get; set; }  // ID của đơn hàng cần cập nhật
+    //public string Status { get; set; }  // Trạng thái đơn hàng
+    public string reason { get; set; }
+}

@@ -20,6 +20,7 @@ public interface IOrderService
     Task<List<OrderResponse>> CreateOrderAsync(CreateOrderRequest request);
     Task<OrderResponse> UpdateOrderAsync(UpdateOrderRequest request);
     Task<OrderResponse> UpdateOrderStatusAsync(UpdateOrderStatusRequest request);
+    Task<OrderResponse> CancelOrderAsync(RejectOrderRequest request);
     Task<OrderResponse> UpdateOrderCodeShipFeeAsync(UpdateOrderCodeShipFeeRequest request);
   /*  Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request);*/
     Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request);
@@ -284,6 +285,8 @@ public class OrderService(
                 include: u => u.Include(u => u.Shop).Include(u => u.User).Include(u => u.OrderDetail).Include(u => u.Report),
                 CancellationToken.None)).ToList();
         }
+
+        result = result.OrderByDescending(u => u.CreatedDate).ToList();
 
         // Truy vấn danh sách Transaction có DocNo trùng với OrderId
         var transactionList = await transactionRepository.FindAsync(
@@ -586,5 +589,38 @@ public class OrderService(
             return OrderResponse.Error($"Failed to update order: {ex.Message}");
         }
         throw new NotImplementedException();
+    }
+
+    public async Task<OrderResponse> CancelOrderAsync(RejectOrderRequest request)
+    {
+        try
+        {
+            var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
+            if (order == null)
+            {
+                return OrderResponse.Error("Order not found");
+            }
+
+            var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
+            //string status = request.Status.ToLower();
+
+            if (order.Status == OrderStatus.Pending.ToString().ToLower() && transaction.Payment == null)
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = OrderStatus.Cancel.ToString();
+                order.Note = request.reason;
+                transactionRepository.Delete(transaction);
+            }
+
+            orderRepository.Update(order);
+            await uow.SaveChangesAsync();
+            return OrderResponse.Success("Order cancel successfully");
+
+        }
+        catch (Exception ex)
+        {
+
+            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+        }
     }
 }

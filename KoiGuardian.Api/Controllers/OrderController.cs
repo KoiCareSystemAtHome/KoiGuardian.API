@@ -77,5 +77,14 @@ namespace KoiGuardian.Api.Controllers
 
             return Ok(response);
         }
+
+        [HttpPut("RejectOrder")]
+        public async Task<IActionResult> RejecttOrder([FromBody] RejectOrderRequest request)
+        {
+            var response = await service.CancelOrderAsync(request);
+
+            return Ok(response);
+        }
+
     }
 }

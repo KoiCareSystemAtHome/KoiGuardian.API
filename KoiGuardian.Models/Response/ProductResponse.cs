@@ -1,5 +1,6 @@
 ﻿using KoiGuardian.Models.Enums;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +63,9 @@ namespace KoiGuardian.Models.Response
         public int StockQuantity { get; set; }
         public string Brand { get; set; }
         public float? Weight { get; set; }
-        public string ParameterImpactment { get; set; }
+
+        [JsonConverter(typeof(ParameterImpactConverter))]
+        public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
         public string Image { get; set; }
         // Include only necessary Category information
         public CategoryInfo Category { get; set; }
@@ -84,7 +87,8 @@ namespace KoiGuardian.Models.Response
         public string CategoryName { get; set; }
         public string Brand { get; set; }
         public float Weight { get; set; }
-        public string ParameterImpactment { get; set; }
+        [JsonConverter(typeof(ParameterImpactConverter))]
+        public Dictionary<string, ParameterImpactType> ParameterImpacts { get; set; }
         public Guid ShopId { get; set; }
         public string ShopName { get; set; }
         public ProductType Type { get; set; }

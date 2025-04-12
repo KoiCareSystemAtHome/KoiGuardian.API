@@ -75,11 +75,24 @@ namespace KoiGuardian.Api.Services
             }
 
             // Calculate current volume based on water change percentage
-            double currentVolume = request.WaterChangePercent > 0
-                ? pond.MaxVolume * (1 - request.WaterChangePercent / 100)
-                : pond.MaxVolume;
+            double currentVolume;
+            var additionalNotes = new List<string>();
 
-            if (request.WaterChangePercent == 100)
+            if (request.WaterChangePercent < 0 || request.WaterChangePercent > 100)
+            {
+                return new CalculateSaltResponse
+                {
+                    PondId = request.PondId,
+                    TotalSalt = 0.00,
+                    AdditionalInstruction = new List<string> { "WaterChangePercent phải nằm trong khoảng từ 0 đến 100." }
+                };
+            }
+
+            // Interpret WaterChangePercent as the percentage of water remaining
+            currentVolume = Math.Round(pond.MaxVolume * (request.WaterChangePercent / 100), 2);
+            additionalNotes.Add($"Thể tích hiện tại của hồ: {currentVolume:F2} lít (dựa trên {request.WaterChangePercent}% của dung tích tối đa {pond.MaxVolume:F2} lít).");
+
+            if (currentVolume <= 0)
             {
                 return new CalculateSaltResponse
                 {
@@ -125,7 +138,7 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            var additionalNotes = new List<string>();
+           
             if (request.StandardSaltLevel.ToLower() == "high")
             {
                 additionalNotes.Add("Nếu có cá bệnh truyền nhiễm, nên tách hồ để tránh ảnh hưởng đến các con cá khác.");

@@ -425,7 +425,9 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     Weight = p.Weight,
                     Type = p.Type,
-                    ParameterImpactment = p.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
+                    ? new Dictionary<string, ParameterImpactType>()
+                    : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     Image = p.Image,
                     Category = new CategoryInfo
                     {
@@ -612,11 +614,10 @@ namespace KoiGuardian.Api.Services
         }
 
         public async Task<IEnumerable<ProductSearchResponse>> GetProductsByTypeAsync(
-        ProductType productType,
-        CancellationToken cancellationToken,
-        
-        bool sortDescending = false
-        )
+     ProductType productType,
+     CancellationToken cancellationToken,
+     bool sortDescending = false
+ )
         {
             var query = _productRepository.GetQueryable()
                 .Where(p => p.Type == productType)
@@ -633,7 +634,9 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     Weight = p.Weight,
                     Type = p.Type,
-                    ParameterImpactment = p.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     Image = p.Image,
                     Category = new CategoryInfo
                     {
@@ -673,7 +676,9 @@ namespace KoiGuardian.Api.Services
                     CategoryName = x.Product.Category.Name,
                     Brand = x.Product.Brand,
                     Weight = x.Product.Weight,
-                    ParameterImpactment = x.Product.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(x.Product.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(x.Product.ParameterImpactment),
                     ShopId = x.Product.ShopId,
                     ShopName = x.Product.Shop.ShopName,
                     Type = x.Product.Type,
@@ -724,7 +729,9 @@ namespace KoiGuardian.Api.Services
                     CategoryName = x.Product.Category.Name,
                     Brand = x.Product.Brand,
                     Weight = x.Product.Weight,
-                    ParameterImpactment = x.Product.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(x.Product.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(x.Product.ParameterImpactment),
                     ShopId = x.Product.ShopId,
                     ShopName = x.Product.Shop.ShopName,
                     Type = x.Product.Type,
@@ -740,7 +747,6 @@ namespace KoiGuardian.Api.Services
                     AverageRating = x.Product.Feedbacks.Any() ? x.Product.Feedbacks.Average(f => f.Rate) : 0,
                     FeedbackId = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().FeedbackId : Guid.Empty,
                     Content = x.Product.Feedbacks.FirstOrDefault() != null ? x.Product.Feedbacks.FirstOrDefault().Content : null,
-
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
@@ -772,7 +778,9 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     Weight = p.Weight,
                     Type = p.Type,
-                    ParameterImpactment = p.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     Image = p.Image,
                     Category = new CategoryInfo
                     {
@@ -809,7 +817,9 @@ namespace KoiGuardian.Api.Services
                     Brand = p.Brand,
                     Weight = p.Weight,
                     Type = p.Type,
-                    ParameterImpactment = p.ParameterImpactment,
+                    ParameterImpacts = string.IsNullOrEmpty(p.ParameterImpactment)
+                        ? new Dictionary<string, ParameterImpactType>()
+                        : JsonConvert.DeserializeObject<Dictionary<string, ParameterImpactType>>(p.ParameterImpactment),
                     Image = p.Image,
                     Category = new CategoryInfo
                     {

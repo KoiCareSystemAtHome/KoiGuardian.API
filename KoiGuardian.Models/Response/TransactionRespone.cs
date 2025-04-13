@@ -71,6 +71,7 @@ namespace KoiGuardian.Models.Response
     {
         public decimal Amount { get; set; }  // Sử dụng decimal thay cho float để chính xác hơn với tiền tệ
         public DateTime Date { get; set; }
+        public string PaymentMethod { get; set; } 
         public string Description { get; set; }
     }
 

@@ -155,6 +155,48 @@ IImageUploadService imageUpload
         var mem = await memberRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
         var shop = await shopRepository.GetAsync(u => (u.UserId ?? string.Empty).Equals(user.Id.ToLower()), cancellation);
 
+        // Kiểm tra gói mới nhất của người dùng
+        Guid? packageId = null; // Mặc định là null
+        var latestPackage = await ACrepository.GetQueryable()
+            .Where(u => u.AccountId.Equals(user.Id))
+            .OrderByDescending(u => u.PurchaseDate) // Lấy gói mới nhất
+            .FirstOrDefaultAsync(cancellation);
+
+        if (latestPackage != null)
+        {
+            // Lấy thông tin chi tiết của gói từ Package
+            var packageDetails = await packageRepository.GetAsync(u => u.PackageId.Equals(latestPackage.PackageId), CancellationToken.None);
+            if (packageDetails != null)
+            {
+                // Tính ngày hết hạn
+                var expirationDate = latestPackage.PurchaseDate.AddDays(packageDetails.Peiod);
+                if (expirationDate >= DateTime.UtcNow)
+                {
+                    // Nếu gói còn hạn, gán PackageId
+                    packageId = latestPackage.PackageId;
+                }
+                // Nếu gói hết hạn, packageId giữ nguyên là null
+            }
+
+            // Cập nhật user.PackageId để đồng bộ với trạng thái gói mới nhất
+            if (packageId != user.PackageId)
+            {
+                user.PackageId = packageId;
+                userRepository.Update(user);
+                await uow.SaveChangesAsync(cancellation);
+            }
+        }
+        else
+        {
+            // Nếu không có gói nào, đảm bảo user.PackageId cũng là null
+            if (user.PackageId != null)
+            {
+                user.PackageId = null;
+                userRepository.Update(user);
+                await uow.SaveChangesAsync(cancellation);
+            }
+        }
+
         var roles = await _userManager.GetRolesAsync(user);
 
         var token = _jwtTokenGenerator.GenerateToken(user, roles);
@@ -752,6 +794,7 @@ IImageUploadService imageUpload
             {
                 Amount = (decimal)order.Total,
                 Date = DateTime.UtcNow,
+                PaymentMethod = "Wallet",
                 Description = $"Thanh toán cho hóa đơn {order.OrderId}"
             };
 

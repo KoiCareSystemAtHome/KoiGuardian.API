@@ -415,6 +415,7 @@ public class OrderService(
                 {
                     Amount = (decimal)order.Total,
                     Date = DateTime.UtcNow,
+                    PaymentMethod = "COD",
                     Description = $"Thanh toán cho hóa đơn {order.OrderId}"
                 };
                 var jsonOptions = new JsonSerializerOptions
@@ -447,7 +448,7 @@ public class OrderService(
                 {
                     Amount = (decimal)order.Total,
                     Date = DateTime.UtcNow,
-                    Description = $"Hoàn Tiền cho hóa đơn {order.OrderId}"
+                    Description = $"Hoàn Tiền cho hóa đơn giao hàng thất bại {order.OrderId} "
                 };
                 var jsonOptions = new JsonSerializerOptions
                 {
@@ -465,6 +466,49 @@ public class OrderService(
                     walletRepository.Update(wallet);
                 }
             }
+
+            else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Refund == null && transaction.Payment != null
+                    && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = request.Status;
+                transaction.TransactionType = TransactionType.Cancel.ToString();
+
+                var RefundInfo = new RefundInfo
+                {
+                    Amount = (decimal)order.Total,
+                    Date = DateTime.UtcNow,
+                    Description = $"Hoàn Tiền cho hóa đơn bị hoàn trả {order.OrderId}"
+                };
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                };
+                string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
+                transaction.Refund = refundJson;
+                transactionRepository.Update(transaction);
+
+                var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(order.UserId), CancellationToken.None);
+                if (wallet != null)
+                {
+                    wallet.Amount += order.Total;
+                    walletRepository.Update(wallet);
+                }
+            }
+
+            else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Payment == null
+                   && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = request.Status;
+                transaction.TransactionType = TransactionType.Cancel.ToString();
+
+                transactionRepository.Update(transaction);
+
+               
+            }
+
             else
             {
                 order.Status = request.Status;
@@ -609,9 +653,34 @@ public class OrderService(
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();
                 order.Note = request.reason;
-                transactionRepository.Delete(transaction);
+              
             }
 
+            if (order.Status == OrderStatus.Pending.ToString().ToLower() && transaction.Payment != null)
+            {
+                order.UpdatedDate = DateTime.UtcNow;
+                order.Status = OrderStatus.Cancel.ToString();
+                order.Note = request.reason;
+
+                var RefundInfo = new RefundInfo
+                {
+                    Amount = (decimal)order.Total,
+                    Date = DateTime.UtcNow,
+                    Description = $"Hoàn Tiền cho hóa đơn bị hủy {order.OrderId}"
+                };
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                };
+                string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
+                transaction.Refund = refundJson;
+
+            }
+
+
+            transaction.TransactionType = TransactionType.Cancel.ToString();
+            transactionRepository.Update(transaction);
             orderRepository.Update(order);
             await uow.SaveChangesAsync();
             return OrderResponse.Success("Order cancel successfully");

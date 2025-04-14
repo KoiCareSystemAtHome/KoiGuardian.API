@@ -650,7 +650,7 @@ public class OrderService(
             var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
             //string status = request.Status.ToLower();
 
-            if (order.Status == OrderStatus.Pending.ToString().ToLower() && transaction.Payment == null)
+            if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment == null)
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();
@@ -658,7 +658,7 @@ public class OrderService(
               
             }
 
-            if (order.Status == OrderStatus.Pending.ToString().ToLower() && transaction.Payment != null)
+            if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment != null)
             {
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();

@@ -20,6 +20,8 @@ public class UpdateOrderRequest
     public string ShipType { get; set; }  // Loại vận chuyển
     public string Status { get; set; }  // Trạng thái đơn hàng
     public decimal ShipFee { get; set; }  // Phí vận chuyển
+    public string Name { get; set; }
+    public string PhoneNumber { get; set; }
     public List<OrderDetailDto> OrderDetails { get; set; }  // Danh sách sản phẩm trong đơn hàng
 }
 
@@ -32,6 +34,8 @@ public class CreateOrderRequest
     public decimal ShipFee { get; set; } // Lưu dạng số
     public string Note { get; set; }
     public AddressDto Address { get; set; } // Đối tượng Address
+    public string? Name { get; set; }
+    public string? PhoneNumber { get; set; }
     public List<OrderDetailDto> OrderDetails { get; set; }
 }
 

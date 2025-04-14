@@ -86,8 +86,8 @@ public class OrderService(
                         {
                             return new List<OrderResponse> { OrderResponse.Error("Số Lượng Hàng Không Hợp lệ") };
                         }
-                        product.StockQuantity -=  detail.Quantity; 
-                        /*productRepository.Update(product);*/
+                        product.StockQuantity -=  detail.Quantity;
+                        productRepository.Update(product);
                         total += product.Price * detail.Quantity; // Tính tổng giá trị sản phẩm
                        
                     } 
@@ -105,6 +105,8 @@ public class OrderService(
                     ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
                     Total = (float)total, // Gán tổng giá trị
                     Address = addressNote,
+                    PhoneNumber = request.PhoneNumber,
+                    Name = request.Name,
                     Note = request.Note,
                     CreatedDate = DateTime.UtcNow,
                     UpdatedDate = DateTime.MaxValue,

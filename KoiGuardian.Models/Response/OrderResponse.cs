@@ -45,5 +45,7 @@ public class OrderDetailResponse
     public string Status { get; set; }
     public string ShipFee { get; set; } // include currencies
     public string Note { get; set; } 
+    public string RecieverName { get; set; }
+    public string RecieverPhone { get; set; }
     public object Details { get; set; }
 }

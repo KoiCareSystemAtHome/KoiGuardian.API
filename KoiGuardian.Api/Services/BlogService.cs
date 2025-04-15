@@ -75,6 +75,7 @@ namespace KoiGuardian.Api.Services
         {
             var blogResponse = new BlogResponse();
 
+            // Kiểm tra xem Shop có tồn tại không
             var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == blogRequest.ShopId, cancellationToken);
             if (!shopExists)
             {
@@ -85,8 +86,10 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
+            // Tạo mới Blog
             var blog = new Blog
             {
+                BlogId = Guid.NewGuid(), // Đảm bảo BlogId được sinh ra
                 Title = blogRequest.Title,
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
@@ -94,10 +97,28 @@ namespace KoiGuardian.Api.Services
                 IsApproved = false, // Chưa được duyệt
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
-                
             };
 
+            // Thêm Blog vào repository
             _blogRepository.Insert(blog);
+
+            // Xử lý BlogProduct nếu có ProductIds
+            if (blogRequest.ProductIds != null && blogRequest.ProductIds.Any())
+            {
+                foreach (var productId in blogRequest.ProductIds)
+                {
+                    // Có thể thêm kiểm tra ProductId tồn tại nếu cần
+                    var blogProduct = new BlogProduct
+                    {
+                        BPId = Guid.NewGuid(), // Sinh khóa chính cho BlogProduct
+                        BlogId = blog.BlogId,
+                        ProductId = productId
+                    };
+                    _blogProductRepository.Insert(blogProduct);
+                }
+            }
+
+            // Lưu tất cả thay đổi
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return new BlogResponse
@@ -106,7 +127,6 @@ namespace KoiGuardian.Api.Services
                 Message = "Blog created successfully and is pending approval."
             };
         }
-
 
         public async Task<BlogDto> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken)
         {

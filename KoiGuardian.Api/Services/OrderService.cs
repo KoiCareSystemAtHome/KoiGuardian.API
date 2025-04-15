@@ -34,6 +34,7 @@ public class OrderService(
     IRepository<Wallet> walletRepository,
     IRepository<Product> productRepository,
     IRepository<Member> memRepository,
+    IRepository<Shop> shopRepository,
     IUnitOfWork<KoiGuardianDbContext> uow,
     GhnService ghnService
     ) : IOrderService
@@ -74,9 +75,11 @@ public class OrderService(
             {
                 Guid shopId = group.Key;
                 var orderDetails = group.Value;
+                var shop = await shopRepository.GetAsync(x=> x.ShopId.Equals(shopId),CancellationToken.None);
 
                 // Tính tổng giá trị đơn hàng cho từng ShopId
                 decimal total = 0;
+                int totalWeight = 0;
                 foreach (var detail in orderDetails)
                 {
                     var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
@@ -89,10 +92,45 @@ public class OrderService(
                         product.StockQuantity -=  detail.Quantity;
                         productRepository.Update(product);
                         total += product.Price * detail.Quantity; // Tính tổng giá trị sản phẩm
-                       
+                        totalWeight += (int)product.Weight * detail.Quantity; 
                     } 
                     
                 }
+
+                int districtId;
+                if (!int.TryParse(request.Address.DistrictId, out districtId))
+                {
+                    return new List<OrderResponse> { OrderResponse.Error("Invalid DistrictId format. Must be a valid integer.") };
+                }
+
+                var feeRequest = new GHNShippingFeeReuqest
+                {
+                    service_type_id = 1,
+                    to_district_id = districtId,
+                    to_ward_code = request.Address.WardId.ToString(),
+                    weight = totalWeight,
+                    length = 10, // Giả sử giá trị mặc định
+                    width = 10,
+                    height = 10,
+                    insurance_value = 0,
+                    coupon = "",
+                    items = orderDetails.Select(d => new Item
+                    {
+                        name = products.FirstOrDefault(p => p.ProductId == d.ProductId)?.ProductName ?? "Product",
+                        quantity = d.Quantity,
+                        weight = (int)products.FirstOrDefault(p => p.ProductId == d.ProductId).Weight,
+                    }).ToList()
+                };
+
+
+
+                var shippingFeeResponse = await ghnService.CalculateShippingFee(feeRequest, shop.GHNId);
+                if (shippingFeeResponse == null)
+                {
+                    return new List<OrderResponse> { OrderResponse.Error("Không thể tính phí vận chuyển") };
+                }
+                decimal shippingFee = shippingFeeResponse.Data.Total;
+
 
                 var order = new Order
                 {

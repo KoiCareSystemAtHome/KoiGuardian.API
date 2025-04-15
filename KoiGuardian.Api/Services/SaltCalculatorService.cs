@@ -120,7 +120,7 @@ namespace KoiGuardian.Api.Services
             // Fetch current salt amount (in kg, not a concentration)
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
-                .Include(p => p.Parameter);
+                .Include(p => p.Parameter).OrderByDescending(p => p.CalculatedDate);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
             double currentSaltWeightKg = Math.Round(currentSaltValue?.Value ?? 0, 2); // Directly use the value as kg
 
@@ -414,7 +414,7 @@ namespace KoiGuardian.Api.Services
             return await remindersQuery.ToListAsync();
         }
 
-      
+
         public async Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
         {
             try
@@ -427,50 +427,35 @@ namespace KoiGuardian.Api.Services
                     return false;
                 }
 
-                var saltParamQuery = _pondParamRepository.GetQueryable(p =>
-                    p.PondId == pondId &&
-                    p.Parameter.Name.ToLower() == "salt")
-                    .Include(p => p.Parameter);
+                // Lấy thông tin standardSaltParam để tạo bản ghi mới
+                var standardSaltParam = await _pondStandardParamRepository
+                    .GetQueryable(p => p.Name.ToLower() == "salt")
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                var saltParameter = await saltParamQuery.FirstOrDefaultAsync(cancellationToken);
-                double currentSaltKg = saltParameter?.Value ?? 0;
-
-                if (saltParameter == null)
+                if (standardSaltParam == null)
                 {
-                    var standardSaltParam = await _pondStandardParamRepository
-                        .GetQueryable(p => p.Name.ToLower() == "salt")
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (standardSaltParam == null)
-                    {
-                        return false;
-                    }
-
-                    saltParameter = new RelPondParameter
-                    {
-                        RelPondParameterId = Guid.NewGuid(),
-                        PondId = pondId,
-                        ParameterID = standardSaltParam.ParameterID,
-                        Value = (float)addedSaltKg,
-                        CalculatedDate = DateTime.UtcNow,
-                        ParameterHistoryId = Guid.NewGuid()
-                    };
-                    _pondParamRepository.Insert(saltParameter);
+                    return false;
                 }
-                else
+
+                // Tạo bản ghi mới cho giá trị salt
+                var newSaltParameter = new RelPondParameter
                 {
-                    saltParameter.Value = (float)(currentSaltKg + addedSaltKg);
-                    saltParameter.CalculatedDate = DateTime.UtcNow;
-                    _pondParamRepository.Update(saltParameter);
-                }
+                    RelPondParameterId = Guid.NewGuid(),
+                    PondId = pondId,
+                    ParameterID = standardSaltParam.ParameterID,
+                    Value = (float)addedSaltKg, // Lưu giá trị mới trực tiếp
+                    CalculatedDate = DateTime.UtcNow,
+                    ParameterHistoryId = Guid.NewGuid()
+                };
+                _pondParamRepository.Insert(newSaltParameter);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+                // Cập nhật cache với giá trị mới nhất
                 if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
                 {
-                    double updatedSaltAmount = currentSaltKg + addedSaltKg;
-                    cachedResponse.CurrentSalt = updatedSaltAmount;
-                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - updatedSaltAmount);
+                    cachedResponse.CurrentSalt = addedSaltKg; // Cập nhật giá trị hiện tại trong cache
+                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
                     _saltCalculationCache[pondId] = cachedResponse;
                 }
 

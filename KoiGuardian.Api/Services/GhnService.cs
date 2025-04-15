@@ -6,6 +6,7 @@ namespace KoiGuardian.Api.Services
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
+    using KoiGuardian.Models.Response;
     using Newtonsoft.Json;
 
     public class GhnService
@@ -148,7 +149,7 @@ namespace KoiGuardian.Api.Services
 
 
 
-        public async Task<string> CalculateShippingFee(GHNShippingFeeReuqest feeRequest, string shopId)
+        public async Task<GHNResponse> CalculateShippingFee(GHNShippingFeeReuqest feeRequest, string shopId)
         {
             var requestUrl = $"{_baseUrl}/v2/shipping-order/fee";
 
@@ -166,7 +167,8 @@ namespace KoiGuardian.Api.Services
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsStringAsync();
+                var responseContent = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<GHNResponse>(responseContent);
             }
             else
             {
@@ -174,7 +176,6 @@ namespace KoiGuardian.Api.Services
                 throw new Exception($"Failed to calculate shipping fee. Status: {response.StatusCode}. Error: {errorContent}");
             }
         }
-
 
         public async Task<string> CancelOrder(CancelOrderRequest cancelOrderRequest, string shopId)
         {

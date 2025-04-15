@@ -133,15 +133,7 @@ namespace KoiGuardian.Api.Controllers
             try
             {
                 var result = await _ghnService.CalculateShippingFee(feeRequest, shopId);
-
-                var jsonElement = JsonSerializer.Deserialize<JsonElement>(result);
-
-                string prettyJson = JsonSerializer.Serialize(jsonElement, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                return Content(prettyJson, "application/json");
+                return Ok(result); 
             }
             catch (Exception ex)
             {

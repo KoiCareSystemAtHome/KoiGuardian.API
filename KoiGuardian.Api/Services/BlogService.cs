@@ -21,7 +21,7 @@ namespace KoiGuardian.Api.Services
         Task<BlogResponse> CreateBlogAsync(BlogRequest blogRequest, CancellationToken cancellationToken);
         Task<BlogResponse> UpdateBlogAsync(BlogUpdateRequest blogUpdateRequest, CancellationToken cancellationToken);
         Task<BlogDto> GetBlogByIdAsync(Guid blogId, CancellationToken cancellationToken);
-        Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
+        Task<IList<BlogDto>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken);
         Task<IList<Blog>> GetAllBlogsIsApprovedFalseAsync(CancellationToken cancellationToken);
 
         Task<IList<Blog>> GetBlogsByTagAsync(string tag, CancellationToken cancellationToken);
@@ -363,12 +363,41 @@ namespace KoiGuardian.Api.Services
             );
         }
 
-        public async Task<IList<Blog>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken)
+        public async Task<IList<BlogDto>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken)
         {
-            return await _blogRepository.FindAsync(
-                b => b.IsApproved == true,
-                cancellationToken
-            );
+            var blogs = await _blogRepository.GetQueryable()
+                .Where(b => b.IsApproved == true)
+                .Include(b => b.BlogProducts)
+                    .ThenInclude(bp => bp.Product)
+                .Include(b => b.Shop)
+                .ToListAsync(cancellationToken);
+
+            return blogs.Select(blog => new BlogDto
+            {
+                BlogId = blog.BlogId,
+                Title = blog.Title,
+                Content = blog.Content,
+                Images = blog.Images,
+                Tag = blog.Tag,
+                IsApproved = blog.IsApproved,
+                Type = blog.Type,
+                ReportedBy = blog.ReportedBy,
+                ReportedDate = blog.ReportedDate,
+                ShopId = blog.ShopId,
+                Shop = blog.Shop != null ? new ShopBasicDto
+                {
+                    ShopId = blog.Shop.ShopId,
+                    Name = blog.Shop.ShopName,
+                    Description = blog.Shop.ShopDescription
+                } : null,
+                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
+                {
+                    ProductId = bp.Product?.ProductId ?? Guid.Empty,
+                    Name = bp.Product?.ProductName,
+                    Price = bp.Product.Price,
+                    Image = bp.Product?.Image
+                }).ToList() ?? new List<ProductBasicDto>()
+            }).ToList();
         }
 
         public async Task<IList<BlogDto>> GetAllBlogsAsync(CancellationToken cancellationToken)

@@ -154,7 +154,7 @@ public class FoodCalculatorService
         if (food!= null && fishDateSince < 30)
         {
             note = note + " \n Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.";
-            food =  food.Where(u => u.Product.FoodIsFloat == true).ToList();
+            food =  food.Where(u => u.Product.FoodIsFloat == false).ToList();
         }
         var image = "";
         if(food.Count() == 0)

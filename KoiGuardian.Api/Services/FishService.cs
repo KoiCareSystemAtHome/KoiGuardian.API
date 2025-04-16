@@ -119,7 +119,7 @@ namespace KoiGuardian.Api.Services
                 {
                     KoiReportId = Guid.NewGuid(),
                     KoiId = fish.KoiID,
-                    CalculatedDate = DateTime.UtcNow,
+                    CalculatedDate = DateTime.UtcNow.AddHours(7),
                     Size = fishRequest.size,
                     Weight  = fishRequest.weight
                 });
@@ -255,7 +255,7 @@ namespace KoiGuardian.Api.Services
 
 
             // Kiểm tra xem đã có KoiReport nào trong cùng ngày (ngày/tháng/năm) với KoiId này chưa
-            var today = DateTime.UtcNow.Date; // Lấy ngày hiện tại (chỉ lấy ngày/tháng/năm, bỏ giờ/phút/giây)
+            var today = DateTime.UtcNow.AddHours(7).Date; // Lấy ngày hiện tại (chỉ lấy ngày/tháng/năm, bỏ giờ/phút/giây)
             var existingKoiReport = await _relKoiparameterRepository.GetAsync(
                 x => x.KoiId == existingFish.KoiID && x.CalculatedDate.Date == today,
                 cancellationToken);
@@ -267,7 +267,7 @@ namespace KoiGuardian.Api.Services
                 {
                     KoiReportId = Guid.NewGuid(),
                     KoiId = existingFish.KoiID,
-                    CalculatedDate = DateTime.UtcNow,
+                    CalculatedDate = DateTime.UtcNow.AddHours(7),
                     Weight = fishRequest.weight,
                     Size = fishRequest.size,
                 });

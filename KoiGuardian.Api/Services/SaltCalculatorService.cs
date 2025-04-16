@@ -74,10 +74,7 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Calculate current volume based on water change percentage
-            double currentVolume;
-            var additionalNotes = new List<string>();
-
+            // Kiểm tra phần trăm thay nước
             if (request.WaterChangePercent < 0 || request.WaterChangePercent > 100)
             {
                 return new CalculateSaltResponse
@@ -88,9 +85,9 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Interpret WaterChangePercent as the percentage of water remaining
-            currentVolume = Math.Round(pond.MaxVolume * (request.WaterChangePercent / 100), 2);
-            additionalNotes.Add($"Thể tích hiện tại của hồ: {currentVolume:F2} lít (dựa trên {request.WaterChangePercent}% của dung tích tối đa {pond.MaxVolume:F2} lít).");
+            // Tính thể tích hiện tại
+            double currentVolume = Math.Round(pond.MaxVolume * (request.WaterChangePercent / 100), 2);
+            var additionalNotes = new List<string> { $"Thể tích hiện tại của hồ: {currentVolume:F2} lít (dựa trên {request.WaterChangePercent}% của dung tích tối đa {pond.MaxVolume:F2} lít)." };
 
             if (currentVolume <= 0)
             {
@@ -102,7 +99,7 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Fetch salt parameter
+            // Lấy thông số muối
             var saltParameterQuery = _pondParamRepository.GetQueryable(p => p.Parameter.Name.ToLower() == "salt")
                 .Include(p => p.Parameter);
             var saltParameter = await saltParameterQuery.FirstOrDefaultAsync();
@@ -117,17 +114,17 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Fetch current salt amount (in kg, not a concentration)
+            // Lấy lượng muối hiện tại
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
                 .Include(p => p.Parameter).OrderByDescending(p => p.CalculatedDate);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-            double currentSaltWeightKg = Math.Round(currentSaltValue?.Value ?? 0, 2); // Directly use the value as kg
+            double currentSaltWeightKg = Math.Round(currentSaltValue?.Value ?? 0, 2);
 
-            // Calculate the concentration (in kg/L) for water replacement calculations
+            // Tính nồng độ muối hiện tại
             double currentSaltConcentrationKgPerL = currentVolume > 0 ? currentSaltWeightKg / currentVolume : 0;
 
-            // Fetch standard salt percentage
+            // Lấy phần trăm muối tiêu chuẩn
             if (!_standardSaltPercentDict.TryGetValue(request.StandardSaltLevel.ToLower(), out double standardSalt))
             {
                 return new CalculateSaltResponse
@@ -138,13 +135,12 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-           
             if (request.StandardSaltLevel.ToLower() == "high")
             {
                 additionalNotes.Add("Nếu có cá bệnh truyền nhiễm, nên tách hồ để tránh ảnh hưởng đến các con cá khác.");
             }
 
-            // Calculate additional salt percentage due to fish diseases
+            // Tính phần trăm muối bổ sung do bệnh của cá
             double saltModifyPercent = 0;
             var fishList = pond.Fish?.ToList() ?? new List<Fish>();
             if (fishList.Any())
@@ -157,13 +153,10 @@ namespace KoiGuardian.Api.Services
 
                     foreach (var diseaseProfile in diseaseProfiles)
                     {
-                        if (diseaseProfile.Status == ProfileStatus.Accept || diseaseProfile.Status == ProfileStatus.Pending)
+                        if (diseaseProfile.Status is ProfileStatus.Accept or ProfileStatus.Pending && diseaseProfile.Disease != null)
                         {
-                            if (diseaseProfile.Disease != null)
-                            {
-                                saltModifyPercent += diseaseProfile.Disease.SaltModifyPercent;
-                                additionalNotes.Add($"Cá {fish.Name} mắc bệnh '{diseaseProfile.Disease.Name}', ảnh hưởng đến mức muối {diseaseProfile.Disease.SaltModifyPercent}%.");
-                            }
+                            saltModifyPercent += diseaseProfile.Disease.SaltModifyPercent;
+                            additionalNotes.Add($"Cá {fish.Name} mắc bệnh '{diseaseProfile.Disease.Name}', ảnh hưởng đến mức muối {diseaseProfile.Disease.SaltModifyPercent}%.");
                         }
                     }
                 }
@@ -173,80 +166,49 @@ namespace KoiGuardian.Api.Services
                 additionalNotes.Add("Không tìm thấy cá trong hồ.");
             }
 
-            // Calculate the required salt percentage (standard + modification due to fish conditions)
+            // Tính phần trăm muối yêu cầu
             double requiredSaltPercent = standardSalt + saltModifyPercent;
+            double lowerSaltPercent = saltParameter.Parameter.WarningLowwer.HasValue
+                ? saltParameter.Parameter.WarningLowwer.Value + saltModifyPercent
+                : standardSalt;
+            double upperSaltPercent = saltParameter.Parameter.WarningUpper.HasValue
+                ? saltParameter.Parameter.WarningUpper.Value + saltModifyPercent
+                : standardSalt;
 
-            // Calculate the optimal salt range (lower and upper bounds)
-            double lowerSaltPercent = standardSalt; // Lower bound of the standard
-            double upperSaltPercent = standardSalt; // Upper bound of the standard
-
-            // Adjust the bounds based on the salt parameter's standard range (if available)
-            if (saltParameter.Parameter.WarningLowwer.HasValue)
-            {
-                lowerSaltPercent = saltParameter.Parameter.WarningLowwer.Value + saltModifyPercent;
-            }
-            if (saltParameter.Parameter.WarningUpper.HasValue)
-            {
-                upperSaltPercent = saltParameter.Parameter.WarningUpper.Value + saltModifyPercent;
-            }
-
-            // Debug the percentages
-            Console.WriteLine($"lowerSaltPercent: {lowerSaltPercent:F4}%");
-            Console.WriteLine($"upperSaltPercent: {upperSaltPercent:F4}%");
-
-            // Calculate the optimal salt range in kg
+            // Tính khoảng muối tối ưu
             double lowerSaltWeightKg = Math.Round(currentVolume * (lowerSaltPercent / 100), 2);
             double upperSaltWeightKg = Math.Round(currentVolume * (upperSaltPercent / 100), 2);
-
-            // Debug the optimal range
-            Console.WriteLine($"currentVolume: {currentVolume:F2}L");
-            Console.WriteLine($"lowerSaltWeightKg: {lowerSaltWeightKg:F2}kg");
-            Console.WriteLine($"upperSaltWeightKg: {upperSaltWeightKg:F2}kg");
-
-            // Calculate target salt weight (midpoint of the optimal range for simplicity)
             double targetSaltWeightKg = Math.Round((lowerSaltWeightKg + upperSaltWeightKg) / 2, 2);
 
-            // Initialize variables
+            // Khởi tạo biến
             double saltDifference = Math.Round(targetSaltWeightKg - currentSaltWeightKg, 2);
             double additionalSaltNeeded = 0.0;
             double excessSalt = 0.0;
             double waterToReplace = 0.0;
 
-            // Check if current salt is within the optimal range
+            // Kiểm tra lượng muối hiện tại có trong khoảng tối ưu không
             if (currentSaltWeightKg >= lowerSaltWeightKg && currentSaltWeightKg <= upperSaltWeightKg)
             {
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) đã nằm trong khoảng tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
-                additionalSaltNeeded = 0.0;
-                excessSalt = 0.0;
-                waterToReplace = 0.0;
             }
             else if (currentSaltWeightKg < lowerSaltWeightKg)
             {
-                additionalSaltNeeded = saltDifference > 0 ? saltDifference : 0.0;
+                additionalSaltNeeded = saltDifference;
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) thấp hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
                 additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối để đạt mức mục tiêu.");
             }
-            else if (currentSaltWeightKg > upperSaltWeightKg)
+            else
             {
                 excessSalt = Math.Abs(saltDifference);
                 double saltToRemove = currentSaltWeightKg - upperSaltWeightKg;
                 if (currentSaltConcentrationKgPerL > 0)
                 {
-                    waterToReplace = saltToRemove / currentSaltConcentrationKgPerL;
-                    waterToReplace = Math.Round(waterToReplace, 2);
-
-                    // Debug the water replacement calculation
-                    Console.WriteLine($"saltToRemove: {saltToRemove:F2}kg");
-                    Console.WriteLine($"currentSaltConcentrationKgPerL: {currentSaltConcentrationKgPerL:F6} kg/L");
-                    Console.WriteLine($"waterToReplace: {waterToReplace:F2}L");
-
-                    // Check if the water to replace exceeds the current volume
+                    waterToReplace = Math.Round(saltToRemove / currentSaltConcentrationKgPerL, 2);
                     if (waterToReplace > currentVolume)
                     {
                         additionalNotes.Add($"Lỗi: Lượng nước cần thay ({waterToReplace:F2} lít) vượt quá lượng nước trong hồ ({currentVolume:F2} lít).");
-                        waterToReplace = currentVolume; // Cap at the current volume
+                        waterToReplace = currentVolume;
                     }
-
                     additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) cao hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
                     additionalNotes.Add($"Cần thay {waterToReplace:F2} lít nước (rút ra và thêm nước lọc) để đưa muối về mức tối ưu.");
                 }
@@ -256,74 +218,29 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
-            // Threshold calculations (in mg/L)
-            double currentSaltConcentrationMgPerL = (currentSaltConcentrationKgPerL * 1_000_000); // kg/L to mg/L
-            double? warningLowerMgPerL = saltParameter.Parameter.WarningLowwer.HasValue
-                ? Math.Round((saltParameter.Parameter.WarningLowwer.Value * 1_000_000) / currentVolume, 2)
-                : null;
-            double? warningUpperMgPerL = saltParameter.Parameter.WarningUpper.HasValue
-                ? Math.Round((saltParameter.Parameter.WarningUpper.Value * 1_000_000) / currentVolume, 2)
-                : null;
-            double? dangerLowerMgPerL = saltParameter.Parameter.DangerLower.HasValue
-                ? Math.Round((saltParameter.Parameter.DangerLower.Value * 1_000_000) / currentVolume, 2)
-                : null;
-            double? dangerUpperMgPerL = saltParameter.Parameter.DangerUpper.HasValue
-                ? Math.Round((saltParameter.Parameter.DangerUpper.Value * 1_000_000) / currentVolume, 2)
-                : null;
-
-            double additionalWaterNeeded = 0.0;
-            List<string> thresholdMessages = new List<string>();
-            if (currentSaltWeightKg < lowerSaltWeightKg || currentSaltWeightKg > upperSaltWeightKg)
-            {
-                var (waterNeeded, messages) = await CalculateWaterAdjustmentAndThresholds(
-                    pond, currentSaltConcentrationMgPerL, targetSaltWeightKg, currentVolume,
-                    warningLowerMgPerL, warningUpperMgPerL, dangerLowerMgPerL, dangerUpperMgPerL);
-                additionalWaterNeeded = waterNeeded;
-                thresholdMessages = messages;
-            }
-
-            additionalNotes.AddRange(thresholdMessages);
-
-            if (excessSalt > 0 && waterToReplace == 0 && (currentSaltWeightKg < lowerSaltWeightKg || currentSaltWeightKg > upperSaltWeightKg))
-            {
-                additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) vượt quá mục tiêu ({targetSaltWeightKg:F2} kg).");
-                additionalNotes.Add($"Lượng muối dư: {excessSalt:F2} kg.");
-                if (currentVolume + additionalWaterNeeded > pond.MaxVolume)
-                {
-                    double excessVolume = Math.Round((currentVolume + additionalWaterNeeded) - pond.MaxVolume, 2);
-                    additionalNotes.Add($"Cảnh báo: Thêm {additionalWaterNeeded:F2} lít nước sẽ vượt quá dung tích hồ {excessVolume:F2} lít.");
-                }
-            }
-            else if (additionalSaltNeeded > 0 && waterToReplace == 0)
-            {
-                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối.");
-                additionalNotes.Add($"Lượng muối hiện tại: {currentSaltWeightKg:F2} kg.");
-                additionalNotes.Add($"Lượng muối mục tiêu: {targetSaltWeightKg:F2} kg.");
-            }
-
-            // Suggested reminders for adding salt
+            // Gợi ý nhắc nhở thêm muối
             var suggestedReminders = new List<SuggestedSaltReminderResponse>();
             if (additionalSaltNeeded > 0 && waterToReplace == 0)
             {
                 int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
                 double saltPerAddition = Math.Round(additionalSaltNeeded / numberOfAdditions, 2);
-
                 int hoursInterval = 12;
                 DateTime startTime = DateTime.UtcNow;
+
                 for (int i = 0; i < numberOfAdditions; i++)
                 {
                     DateTime maintainDate = startTime.AddHours(hoursInterval * i);
                     suggestedReminders.Add(new SuggestedSaltReminderResponse
                     {
                         TemporaryId = Guid.NewGuid(),
-                        Title = "Salt Addition Reminder",
-                        Description = $"Add {saltPerAddition:F2} kg of salt (Step {i + 1}/{numberOfAdditions}). Total: {additionalSaltNeeded:F2} kg.",
+                        Title = "Nhắc nhở thêm muối",
+                        Description = $"Thêm {saltPerAddition:F2} kg muối (Bước {i + 1}/{numberOfAdditions}). Tổng: {additionalSaltNeeded:F2} kg.",
                         MaintainDate = maintainDate.ToUniversalTime()
                     });
                 }
             }
 
-            // Prepare response
+            // Chuẩn bị phản hồi
             var response = new CalculateSaltResponse
             {
                 PondId = request.PondId,
@@ -331,7 +248,7 @@ namespace KoiGuardian.Api.Services
                 CurrentSalt = currentSaltWeightKg,
                 SaltNeeded = additionalSaltNeeded,
                 ExcessSalt = excessSalt,
-                WaterNeeded = Math.Round(waterToReplace, 2),
+                WaterNeeded = waterToReplace,
                 AdditionalInstruction = additionalNotes,
                 OptimalSaltFrom = lowerSaltWeightKg,
                 OptimalSaltTo = upperSaltWeightKg
@@ -341,7 +258,7 @@ namespace KoiGuardian.Api.Services
             return response;
         }
 
-        private async Task<(double additionalWaterNeeded, List<string> messages)> CalculateWaterAdjustmentAndThresholds(
+        /*private async Task<(double additionalWaterNeeded, List<string> messages)> CalculateWaterAdjustmentAndThresholds(
             Pond pond, double currentSaltConcentration, double targetSaltWeightKg, double currentVolume,
             double? warningLowerMgPerL, double? warningUpperMgPerL, double? dangerLowerMgPerL, double? dangerUpperMgPerL)
         {
@@ -361,7 +278,7 @@ namespace KoiGuardian.Api.Services
            
 
             return (additionalWaterNeeded, messages);
-        }
+        }*/
 
         public async Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId)
         {

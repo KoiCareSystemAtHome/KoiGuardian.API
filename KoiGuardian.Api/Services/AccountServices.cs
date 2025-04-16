@@ -72,8 +72,8 @@ IImageUploadService imageUpload
 {
     public async Task<AccountDashboardResponse> AccountDashboard(DateTime? startDate, DateTime? endDate)
     {
-        startDate = startDate ?? DateTime.UtcNow.AddMonths(-1);
-        endDate = endDate ?? DateTime.UtcNow;
+        startDate = startDate ?? DateTime.UtcNow.AddHours(7).AddMonths(-1);
+        endDate = endDate ?? DateTime.UtcNow.AddHours(7);
         return await userRepository.GetQueryable()
             .Where(u => u.CreatedDate < endDate && u.CreatedDate > startDate)
             .GroupBy(u => 1)
@@ -170,7 +170,7 @@ IImageUploadService imageUpload
             {
                 // Tính ngày hết hạn
                 var expirationDate = latestPackage.PurchaseDate.AddDays(packageDetails.Peiod);
-                if (expirationDate >= DateTime.UtcNow)
+                if (expirationDate >= DateTime.UtcNow.AddHours(7))
                 {
                     // Nếu gói còn hạn, gán PackageId
                     packageId = latestPackage.PackageId;
@@ -235,8 +235,8 @@ IImageUploadService imageUpload
             NormalizedEmail = registrationRequestDto.Email.ToUpper(),
             Status = UserStatus.NotVerified,
             Code = SD.RandomCode(),
-            CreatedDate = DateTime.UtcNow,
-            ValidUntil = DateTime.UtcNow.AddMinutes(5),
+            CreatedDate = DateTime.UtcNow.AddHours(7),
+            ValidUntil = DateTime.UtcNow.AddHours(7).AddMinutes(5),
         };
 
         var exist = await userRepository.GetAsync(x => x.Email.Equals(registrationRequestDto.Email), CancellationToken.None);
@@ -296,7 +296,7 @@ IImageUploadService imageUpload
                 {
                     WalletId = Guid.NewGuid(),
                     UserId = userToReturn.Id,
-                    PurchaseDate = DateTime.UtcNow,
+                    PurchaseDate = DateTime.UtcNow.AddHours(7),
                     Amount = 0,
                     Status = WalletStatus.avai.ToString()
                 });
@@ -362,7 +362,7 @@ IImageUploadService imageUpload
             };
         }
 
-        if (user.ValidUntil < DateTime.UtcNow)
+        if (user.ValidUntil < DateTime.UtcNow.AddHours(7))
         {
             return new AccountResponse
             {
@@ -394,7 +394,7 @@ IImageUploadService imageUpload
         }
 
         user.Code = SD.RandomCode();
-        user.ValidUntil = DateTime.UtcNow.AddMinutes(5);
+        user.ValidUntil = DateTime.UtcNow.AddHours(7).AddMinutes(5);
 
         string sendMail = SendMail.SendEmail(user.Email ?? "", "Code for register", EmailTemplate.Register(user.Code), "");
         if (sendMail != "")
@@ -418,7 +418,7 @@ IImageUploadService imageUpload
         }
 
         user.Code = SD.RandomCode();
-        user.ValidUntil = DateTime.UtcNow.AddMinutes(5);
+        user.ValidUntil = DateTime.UtcNow.AddHours(7).AddMinutes(5);
 
         string sendMail = SendMail.SendEmail(user.Email ?? "", "Code for register", EmailTemplate.Register(user.Code), "");
         if (sendMail != "")
@@ -465,7 +465,7 @@ IImageUploadService imageUpload
                 }
                 if (user.Code == code)
                 {
-                    if (DateTime.UtcNow > (user.ValidUntil ?? DateTime.UtcNow).AddMinutes(10))
+                    if (DateTime.UtcNow.AddHours(7) > (user.ValidUntil ?? DateTime.UtcNow.AddHours(7)).AddMinutes(10))
                     {
                         return "Expired code! ";
                     }
@@ -599,7 +599,7 @@ IImageUploadService imageUpload
         tranctionRepository.Insert(new Transaction
         {
             TransactionId = Guid.NewGuid(),
-            TransactionDate = DateTime.UtcNow,
+            TransactionDate = DateTime.UtcNow.AddHours(7),
             TransactionType = TransactionType.Success.ToString(),
             Amount = amount,
             VnPayTransactionid = VnPayTransactionId,
@@ -630,7 +630,7 @@ IImageUploadService imageUpload
         var currentPackage = await ACrepository.GetAsync(u => u.AccountId.Equals(user.Id), CancellationToken.None);
         var package = await packageRepository.GetAsync(u => u.PackageId.Equals(packageId), CancellationToken.None);
 
-        if (package == null || package.EndDate < DateTime.UtcNow || package.StartDate > DateTime.UtcNow)
+        if (package == null || package.EndDate < DateTime.UtcNow.AddHours(7) || package.StartDate > DateTime.UtcNow.AddHours(7))
         {
             return ("Package is not valid!", false, null, null, false);
         }
@@ -648,10 +648,10 @@ IImageUploadService imageUpload
                 }
 
                 var expirationDate = currentPackage.PurchaseDate.AddDays(currentPackageDetails.Peiod);
-                if (expirationDate > DateTime.UtcNow && !forceRenew)
+                if (expirationDate > DateTime.UtcNow.AddHours(7) && !forceRenew)
                 {
                     // Tính số ngày còn lại của gói hiện tại
-                    var remainingDays = (expirationDate - DateTime.UtcNow).TotalDays;
+                    var remainingDays = (expirationDate - DateTime.UtcNow.AddHours(7)).TotalDays;
                     if (remainingDays < 0) remainingDays = 0;
 
                     // Tính giá trị còn lại của gói hiện tại
@@ -678,7 +678,7 @@ IImageUploadService imageUpload
                     }
 
                     // Tiến hành nâng cấp gói
-                    DateTime newPurchaseDate = DateTime.UtcNow;
+                    DateTime newPurchaseDate = DateTime.UtcNow.AddHours(7);
 
                     // Trừ tiền và cập nhật gói
                     wallet.Amount -= (float)discountedPrice;
@@ -697,7 +697,7 @@ IImageUploadService imageUpload
                     tranctionRepository.Insert(new Transaction
                     {
                         TransactionId = Guid.NewGuid(),
-                        TransactionDate = DateTime.UtcNow,
+                        TransactionDate = DateTime.UtcNow.AddHours(7),
                         TransactionType = TransactionType.Success.ToString(),
                         VnPayTransactionid = $"Pay By Wallet - Discounted {discountValue:F2} from original {package.PackagePrice:F2}",
                         UserId = user.Id,
@@ -721,7 +721,7 @@ IImageUploadService imageUpload
         }
 
         // Mua gói mới như bình thường
-        DateTime purchaseDate = DateTime.UtcNow;
+        DateTime purchaseDate = DateTime.UtcNow.AddHours(7);
 
         wallet.Amount -= (float)package.PackagePrice;
         user.PackageId = packageId;
@@ -737,7 +737,7 @@ IImageUploadService imageUpload
         tranctionRepository.Insert(new Transaction
         {
             TransactionId = Guid.NewGuid(),
-            TransactionDate = DateTime.UtcNow,
+            TransactionDate = DateTime.UtcNow.AddHours(7),
             TransactionType = TransactionType.Success.ToString(),
             VnPayTransactionid = "Pay By Wallet",
             UserId = user.Id,
@@ -793,7 +793,7 @@ IImageUploadService imageUpload
             var paymentInfo = new PaymentInfo
             {
                 Amount = (decimal)order.Total,
-                Date = DateTime.UtcNow,
+                Date = DateTime.UtcNow.AddHours(7),
                 PaymentMethod = "Wallet",
                 Description = $"Thanh toán cho hóa đơn {order.OrderId}"
             };
@@ -808,7 +808,7 @@ IImageUploadService imageUpload
 
             // Cập nhật Payment trong transaction hiện có
             transaction.Payment = paymentJson;
-            transaction.TransactionDate = DateTime.UtcNow; // Cập nhật thời gian nếu cần
+            transaction.TransactionDate = DateTime.UtcNow.AddHours(7); // Cập nhật thời gian nếu cần
 
             orderRepository.Update(order);
             tranctionRepository.Update(transaction); // Sửa typo từ tranctionRepository

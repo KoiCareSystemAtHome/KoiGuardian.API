@@ -577,7 +577,7 @@ namespace KoiGuardian.Api.Services
 
             // Cập nhật thông tin báo cáo
             blog.ReportedBy = reportedBy; 
-            blog.ReportedDate = DateTime.UtcNow; 
+            blog.ReportedDate = DateTime.UtcNow.AddHours(7); 
             blog.Tag = "Reported"; 
             blog.IsApproved = true; 
 
@@ -595,7 +595,7 @@ namespace KoiGuardian.Api.Services
                               $"Title: {blog.Title}\n" +
                               $"Reported By: {reportedBy}\n" +
                               $"Reason: {reason}\n" +
-                              $"Reported Date: {DateTime.UtcNow}\n" +
+                              $"Reported Date: {DateTime.UtcNow.AddHours(7)}\n" +
                               "Please review this blog.";
 
                 SendMail.SendEmail(adminEmail, subject, body, null);

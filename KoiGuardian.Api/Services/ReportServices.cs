@@ -64,7 +64,7 @@ namespace KoiGuardian.Api.Services
             {
                 ReportId = Guid.NewGuid(),
                 OrderId = request.OrderId,
-                CreatedDate = DateTime.UtcNow,
+                CreatedDate = DateTime.UtcNow.AddHours(7),
                 image = request.Image,
                 Reason = request.Reason,
                 status = ReportStatus.Pending.ToString(),
@@ -233,13 +233,13 @@ namespace KoiGuardian.Api.Services
                     if(order != null && wallet != null)
                     {
                         order.Status = OrderStatus.Fail.ToString();
-                        order.UpdatedDate = DateTime.UtcNow;
+                        order.UpdatedDate = DateTime.UtcNow.AddHours(7);
                         transaction.TransactionType = TransactionType.Cancel.ToString() ;
 
                         var RefundInfo = new RefundInfo
                         {
                             Amount = (decimal)order.Total,
-                            Date = DateTime.UtcNow,
+                            Date = DateTime.UtcNow.AddHours(7),
                             Description = $"Hoàn Tiền cho hóa đơn {order.OrderId}"
                         };
                         var jsonOptions = new JsonSerializerOptions

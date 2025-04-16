@@ -79,7 +79,7 @@ public class OrderService(
 
                 // Tính tổng giá trị đơn hàng cho từng ShopId
                 decimal total = 0;
-                //int totalWeight = 0;
+                int totalWeight = 0;
                 foreach (var detail in orderDetails)
                 {
                     var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
@@ -92,12 +92,12 @@ public class OrderService(
                         product.StockQuantity -=  detail.Quantity;
                         productRepository.Update(product);
                         total += product.Price * detail.Quantity; // Tính tổng giá trị sản phẩm
-                        //totalWeight += (int)product.Weight * detail.Quantity; 
+                        totalWeight += (int)product.Weight * detail.Quantity; 
                     } 
                     
                 }
 
-               /* int districtId;
+                int districtId;
                 if (!int.TryParse(request.Address.DistrictId, out districtId))
                 {
                     return new List<OrderResponse> { OrderResponse.Error("Invalid DistrictId format. Must be a valid integer.") };
@@ -105,7 +105,7 @@ public class OrderService(
 
                 var feeRequest = new GHNShippingFeeReuqest
                 {
-                    service_type_id = 1,
+                    service_type_id = 2,
                     to_district_id = districtId,
                     to_ward_code = request.Address.WardId.ToString(),
                     weight = totalWeight,
@@ -130,7 +130,7 @@ public class OrderService(
                     return new List<OrderResponse> { OrderResponse.Error("Không thể tính phí vận chuyển") };
                 }
                 decimal shippingFee = shippingFeeResponse.Data.Total;
-*/
+
 
                 var order = new Order
                 {
@@ -140,7 +140,7 @@ public class OrderService(
                     ShipType = request.ShipType,
                     oder_code = $"{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}", // Sinh mã đơn hàng
                     Status = request.Status,
-                    ShipFee = request.ShipFee.ToString("C"), // Định dạng tiền tệ
+                    ShipFee = shippingFee.ToString(), // Định dạng tiền tệ
                     Total = (float)total, // Gán tổng giá trị
                     Address = addressNote,
                     PhoneNumber = request.PhoneNumber,

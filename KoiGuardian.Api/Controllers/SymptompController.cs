@@ -24,6 +24,12 @@ namespace KoiGuardian.Api.Controllers
             return await service.DiseaseTypePredict(symptoms);
         }
 
+        [HttpPost("reminder")]
+        public async Task<string> Reminder(Guid pondId)
+        {
+            return await service.Reminder(pondId);
+        }
+
         [HttpPost("examination")]
         public async Task<FinalDiseaseTypePredictResponse> Examination
             ([FromBody]List<DiseaseTypePredictRequest> symptoms)

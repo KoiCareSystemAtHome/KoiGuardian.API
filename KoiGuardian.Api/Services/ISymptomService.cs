@@ -14,6 +14,7 @@ public interface ISymptomService
     Task<FinalDiseaseTypePredictResponse> Examination2();
     Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms);
     Task<List<PredictSymptoms>> GetByType(string? type);
+    Task<string> Reminder(Guid pondId);
 }
 
 public class SymptomService( 
@@ -22,6 +23,7 @@ public class SymptomService(
     IRepository<Disease> diseaseRepository,
     IRepository<RelPredictSymptomDisease> relPredictSymptomDiseaseRepository,
     IRepository<RelSymptomDisease> relSymptomDiseaseRepository,
+    IRepository<PondReminder> reminderRepository,
     IUnitOfWork<KoiGuardianDbContext> uom
 
     ) : ISymptomService
@@ -251,5 +253,23 @@ public class SymptomService(
             .FindAsync(u => u.Type.ToLower()  == type.ToLower(), CancellationToken.None)).ToList();
     }
 
-
+    public async Task<string> Reminder(Guid pondId)
+    {
+        try
+        {
+            reminderRepository.Insert(new PondReminder()
+            {
+                PondId = pondId,
+                Description = " Kiểm tra các thông số của hồ để cá luôn khỏe mạnh",
+                MaintainDate = DateTime.Now.AddDays(1),
+                ReminderType = ReminderType.Maintenance,
+                PondReminderId = Guid.NewGuid(),
+                Title = "Phòng bệnh cho cá"
+            });
+            await uom.SaveChangesAsync();
+            return "";
+        } catch (Exception ex) {
+            return ex.Message;
+        }
+    }
 }

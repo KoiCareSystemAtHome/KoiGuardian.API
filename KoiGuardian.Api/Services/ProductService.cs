@@ -355,15 +355,15 @@ namespace KoiGuardian.Api.Services
             {
                 if (!string.IsNullOrEmpty(medicne.Medicinename))
                 {
-                    spec = spec + $"💊 Hay còn được gọi là {medicne.Medicinename}";
+                    spec = spec + $"💊 Hay còn được gọi là {medicne.Medicinename} \n";
                 }
                 if (!string.IsNullOrEmpty(medicne.Medicinename))
                 {
-                    spec = spec + $"💊 Liều dùng {medicne.DosageForm}";
+                    spec = spec + $"💊 Liều dùng {medicne.DosageForm} \n";
                 }
                 if (!string.IsNullOrEmpty(medicne.Medicinename))
                 {
-                    spec = spec + $"💊 Tác dụng phụ có thể xảy ra {medicne.Symtomps}";
+                    spec = spec + $"💊 Tác dụng phụ có thể xảy ra {medicne.Symtomps}\n";
                 }
             }
             else
@@ -374,10 +374,10 @@ namespace KoiGuardian.Api.Services
                     if ((!product.FoodIsFloat) ?? false) {
                         spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
                     }
-                    spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} ";
+                    spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} \n";
                     if (!string.IsNullOrEmpty(food.Name))
                     {
-                        spec = spec + $"🌟 Hay còn được gọi là {food.Name}";
+                        spec = spec + $"🌟 Hay còn được gọi là {food.Name} \n";
                     }
 
                 }

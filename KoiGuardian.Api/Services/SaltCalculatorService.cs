@@ -225,7 +225,7 @@ namespace KoiGuardian.Api.Services
                 int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
                 double saltPerAddition = Math.Round(additionalSaltNeeded / numberOfAdditions, 2);
                 int hoursInterval = 12;
-                DateTime startTime = DateTime.UtcNow.AddHours(7);
+                DateTime startTime = DateTime.UtcNow;
 
                 for (int i = 0; i < numberOfAdditions; i++)
                 {
@@ -361,7 +361,7 @@ namespace KoiGuardian.Api.Services
                     PondId = pondId,
                     ParameterID = standardSaltParam.ParameterID,
                     Value = (float)addedSaltKg, // Lưu giá trị mới trực tiếp
-                    CalculatedDate = DateTime.UtcNow.AddHours(7),
+                    CalculatedDate = DateTime.UtcNow,
                     ParameterHistoryId = Guid.NewGuid()
                 };
                 _pondParamRepository.Insert(newSaltParameter);
@@ -415,7 +415,7 @@ namespace KoiGuardian.Api.Services
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
-            DateTime startDate = DateTime.UtcNow.AddHours(7).AddHours(2); 
+            DateTime startDate = DateTime.UtcNow.AddHours(2); 
 
             for (int i = 0; i < numberOfAdditions; i++)
             {

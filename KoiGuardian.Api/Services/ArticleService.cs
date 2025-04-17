@@ -82,7 +82,7 @@ namespace KoiGuardian.Api.Services
             {
                 Link = articleRequest.Link,
                 Title = title,
-                CrawDate = DateTime.UtcNow.AddHours(7),
+                CrawDate = DateTime.UtcNow,
                 isSeen = false
             };
 

@@ -146,7 +146,7 @@ public class OrderService(
                     PhoneNumber = request.PhoneNumber,
                     Name = request.Name,
                     Note = request.Note,
-                    CreatedDate = DateTime.UtcNow.AddHours(7),
+                    CreatedDate = DateTime.UtcNow,
                     UpdatedDate = DateTime.MaxValue,
                     OrderDetail = new List<OrderDetail>()
                 };
@@ -154,7 +154,7 @@ public class OrderService(
                 var transaction = new Transaction
                 {
                     TransactionId = Guid.NewGuid(),
-                    TransactionDate = DateTime.UtcNow.AddHours(7),
+                    TransactionDate = DateTime.UtcNow,
                     TransactionType = TransactionType.Pending.ToString(),
                     VnPayTransactionid = "Order Paid",
                     UserId = request.AccountId,
@@ -449,12 +449,12 @@ public class OrderService(
 
             if (status == OrderStatus.Complete.ToString().ToLower() && transaction.Payment == null)
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 var paymentInfo = new PaymentInfo
                 {
                     Amount = (decimal)order.Total,
-                    Date = DateTime.UtcNow.AddHours(7),
+                    Date = DateTime.UtcNow,
                     PaymentMethod = "COD",
                     Description = $"Thanh toán cho hóa đơn {order.OrderId}"
                 };
@@ -469,7 +469,7 @@ public class OrderService(
                 /* transactionRepository.Insert(new Transaction
                  {
                      TransactionId = Guid.NewGuid(),
-                     TransactionDate = DateTime.UtcNow.AddHours(7),
+                     TransactionDate = DateTime.UtcNow,
                      Amount = order.Total,
                      TransactionType = TransactionType.Pending.ToString(),
                      VnPayTransactionid = "Order Paid (COD)",
@@ -480,14 +480,14 @@ public class OrderService(
             else if (status == OrderStatus.Fail.ToString().ToLower() && transaction.Refund == null && transaction.Payment !=null
                      && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
                 var RefundInfo = new RefundInfo
                 {
                     Amount = (decimal)order.Total,
-                    Date = DateTime.UtcNow.AddHours(7),
+                    Date = DateTime.UtcNow,
                     Description = $"Hoàn Tiền cho hóa đơn giao hàng thất bại {order.OrderId} "
                 };
                 var jsonOptions = new JsonSerializerOptions
@@ -510,14 +510,14 @@ public class OrderService(
             else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Refund == null && transaction.Payment != null
                     && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
                 var RefundInfo = new RefundInfo
                 {
                     Amount = (decimal)order.Total,
-                    Date = DateTime.UtcNow.AddHours(7),
+                    Date = DateTime.UtcNow,
                     Description = $"Hoàn Tiền cho hóa đơn bị hoàn trả {order.OrderId}"
                 };
                 var jsonOptions = new JsonSerializerOptions
@@ -540,7 +540,7 @@ public class OrderService(
             else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Payment == null
                    && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
@@ -692,7 +692,7 @@ public class OrderService(
 
             if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment == null)
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();
                 order.Note = request.reason;
               
@@ -700,14 +700,14 @@ public class OrderService(
 
             if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment != null)
             {
-                order.UpdatedDate = DateTime.UtcNow.AddHours(7);
+                order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();
                 order.Note = request.reason;
 
                 var RefundInfo = new RefundInfo
                 {
                     Amount = (decimal)order.Total,
-                    Date = DateTime.UtcNow.AddHours(7),
+                    Date = DateTime.UtcNow,
                     Description = $"Hoàn Tiền cho hóa đơn bị hủy {order.OrderId}"
                 };
                 var jsonOptions = new JsonSerializerOptions

@@ -93,7 +93,7 @@ namespace KoiGuardian.Api.Services
                             WarningAcceptantDay = warningAcceptantDay,
                             DangerAcceptantDay = dangerAcceptantDay,
                             ValidUntil = validUntil,
-                            CreatedAt = DateTime.UtcNow.AddHours(7)
+                            CreatedAt = DateTime.UtcNow
                         };
                         _pondParameterRepository.Insert(pondParameter);
                     }

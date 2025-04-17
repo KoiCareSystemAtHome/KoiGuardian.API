@@ -10,7 +10,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using KoiGuardian.Api.Extensions;
 using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 using KoiGuardian.DataAccess.MongoDB;
+using KoiGuardian.Api.Utils;
 //using static KoiGuardian.Api.Services.IAuthServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,7 +63,12 @@ builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new LocalTimeDateTimeConverter());
+    });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option =>

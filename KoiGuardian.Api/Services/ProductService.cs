@@ -374,7 +374,7 @@ namespace KoiGuardian.Api.Services
                     if ((!product.FoodIsFloat) ?? false) {
                         spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
                     }
-                    spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} \n";
+                    spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} (ngày tuổi)\n";
                     if (!string.IsNullOrEmpty(food.Name))
                     {
                         spec = spec + $"🌟 Hay còn được gọi là {food.Name} \n";

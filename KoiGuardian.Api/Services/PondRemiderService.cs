@@ -48,7 +48,7 @@ namespace KoiGuardian.Api.Services
         {
             const int LookbackMonths = 3;
             const int DaysSinceLastUpdateThreshold = 14; // Ngưỡng 14 ngày chưa cập nhật
-            var cutoffDate = DateTime.UtcNow.AddHours(7).AddMonths(-LookbackMonths);
+            var cutoffDate = DateTime.UtcNow.AddMonths(-LookbackMonths);
             DateTime? earliestMaintenanceDate = null;
             string? earliestDescription = null;
             double earliestValue = 0;
@@ -70,7 +70,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = "No data available for the pond. Maintenance required.",
-                    MaintainDate = DateTime.UtcNow.AddHours(7).AddDays(1).ToUniversalTime(), // Ngày hôm sau
+                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
@@ -90,7 +90,7 @@ namespace KoiGuardian.Api.Services
 
             // Kiểm tra lần cập nhật cuối cùng
             var latestUpdate = pondParameters.Max(rp => rp.CalculatedDate);
-            var daysSinceLastUpdate = (DateTime.UtcNow.AddHours(7) - latestUpdate).Days;
+            var daysSinceLastUpdate = (DateTime.UtcNow - latestUpdate).Days;
 
             if (daysSinceLastUpdate > DaysSinceLastUpdateThreshold)
             {
@@ -101,7 +101,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago).",
-                    MaintainDate = DateTime.UtcNow.AddHours(7).AddDays(1).ToUniversalTime(), // Ngày hôm sau
+                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
@@ -126,13 +126,13 @@ namespace KoiGuardian.Api.Services
                 // Kiểm tra ngưỡng nguy hiểm
                 if (currentValue >= maxSafeDensity)
                 {
-                    maintenanceDate = DateTime.UtcNow.AddHours(7).AddDays(1); // Ngày hôm sau
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
                     description = $"{parameter.Name} chạm ngưỡng nguy hiểm ({currentValue}/{maxSafeDensity})";
                 }
                 // Kiểm tra ngưỡng cảnh báo
                 else if (warningUpper.HasValue && currentValue > warningUpper.Value)
                 {
-                    maintenanceDate = DateTime.UtcNow.AddHours(7).AddDays(1); // Ngày hôm sau
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
                     description = $"{parameter.Name} vượt ngưỡng cảnh báo ({currentValue}/{warningUpper.Value})";
                 }
                 // Tính ngày bảo trì dựa trên gia tăng
@@ -153,7 +153,7 @@ namespace KoiGuardian.Api.Services
                         int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity - currentValue) / avgIncrease);
                         if (daysUntilMaintenance < 0)
                             continue;
-                        maintenanceDate = DateTime.UtcNow.AddHours(7).AddDays(daysUntilMaintenance);
+                        maintenanceDate = DateTime.UtcNow.AddDays(daysUntilMaintenance);
                         description = $"{parameter.Name} approaching unsafe limits ({currentValue}/{maxSafeDensity})";
                     }
                     else
@@ -174,7 +174,7 @@ namespace KoiGuardian.Api.Services
             // Nếu không tính được ngày cụ thể từ các parameter
             if (!earliestMaintenanceDate.HasValue)
             {
-                earliestMaintenanceDate = DateTime.UtcNow.AddHours(7).AddDays(1); // Ngày hôm sau nếu không có dữ liệu cụ thể
+                earliestMaintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau nếu không có dữ liệu cụ thể
                 earliestDescription = "Routine maintenance scheduled (no critical parameters detected)";
                 earliestValue = 0;
                 earliestParamName = "Pond";
@@ -250,7 +250,7 @@ namespace KoiGuardian.Api.Services
             }
 
             List<PondReminder> reminders = new List<PondReminder>();
-            DateTime startDate = DateTime.UtcNow.AddHours(7);
+            DateTime startDate = DateTime.UtcNow;
 
             while (startDate <= endDate)
             {
@@ -322,7 +322,7 @@ namespace KoiGuardian.Api.Services
                 throw new InvalidOperationException($"Reminder with ID '{id}' not found.");
                 return "Fail";
             }
-            pondReminder.SeenDate = DateTime.UtcNow.AddHours(7);
+            pondReminder.SeenDate = DateTime.UtcNow;
             _reminderRepository.Update(pondReminder);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return "success";

@@ -48,7 +48,7 @@ public class KoiDiseaseService
                 DiseaseId = request.DiseaseID,
                 MedicineId = request.MedicineId ?? Guid.Empty,
                 FishId = request.FishId,
-                Createddate = DateTime.UtcNow.AddHours(7),
+                Createddate = DateTime.UtcNow,
                 EndDate = request.EndDate,
                 Status = (ProfileStatus)Enum.Parse(typeof(ProfileStatus), request.Status),
                 Symptoms = JsonSerializer.Serialize(request.Symptoms),
@@ -180,7 +180,7 @@ public class KoiDiseaseService
             if (!string.IsNullOrEmpty(request.Status) && Enum.TryParse<ProfileStatus>(request.Status, out ProfileStatus status))
             {
                 profile.Status = status;
-                profile.EndDate = status == ProfileStatus.Buyed ? DateTime.UtcNow.AddHours(7) : profile.EndDate;
+                profile.EndDate = status == ProfileStatus.Buyed ? DateTime.UtcNow : profile.EndDate;
             }
 
             // Cập nhật thuốc nếu có

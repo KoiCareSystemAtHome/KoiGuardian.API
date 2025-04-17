@@ -261,7 +261,7 @@ public class SymptomService(
             {
                 PondId = pondId,
                 Description = " Kiểm tra các thông số của hồ để cá luôn khỏe mạnh",
-                MaintainDate = DateTime.UtcNow.AddHours(7).AddDays(1),
+                MaintainDate = DateTime.UtcNow.AddDays(1),
                 ReminderType = ReminderType.Maintenance,
                 PondReminderId = Guid.NewGuid(),
                 SeenDate = DateTime.MinValue.ToUniversalTime(),

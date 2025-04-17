@@ -67,7 +67,7 @@ namespace KoiGuardian.Api.Services
                         RelPondParameterId = Guid.NewGuid(),
                         PondId = pond.PondID,
                         ParameterHistoryId = validValue.HistoryId,
-                        CalculatedDate = DateTime.UtcNow.AddHours(7),
+                        CalculatedDate = DateTime.UtcNow,
                         ParameterID = validValue.HistoryId,
                         Value = validValue.Value
                     });
@@ -132,7 +132,7 @@ namespace KoiGuardian.Api.Services
                         PondId = pond.PondID,
                         ParameterHistoryId = validValue.HistoryId,
                         ParameterID = validValue.HistoryId, 
-                        CalculatedDate = DateTime.UtcNow.AddHours(7),
+                        CalculatedDate = DateTime.UtcNow,
                         Value = validValue.Value
                     });
                 }
@@ -351,7 +351,7 @@ namespace KoiGuardian.Api.Services
 
                     // Kiểm tra lần cập nhật cuối cùng
                     var latestUpdate = latestParameters.Max(rp => rp.CalculatedDate);
-                    var daysSinceLastUpdate = (DateTime.UtcNow.AddHours(7) - latestUpdate).Days;
+                    var daysSinceLastUpdate = (DateTime.UtcNow - latestUpdate).Days;
 
                     if (daysSinceLastUpdate > DaysSinceLastUpdateThreshold)
                     {
@@ -442,7 +442,7 @@ namespace KoiGuardian.Api.Services
                         PondId = pond.PondID,
                         ParameterHistoryId = validValue.HistoryId,
                         ParameterID = validValue.HistoryId,
-                        CalculatedDate = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(7), DateTimeKind.Utc),
+                        CalculatedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                         Value = validValue.Value
                     });
                 }

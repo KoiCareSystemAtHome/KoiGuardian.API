@@ -349,6 +349,38 @@ namespace KoiGuardian.Api.Services
             if (product == null)
                 return null;
 
+            var spec = "";
+            var medicne = (await _medicineRepository.FindAsync( u => u.ProductId == productId)).FirstOrDefault();
+            if (medicne == null)
+            {
+                if (!string.IsNullOrEmpty(medicne.Medicinename))
+                {
+                    spec = spec + $"💊 Hay còn được gọi là {medicne.Medicinename}";
+                }
+                if (!string.IsNullOrEmpty(medicne.Medicinename))
+                {
+                    spec = spec + $"💊 Liều dùng {medicne.DosageForm}";
+                }
+                if (!string.IsNullOrEmpty(medicne.Medicinename))
+                {
+                    spec = spec + $"💊 Tác dụng phụ có thể xảy ra {medicne.Symtomps}";
+                }
+            }
+            else
+            {
+                var food = (await _foodRepository.FindAsync( u => u.ProductId == productId)).FirstOrDefault();
+                if ((!product.FoodIsFloat) ?? false) {
+                    spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
+                }
+                spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} ";
+                if (!string.IsNullOrEmpty(food.Name))
+                {
+                    spec = spec + $"🌟 Hay còn được gọi là {food.Name}";
+                }
+
+            }
+
+
             return new ProductDetailResponse
             {
                 ProductId = product.ProductId,
@@ -361,6 +393,8 @@ namespace KoiGuardian.Api.Services
                 Weight = product.Weight,
                 Type = product.Type,
                 Rate = product.Rate,
+                FoodIsFloat = product.FoodIsFloat ?? false,
+                Spec = spec,
                 ParameterImpactment = product.ParameterImpactment,
                 Category = new CategoryInfo
                 {

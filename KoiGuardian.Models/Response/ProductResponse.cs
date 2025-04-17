@@ -32,6 +32,9 @@ namespace KoiGuardian.Models.Response
 
         public ProductType Type { get; set; }
         public float Rate { get; set; }
+        public bool FoodIsFloat { get; set; }
+
+        public string Spec {  get; set; }
     }
 
     public class CategoryInfo

@@ -185,8 +185,8 @@ namespace KoiGuardian.Api.Services
                 PondReminderId = Guid.NewGuid(),
                 PondId = pondId,
                 ReminderType = ReminderType.Maintenance,
-                Title = $"Maintenance for {earliestParamName}",
-                Description = $"Current value: {earliestValue} - {earliestDescription}. Maintenance required.",
+                Title = $"Lịch Bảo Dưỡng Hồ Cho {earliestParamName}",
+                Description = $"Nồng Độ Hiẹn tại: {earliestValue} - {earliestDescription}. Cần Được Bảo Trì.",
                 MaintainDate = earliestMaintenanceDate.Value.ToUniversalTime(),
                 SeenDate = DateTime.MinValue.ToUniversalTime()
             };
@@ -259,8 +259,8 @@ namespace KoiGuardian.Api.Services
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
                     ReminderType = ReminderType.RecurringMaintenance,
-                    Title = "Scheduled Maintenance",
-                    Description = "Routine maintenance scheduled for the pond.",
+                    Title = "Bảo Dưỡng Định Kì",
+                    Description = "Thời gian bảo dưỡng định kì cho hồ.",
                     MaintainDate = startDate.ToUniversalTime(),
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 });

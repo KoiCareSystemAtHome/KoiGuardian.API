@@ -281,6 +281,8 @@ namespace KoiGuardian.Api.Services
         {
             try
             {
+                reminder.SeenDate = reminder.SeenDate.ToUniversalTime();
+                reminder.MaintainDate = reminder.MaintainDate.ToUniversalTime();
                 _reminderRepository.Insert(reminder);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }

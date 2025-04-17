@@ -49,6 +49,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<BlogProduct> _blogProductRepository;
         private readonly IRepository<Shop> _shopRepository;
         private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Product> _productRepository;
         private readonly ICurrentUser _currentUser;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
         
@@ -58,6 +59,7 @@ namespace KoiGuardian.Api.Services
             IRepository<BlogProduct> blogProductRepository,
             IRepository<Shop> shopRepository,
             IRepository<User> userRepository,
+            IRepository<Product> productRepository,
             ICurrentUser currentUser,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
 
@@ -66,6 +68,7 @@ namespace KoiGuardian.Api.Services
             _blogProductRepository = blogProductRepository;
             _shopRepository = shopRepository;
             _userRepository = userRepository;
+            _productRepository = productRepository;
             _currentUser = currentUser;
             _unitOfWork = unitOfWork;
 
@@ -75,42 +78,57 @@ namespace KoiGuardian.Api.Services
         {
             var blogResponse = new BlogResponse();
 
-            // Kiểm tra xem Shop có tồn tại không
+            // Check if Shop exists
             var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == blogRequest.ShopId, cancellationToken);
             if (!shopExists)
             {
                 return new BlogResponse
                 {
                     Status = "400",
-                    Message = "Shop with the provided ShopId does not exist."
+                    Message = "Shop không tồn tại"
                 };
             }
 
-            // Tạo mới Blog
+            // Validate that all ProductIds belong to the specified ShopId
+            if (blogRequest.ProductIds != null && blogRequest.ProductIds.Any())
+            {
+                var invalidProducts = await _productRepository
+                    .AnyAsync(p => blogRequest.ProductIds.Contains(p.ProductId) && p.ShopId != blogRequest.ShopId, cancellationToken);
+
+                if (invalidProducts)
+                {
+                    return new BlogResponse
+                    {
+                        Status = "400",
+                        Message = "Sản phẩm không thuộc shop này"
+                    };
+                }
+            }
+
+            // Create new Blog
             var blog = new Blog
             {
-                BlogId = Guid.NewGuid(), // Đảm bảo BlogId được sinh ra
+                BlogId = Guid.NewGuid(),
                 Title = blogRequest.Title,
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
-                Tag = "Pending",    // Đặt Tag mặc định là "Pending"
-                IsApproved = false, // Chưa được duyệt
+                Tag = "Pending",
+                IsApproved = false,
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
             };
 
-            // Thêm Blog vào repository
+            // Insert Blog into repository
             _blogRepository.Insert(blog);
 
-            // Xử lý BlogProduct nếu có ProductIds
+            // Process BlogProduct if ProductIds are provided
             if (blogRequest.ProductIds != null && blogRequest.ProductIds.Any())
             {
                 foreach (var productId in blogRequest.ProductIds)
                 {
-                    // Có thể thêm kiểm tra ProductId tồn tại nếu cần
                     var blogProduct = new BlogProduct
                     {
-                        BPId = Guid.NewGuid(), // Sinh khóa chính cho BlogProduct
+                        BPId = Guid.NewGuid(),
                         BlogId = blog.BlogId,
                         ProductId = productId
                     };
@@ -118,13 +136,11 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
-            // Lưu tất cả thay đổi
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
             return new BlogResponse
             {
-                Status = "201",
-                Message = "Blog created successfully and is pending approval."
+                Status = "200",
+                Message = "Tạo bài viết thành công.",
+               
             };
         }
 

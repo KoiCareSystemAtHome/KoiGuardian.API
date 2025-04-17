@@ -351,7 +351,7 @@ namespace KoiGuardian.Api.Services
 
             var spec = "";
             var medicne = (await _medicineRepository.FindAsync( u => u.ProductId == productId)).FirstOrDefault();
-            if (medicne == null)
+            if (medicne != null)
             {
                 if (!string.IsNullOrEmpty(medicne.Medicinename))
                 {
@@ -369,13 +369,17 @@ namespace KoiGuardian.Api.Services
             else
             {
                 var food = (await _foodRepository.FindAsync( u => u.ProductId == productId)).FirstOrDefault();
-                if ((!product.FoodIsFloat) ?? false) {
-                    spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
-                }
-                spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} ";
-                if (!string.IsNullOrEmpty(food.Name))
+                if (food != null)
                 {
-                    spec = spec + $"🌟 Hay còn được gọi là {food.Name}";
+                    if ((!product.FoodIsFloat) ?? false) {
+                        spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
+                    }
+                    spec = spec + $"🌟 Cá trong độ tuổi : {food.AgeFrom} - {food.AgeTo} ";
+                    if (!string.IsNullOrEmpty(food.Name))
+                    {
+                        spec = spec + $"🌟 Hay còn được gọi là {food.Name}";
+                    }
+
                 }
 
             }

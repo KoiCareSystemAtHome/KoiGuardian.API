@@ -717,6 +717,12 @@ public class OrderService(
                 };
                 string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
                 transaction.Refund = refundJson;
+                var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(order.UserId), CancellationToken.None);
+                if (wallet != null)
+                {
+                    wallet.Amount += order.Total;
+                    walletRepository.Update(wallet);
+                }
 
             }
 

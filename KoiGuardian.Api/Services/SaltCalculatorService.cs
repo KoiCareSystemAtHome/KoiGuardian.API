@@ -115,12 +115,13 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Lấy lượng muối hiện tại
+            // Lấy nồng độ muối hiện tại (ở %)
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
                 .Include(p => p.Parameter).OrderByDescending(p => p.CalculatedDate);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-            double currentSaltWeightKg = Math.Round(currentSaltValue?.Value ?? 0, 2);
+            double currentSaltConcentrationPercent = Math.Round(currentSaltValue?.Value ?? 0, 2);
+            double currentSaltWeightKg = Math.Round((currentSaltConcentrationPercent / 100) * currentVolume, 2);
 
             // Tính nồng độ muối hiện tại
             double currentSaltConcentrationKgPerL = currentVolume > 0 ? currentSaltWeightKg / currentVolume : 0;
@@ -187,6 +188,9 @@ namespace KoiGuardian.Api.Services
             double excessSalt = 0.0;
             double waterToReplace = 0.0;
 
+            // Tính nồng độ muối cần thêm (%)
+            double additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((additionalSaltNeeded / currentVolume) * 100, 2) : 0;
+
             // Kiểm tra lượng muối hiện tại có trong khoảng tối ưu không
             if (currentSaltWeightKg >= lowerSaltWeightKg && currentSaltWeightKg <= upperSaltWeightKg)
             {
@@ -195,8 +199,9 @@ namespace KoiGuardian.Api.Services
             else if (currentSaltWeightKg < lowerSaltWeightKg)
             {
                 additionalSaltNeeded = saltDifference;
+                additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((additionalSaltNeeded / currentVolume) * 100, 2) : 0;
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) thấp hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
-                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối để đạt mức mục tiêu.");
+                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối (nồng độ hiện tại: {currentSaltConcentrationPercent:F2}%, nồng độ cần thêm: {additionalSaltConcentrationPercent:F2}%) để đạt mức mục tiêu.");
             }
             else
             {
@@ -211,7 +216,7 @@ namespace KoiGuardian.Api.Services
                         waterToReplace = currentVolume;
                     }
                     additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) cao hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
-                    additionalNotes.Add($"Cần thay {waterToReplace:F2} lít nước (rút ra và thêm nước lọc) để đưa muối về mức tối ưu.");
+                    additionalNotes.Add($"Cần thay { waterToReplace:F2} lít nước (rút ra và thêm nước lọc) để đưa muối về mức tối ưu.");
                 }
                 else
                 {
@@ -415,6 +420,10 @@ namespace KoiGuardian.Api.Services
             int numberOfAdditions = additionalSaltNeeded <= 5 ? 2 : 3;
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
+            // Lấy thể tích hiện tại từ cache hoặc MaxVolume
+            double currentVolume = saltResponse.WaterNeeded > 0 ? saltResponse.WaterNeeded : pond.MaxVolume;
+            double additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((saltPerAddition / currentVolume) * 100, 2) : 0;
+
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
 
             // Get current time in Vietnam (UTC+7)
@@ -427,19 +436,20 @@ namespace KoiGuardian.Api.Services
             }
             catch (TimeZoneNotFoundException)
             {
-                
                 DateTime vietnamTime = DateTime.UtcNow.AddHours(7);
                 DateTime startDate = vietnamTime.AddHours(2);
+                startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Local);
 
-               
                 for (int i = 0; i < numberOfAdditions; i++)
                 {
                     DateTime maintainDate = startDate.AddHours(cycleHours * i);
+                    maintainDate = DateTime.SpecifyKind(maintainDate, DateTimeKind.Local);
+                    Console.WriteLine($"Reminder {i + 1} MaintainDate: {maintainDate:yyyy-MM-dd HH:mm:ss}");
                     reminders.Add(new SaltReminderRequest
                     {
                         PondId = pondId,
                         Title = "Thông báo thêm muối",
-                        Description = $"Thêm {saltPerAddition:F2} kg muối (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
+                        Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
                         MaintainDate = maintainDate
                     });
                 }
@@ -456,7 +466,6 @@ namespace KoiGuardian.Api.Services
             vietnamTimeNormal = DateTime.SpecifyKind(vietnamTimeNormal, DateTimeKind.Local);
             startDateNormal = DateTime.SpecifyKind(startDateNormal, DateTimeKind.Local);
 
-
             for (int i = 0; i < numberOfAdditions; i++)
             {
                 DateTime maintainDate = startDateNormal.AddHours(cycleHours * i);
@@ -466,7 +475,7 @@ namespace KoiGuardian.Api.Services
                 {
                     PondId = pondId,
                     Title = "Thông báo thêm muối",
-                    Description = $"Thêm {saltPerAddition:F2} kg muối (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
+                    Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
                     MaintainDate = maintainDate
                 });
             }

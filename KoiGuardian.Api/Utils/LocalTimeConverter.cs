@@ -10,5 +10,5 @@ public class LocalTimeDateTimeConverter : JsonConverter<DateTime>
         => DateTime.SpecifyKind(reader.GetDateTime(), DateTimeKind.Local);
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-        => writer.WriteStringValue(value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
+        => writer.WriteStringValue(value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"));
 }

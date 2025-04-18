@@ -10,6 +10,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.DataAccess;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using System.Runtime.InteropServices;
 
 namespace KoiGuardian.Api.Services
 {
@@ -411,21 +412,62 @@ namespace KoiGuardian.Api.Services
                 return new List<SaltReminderRequest>();
             }
 
-            int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
+            int numberOfAdditions = additionalSaltNeeded <= 5 ? 2 : 3;
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
-            DateTime startDate = DateTime.UtcNow.AddHours(2); 
+
+            // Get current time in Vietnam (UTC+7)
+            TimeZoneInfo vietnamTimeZone;
+            try
+            {
+                vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "SE Asia Standard Time" : "Asia/Ho_Chi_Minh"
+                );
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                
+                DateTime vietnamTime = DateTime.UtcNow.AddHours(7);
+                DateTime startDate = vietnamTime.AddHours(2);
+
+               
+                for (int i = 0; i < numberOfAdditions; i++)
+                {
+                    DateTime maintainDate = startDate.AddHours(cycleHours * i);
+                    reminders.Add(new SaltReminderRequest
+                    {
+                        PondId = pondId,
+                        Title = "Thông báo thêm muối",
+                        Description = $"Thêm {saltPerAddition:F2} kg muối (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
+                        MaintainDate = maintainDate
+                    });
+                }
+
+                return reminders;
+            }
+
+            // Normal time zone conversion
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime vietnamTimeNormal = TimeZoneInfo.ConvertTimeFromUtc(utcNow, vietnamTimeZone);
+            DateTime startDateNormal = vietnamTimeNormal.AddHours(2);
+
+            // Ensure DateTime is treated as local
+            vietnamTimeNormal = DateTime.SpecifyKind(vietnamTimeNormal, DateTimeKind.Local);
+            startDateNormal = DateTime.SpecifyKind(startDateNormal, DateTimeKind.Local);
+
 
             for (int i = 0; i < numberOfAdditions; i++)
             {
-                DateTime maintainDate = startDate.AddHours(cycleHours * i);
+                DateTime maintainDate = startDateNormal.AddHours(cycleHours * i);
+                maintainDate = DateTime.SpecifyKind(maintainDate, DateTimeKind.Local);
+                Console.WriteLine($"Reminder {i + 1} MaintainDate: {maintainDate:yyyy-MM-dd HH:mm:ss}");
                 reminders.Add(new SaltReminderRequest
                 {
                     PondId = pondId,
                     Title = "Thông báo thêm muối",
-                    Description = $"Thêm {saltPerAddition:F2} kg muối (Bước {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                    MaintainDate = maintainDate.ToUniversalTime()
+                    Description = $"Thêm {saltPerAddition:F2} kg muối (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
+                    MaintainDate = maintainDate
                 });
             }
 

@@ -101,7 +101,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago).",
-                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
+                    MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60*7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }

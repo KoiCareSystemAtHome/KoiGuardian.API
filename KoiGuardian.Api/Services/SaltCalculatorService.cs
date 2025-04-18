@@ -19,8 +19,8 @@ namespace KoiGuardian.Api.Services
         Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request);
         Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId);
         Task<List<PondReminder>> GetSaltReminders(Guid pondId);
-   
-        Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
+
+        Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
         Task<bool> SaveSelectedSaltReminders(SaveSaltRemindersRequest request);
         Task<List<SaltReminderRequest>> GenerateSaltAdditionRemindersAsync(Guid pondId, int cycleHours, CancellationToken cancellationToken);
         Task<bool> UpdateSaltReminderDateAsync(UpdateSaltReminderRequest request);
@@ -338,7 +338,7 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
+        public async Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
         {
             try
             {
@@ -347,7 +347,34 @@ namespace KoiGuardian.Api.Services
 
                 if (pond == null)
                 {
-                    return false;
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy hồ."
+                    };
+                }
+
+                // Kiểm tra số lần đã thêm muối trong ngày hôm nay
+                var today = DateTime.UtcNow.Date;
+                var tomorrow = today.AddDays(1);
+
+                // Lấy số lượng bản ghi thông số muối từ hôm nay
+                var saltUpdatesCountToday = await _pondParamRepository
+                    .GetQueryable(p => p.PondId == pondId &&
+                                  p.Parameter.Name.ToLower() == "salt" &&
+                                  p.CalculatedDate >= today &&
+                                  p.CalculatedDate < tomorrow)
+                    .Include(p => p.Parameter)
+                    .CountAsync(cancellationToken);
+
+                // Giới hạn chỉ được thêm muối 2 lần mỗi ngày
+                if (saltUpdatesCountToday >= 2)
+                {
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Bạn không được nhập quá 2 lần trong một ngày."
+                    };
                 }
 
                 // Lấy thông tin standardSaltParam để tạo bản ghi mới
@@ -357,10 +384,14 @@ namespace KoiGuardian.Api.Services
 
                 if (standardSaltParam == null)
                 {
-                    return false;
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy thông số muối tiêu chuẩn."
+                    };
                 }
 
-                // Tạo bản ghi mới cho giá trị salt
+                // Tạo bản ghi mới cho giá trị muối
                 var newSaltParameter = new RelPondParameter
                 {
                     RelPondParameterId = Guid.NewGuid(),
@@ -382,12 +413,20 @@ namespace KoiGuardian.Api.Services
                     _saltCalculationCache[pondId] = cachedResponse;
                 }
 
-                return true;
+                return new SaltUpdateResponse
+                {
+                    Success = true,
+                    Message = $"Đã thêm thành công {addedSaltKg} % nồng độ muối."
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating salt amount: {ex.Message}");
-                return false;
+                Console.WriteLine($"Lỗi khi cập nhật lượng muối: {ex.Message}");
+                return new SaltUpdateResponse
+                {
+                    Success = false,
+                    Message = $"Đã xảy ra lỗi: {ex.Message}"
+                };
             }
         }
 

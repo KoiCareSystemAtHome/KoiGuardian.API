@@ -163,28 +163,29 @@ namespace KoiGuardian.Api.Controllers
             {
                 if (request == null || request.PondId == Guid.Empty)
                 {
-                    return BadRequest(new { Message = "Invalid request: PondId is required" });
+                    return BadRequest(new { Success = false, Message = "Yêu cầu không hợp lệ: PondId là bắt buộc" });
                 }
 
                 if (request.AddedSaltKg < 0)
                 {
-                    return BadRequest(new { Message = "Salt amount cannot be negative" });
+                    return BadRequest(new { Success = false, Message = "Lượng muối không thể là số âm" });
                 }
 
-                bool success = await _saltCalculatorService.UpdateSaltAmount(request.PondId, request.AddedSaltKg, cancellationToken);
+                var result = await _saltCalculatorService.UpdateSaltAmount(request.PondId, request.AddedSaltKg, cancellationToken);
 
-                if (!success)
+                if (!result.Success)
                 {
                     return BadRequest(new
                     {
-                        Message = "Failed to update salt amount. Please check if the pond exists."
+                        Success = false,
+                        Message = result.Message // Sử dụng thông báo từ service
                     });
                 }
 
                 return Ok(new
                 {
                     Success = true,
-                    Message = $"Successfully updated salt amount by adding {request.AddedSaltKg} kg for pond {request.PondId}"
+                    Message = result.Message // Sử dụng thông báo thành công từ service
                 });
             }
             catch (Exception ex)
@@ -192,7 +193,7 @@ namespace KoiGuardian.Api.Controllers
                 return StatusCode(500, new
                 {
                     Success = false,
-                    Message = $"An error occurred while updating salt amount: {ex.Message}"
+                    Message = $"Đã xảy ra lỗi khi cập nhật lượng muối: {ex.Message}"
                 });
             }
         }

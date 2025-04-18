@@ -420,63 +420,24 @@ namespace KoiGuardian.Api.Services
             int numberOfAdditions = additionalSaltNeeded <= 5 ? 2 : 3;
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
-            // Lấy thể tích hiện tại từ cache hoặc MaxVolume
             double currentVolume = saltResponse.WaterNeeded > 0 ? saltResponse.WaterNeeded : pond.MaxVolume;
             double additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((saltPerAddition / currentVolume) * 100, 2) : 0;
 
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
 
-            // Get current time in Vietnam (UTC+7)
-            TimeZoneInfo vietnamTimeZone;
-            try
-            {
-                vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "SE Asia Standard Time" : "Asia/Ho_Chi_Minh"
-                );
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                DateTime vietnamTime = DateTime.UtcNow.AddHours(7);
-                DateTime startDate = vietnamTime.AddHours(2);
-                startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Local);
-
-                for (int i = 0; i < numberOfAdditions; i++)
-                {
-                    DateTime maintainDate = startDate.AddHours(cycleHours * i);
-                    maintainDate = DateTime.SpecifyKind(maintainDate, DateTimeKind.Local);
-                    Console.WriteLine($"Reminder {i + 1} MaintainDate: {maintainDate:yyyy-MM-dd HH:mm:ss}");
-                    reminders.Add(new SaltReminderRequest
-                    {
-                        PondId = pondId,
-                        Title = "Thông báo thêm muối",
-                        Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                        MaintainDate = maintainDate
-                    });
-                }
-
-                return reminders;
-            }
-
-            // Normal time zone conversion
-            DateTime utcNow = DateTime.UtcNow;
-            DateTime vietnamTimeNormal = TimeZoneInfo.ConvertTimeFromUtc(utcNow, vietnamTimeZone);
-            DateTime startDateNormal = vietnamTimeNormal.AddHours(2);
-
-            // Ensure DateTime is treated as local
-            vietnamTimeNormal = DateTime.SpecifyKind(vietnamTimeNormal, DateTimeKind.Local);
-            startDateNormal = DateTime.SpecifyKind(startDateNormal, DateTimeKind.Local);
+            // Thời gian bắt đầu là thời gian hiện tại + 2 giờ
+            DateTime startTime = DateTime.Now.AddHours(2); // Thêm 2 giờ vào thời gian hiện tại
 
             for (int i = 0; i < numberOfAdditions; i++)
             {
-                DateTime maintainDate = startDateNormal.AddHours(cycleHours * i);
-                maintainDate = DateTime.SpecifyKind(maintainDate, DateTimeKind.Local);
-                Console.WriteLine($"Reminder {i + 1} MaintainDate: {maintainDate:yyyy-MM-dd HH:mm:ss}");
+                DateTime maintainDate = startTime.AddHours(cycleHours * i);
+
                 reminders.Add(new SaltReminderRequest
                 {
                     PondId = pondId,
                     Title = "Thông báo thêm muối",
                     Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                    MaintainDate = maintainDate
+                    MaintainDate = maintainDate // Giữ nguyên LocalTime
                 });
             }
 
@@ -499,9 +460,12 @@ namespace KoiGuardian.Api.Services
                     _reminderRepository.Delete(reminder);
                 }
 
-                // Chuyển đổi từ SaltReminderRequest sang PondReminder và lưu
+                // Lưu reminders mới
                 foreach (var reminderRequest in request.Reminders)
                 {
+                    // Chuyển đổi từ LocalTime sang UTC trước khi lưu
+                    DateTime maintainDateUtc = reminderRequest.MaintainDate.ToUniversalTime();
+
                     var reminder = new PondReminder
                     {
                         PondReminderId = Guid.NewGuid(),
@@ -509,8 +473,8 @@ namespace KoiGuardian.Api.Services
                         ReminderType = ReminderType.Pond,
                         Title = reminderRequest.Title,
                         Description = reminderRequest.Description,
-                        MaintainDate = reminderRequest.MaintainDate.ToUniversalTime(),
-                        SeenDate = DateTime.MinValue.ToUniversalTime()
+                        MaintainDate = maintainDateUtc, // Lưu dưới dạng UTC
+                        SeenDate = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)
                     };
 
                     _reminderRepository.Insert(reminder);
@@ -525,6 +489,9 @@ namespace KoiGuardian.Api.Services
                 return false;
             }
         }
+
+
+
         public async Task<bool> UpdateSaltReminderDateAsync(UpdateSaltReminderRequest request)
         {
             if (request == null || request.PondReminderId == Guid.Empty)

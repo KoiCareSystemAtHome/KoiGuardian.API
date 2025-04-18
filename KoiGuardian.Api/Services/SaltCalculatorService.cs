@@ -425,19 +425,19 @@ namespace KoiGuardian.Api.Services
 
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
 
-            // Thời gian bắt đầu là thời gian hiện tại + 2 giờ
-            DateTime startTime = DateTime.Now.AddHours(2); // Thêm 2 giờ vào thời gian hiện tại
+            
+            DateTime startTime = DateTime.UtcNow.AddMinutes(60*9);
 
             for (int i = 0; i < numberOfAdditions; i++)
             {
-                DateTime maintainDate = startTime.AddHours(cycleHours * i);
+                DateTime maintainDate = startTime.AddMinutes((cycleHours * i)*60);
 
                 reminders.Add(new SaltReminderRequest
                 {
                     PondId = pondId,
                     Title = "Thông báo thêm muối",
                     Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                    MaintainDate = maintainDate // Giữ nguyên LocalTime
+                    MaintainDate = maintainDate
                 });
             }
 
@@ -459,6 +459,7 @@ namespace KoiGuardian.Api.Services
                 {
                     _reminderRepository.Delete(reminder);
                 }
+                await _unitOfWork.SaveChangesAsync(); // Commit deletions
 
                 // Lưu reminders mới
                 foreach (var reminderRequest in request.Reminders)

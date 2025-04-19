@@ -60,7 +60,7 @@ namespace KoiGuardian.Models.Request
         public string Content { get; set; }
         public string Images { get; set; }
         public string Tag { get; set; }
-        public bool IsApproved { get; set; }
+        public bool? IsApproved { get; set; }
         public string Type { get; set; }
         public string ReportedBy { get; set; }
         public DateTime? ReportedDate { get; set; }

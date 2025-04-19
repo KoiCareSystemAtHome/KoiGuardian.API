@@ -106,6 +106,7 @@ namespace KoiGuardian.Api.Services
             }
 
             // Create new Blog
+            // Create new Blog
             var blog = new Blog
             {
                 BlogId = Guid.NewGuid(),
@@ -113,10 +114,11 @@ namespace KoiGuardian.Api.Services
                 Content = blogRequest.Content,
                 Images = blogRequest.Images,
                 Tag = "Pending",
-                IsApproved = false,
+                IsApproved = null, // set null here
                 Type = blogRequest.Type,
                 ShopId = blogRequest.ShopId,
             };
+
 
             // Insert Blog into repository
             _blogRepository.Insert(blog);
@@ -155,7 +157,7 @@ namespace KoiGuardian.Api.Services
 
             if (blog == null)
             {
-                return null; // Or throw an exception, depending on your requirements
+                return null;
             }
 
             return new BlogDto
@@ -165,7 +167,7 @@ namespace KoiGuardian.Api.Services
                 Content = blog.Content,
                 Images = blog.Images,
                 Tag = blog.Tag,
-                IsApproved = blog.IsApproved ?? false,
+                IsApproved = blog.IsApproved, 
                 Type = blog.Type,
                 ReportedBy = blog.ReportedBy,
                 ReportedDate = blog.ReportedDate,
@@ -175,15 +177,14 @@ namespace KoiGuardian.Api.Services
                     ShopId = blog.Shop.ShopId,
                     Name = blog.Shop.ShopName,
                     Description = blog.Shop.ShopDescription
-              
                 } : null,
-                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
+                Products = blog.BlogProducts != null ? blog.BlogProducts.Select(bp => new ProductBasicDto
                 {
-                    ProductId = bp.Product?.ProductId ?? Guid.Empty, 
-                    Name = bp.Product?.ProductName,
-                    Price = bp.Product.Price,
-                    Image = bp.Product.Image
-                }).ToList() ?? new List<ProductBasicDto>()
+                    ProductId = bp.Product != null ? bp.Product.ProductId : Guid.Empty,
+                    Name = bp.Product != null ? bp.Product.ProductName : null,
+                    Price = bp.Product != null ? bp.Product.Price : 0,
+                    Image = bp.Product != null ? bp.Product.Image : null
+                }).ToList() : new List<ProductBasicDto>()
             };
         }
 
@@ -422,36 +423,37 @@ namespace KoiGuardian.Api.Services
                 .Include(b => b.BlogProducts)
                     .ThenInclude(bp => bp.Product)
                 .Include(b => b.Shop)
+                .Select(blog => new BlogDto
+                {
+                    BlogId = blog.BlogId,
+                    Title = blog.Title,
+                    Content = blog.Content,
+                    Images = blog.Images,
+                    Tag = blog.Tag,
+                    IsApproved = blog.IsApproved, // Preserve null value
+                    Type = blog.Type,
+                    ReportedBy = blog.ReportedBy,
+                    ReportedDate = blog.ReportedDate,
+                    ShopId = blog.ShopId,
+                    Shop = blog.Shop != null ? new ShopBasicDto
+                    {
+                        ShopId = blog.Shop.ShopId,
+                        Name = blog.Shop.ShopName,
+                        Description = blog.Shop.ShopDescription
+                    } : null,
+                    Products = blog.BlogProducts != null ? blog.BlogProducts.Select(bp => new ProductBasicDto
+                    {
+                        ProductId = bp.Product != null ? bp.Product.ProductId : Guid.Empty,
+                        Name = bp.Product != null ? bp.Product.ProductName : null,
+                        Price = bp.Product != null ? bp.Product.Price : 0,
+                        Image = bp.Product != null ? bp.Product.Image : null
+                    }).ToList() : new List<ProductBasicDto>()
+                })
                 .ToListAsync(cancellationToken);
 
-            return blogs.Select(blog => new BlogDto
-            {
-                BlogId = blog.BlogId,
-                Title = blog.Title,
-                Content = blog.Content,
-                Images = blog.Images,
-                Tag = blog.Tag,
-                IsApproved = blog.IsApproved ?? false,
-                Type = blog.Type,
-                ReportedBy = blog.ReportedBy,
-                ReportedDate = blog.ReportedDate,
-                ShopId = blog.ShopId,
-                Shop = blog.Shop != null ? new ShopBasicDto
-                {
-                    ShopId = blog.Shop.ShopId,
-                    Name = blog.Shop.ShopName,
-                    Description = blog.Shop.ShopDescription,
-                   
-                } : null,
-                Products = blog.BlogProducts?.Select(bp => new ProductBasicDto
-                {
-                    ProductId = bp.Product.ProductId,
-                    Name = bp.Product.ProductName,
-                    Price = bp.Product.Price,
-                   
-                }).ToList() ?? new List<ProductBasicDto>()
-            }).ToList();
+            return blogs;
         }
+
 
         public async Task<IList<BlogDto>> GetFilteredBlogsAsync(
             DateTime? createDate,
@@ -488,7 +490,7 @@ namespace KoiGuardian.Api.Services
                 Content = blog.Content,
                 Images = blog.Images,
                 Tag = blog.Tag,
-                IsApproved = blog.IsApproved ?? false,
+                IsApproved = blog.IsApproved,
                 Type = blog.Type,
                 ReportedBy = blog.ReportedBy,
                 ReportedDate = blog.ReportedDate,

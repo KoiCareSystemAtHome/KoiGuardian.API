@@ -91,7 +91,9 @@ namespace KoiGuardian.Api.Services
                     PakageName = package.PackageTitle,
                     Amount = package != null ? package.PackagePrice : 0m // Lấy PackagePrice
                 };
-            }).ToList();
+            })
+                .OrderByDescending(x => x.TransactionDate)
+                .ToList();
 
             return result;
         }
@@ -119,7 +121,9 @@ namespace KoiGuardian.Api.Services
                 Amount = (decimal)t.Amount,
                 VnPayTransactionId = t.VnPayTransactionid
                 
-            }).ToList();
+            })
+                .OrderByDescending(x => x.TransactionDate)
+                .ToList();
 
             return result;
         }
@@ -156,7 +160,9 @@ namespace KoiGuardian.Api.Services
                 ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
                 : null,
                 };
-            }).ToList();
+            })
+                 .OrderByDescending(x => x.TransactionDate)
+                .ToList();
 
             return result;
         }

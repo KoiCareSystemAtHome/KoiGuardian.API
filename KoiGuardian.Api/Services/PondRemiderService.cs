@@ -70,7 +70,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Maintenance,
                     Title = "Maintenance for Pond",
                     Description = "No data available for the pond. Maintenance required.",
-                    MaintainDate = DateTime.UtcNow.AddDays(1).ToUniversalTime(), // Ngày hôm sau
+                    MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
@@ -187,7 +187,7 @@ namespace KoiGuardian.Api.Services
                 ReminderType = ReminderType.Maintenance,
                 Title = $"Lịch Bảo Dưỡng Hồ Cho {earliestParamName}",
                 Description = $"Nồng Độ Hiẹn tại: {earliestValue} - {earliestDescription}. Cần Được Bảo Trì.",
-                MaintainDate = earliestMaintenanceDate.Value.ToUniversalTime(),
+                MaintainDate = earliestMaintenanceDate.Value.AddMinutes(60 * 7).ToUniversalTime(),
                 SeenDate = DateTime.MinValue.ToUniversalTime()
             };
         }
@@ -250,7 +250,7 @@ namespace KoiGuardian.Api.Services
             }
 
             List<PondReminder> reminders = new List<PondReminder>();
-            DateTime startDate = DateTime.UtcNow;
+            DateTime startDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7);
 
             while (startDate <= endDate)
             {

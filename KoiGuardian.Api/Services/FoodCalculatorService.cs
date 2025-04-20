@@ -142,33 +142,55 @@ public class FoodCalculatorService
         }
 
         string note = "";
+
+        var foodCalRespone =  await Calculate(
+            new CalculateFoodRequest()
+            {
+                PondId = id,
+                DesiredGrowth ="medium",
+                TemperatureLower = 17,
+                TemperatureUpper = 20
+            }
+            );
+
+        var foodProductWeight = Math.Round(30 * foodCalRespone.FoodAmount);
+
+
+        note = note    + $"Tổng trọng lượng cá là {foodCalRespone.TotalFishWeight} <kg>," +
+            $" thức ăn nên ăn hết trong 30 ngày," +
+            $" nên mua thức ăn có trọng lượng gần với mức " +
+            $"{foodProductWeight} <kg> \n";
+
+        food = food.Where( u => u.Product.Weight <= foodProductWeight*1.5).ToList();
+
+
         if (food == null || food.Count() == 0)
         {
             if( minFishAge < 90)
             {
-                note = "Cá còn quá nhỏ, nên cho các loại thức ăn nhỏ như giun, bột cám,...";
+                note = "Cá còn quá nhỏ, nên cho các loại thức ăn nhỏ như giun, bột cám,...\n ";
             }else if (minFishAge < 180)
             {
                 note = "Cá đang trong quá trình phát triển," +
-                    " nên cho các loại thức ăn tăng trưởng...";
+                    " nên cho các loại thức ăn tăng trưởng...\n ";
             }
             else 
             {
                 note = "Cá đã phát triển," +
-                    " có thể cho cá ăn đa dạng nguồn thức ăn...";
+                    " có thể cho cá ăn đa dạng nguồn thức ăn...\n ";
             }
 
         }
 
         if (food!= null && fishDateSince < 30)
         {
-            note = note + " \n Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.";
+            note = note + " Có cá vừa vào hồ, thích hợp ăn thức ăn chìm.\n";
             food =  food.Where(u => u.Product.FoodIsFloat == false).ToList();
         }
         var image = "";
         if(food.Count() == 0)
         {
-            note = note + "\n Vì trong hồ cá" +
+            note = note + " Vì trong hồ cá" +
                 " của bạn có bao gồm cá có độ tuổi > " + minFishAge + " \n Cá nên ăn \n" ;
             if(minFishAge < 30)
             {

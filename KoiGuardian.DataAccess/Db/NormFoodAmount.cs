@@ -9,7 +9,7 @@ namespace KoiGuardian.DataAccess.Db
     public class NormFoodAmount
     {
         public Guid NormFoodAmountId {  get; set; }   
-        public string WaterTemperatureID {  get; set; }
+        public string? WaterTemperatureID {  get; set; }
         public float StandardAmount {  get; set; } // percent food compare to fish weight
         public string  FeedingFrequency {  get; set; }
         public int AgeFrom { get; set; } // từ số tháng tuổi 

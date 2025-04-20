@@ -371,6 +371,15 @@ namespace KoiGuardian.Api.Services
                 var food = (await _foodRepository.FindAsync( u => u.ProductId == productId)).FirstOrDefault();
                 if (food != null)
                 {
+                    if (product.Weight > 1000)
+                    {
+                        spec = spec + $"🌟 Cân nặng { Math.Round(product.Weight/ 1000, 1)} (kg) \n";
+                    }
+                    else
+                    {
+                        spec = spec + $"🌟 Cân nặng {product.Weight} (g) \n";
+                    }
+
                     if ((!product.FoodIsFloat) ?? false) {
                         spec = spec + "🌟 Sản phẩm chìm trong nước, phù hợp với cá mới vào hồ \n";
                     }

@@ -10,6 +10,7 @@ using KoiGuardian.DataAccess.Db;
 using KoiGuardian.DataAccess;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using System.Runtime.InteropServices;
 
 namespace KoiGuardian.Api.Services
 {
@@ -18,8 +19,8 @@ namespace KoiGuardian.Api.Services
         Task<CalculateSaltResponse> CalculateSalt(CalculateSaltRequest request);
         Task<SaltAdditionProcessResponse> GetSaltAdditionProcess(Guid pondId);
         Task<List<PondReminder>> GetSaltReminders(Guid pondId);
-   
-        Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
+
+        Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken);
         Task<bool> SaveSelectedSaltReminders(SaveSaltRemindersRequest request);
         Task<List<SaltReminderRequest>> GenerateSaltAdditionRemindersAsync(Guid pondId, int cycleHours, CancellationToken cancellationToken);
         Task<bool> UpdateSaltReminderDateAsync(UpdateSaltReminderRequest request);
@@ -114,12 +115,13 @@ namespace KoiGuardian.Api.Services
                 };
             }
 
-            // Lấy lượng muối hiện tại
+            // Lấy nồng độ muối hiện tại (ở %)
             var currentSaltQuery = _pondParamRepository.GetQueryable(
                 p => p.PondId == request.PondId && p.Parameter.ParameterID == saltParameter.Parameter.ParameterID)
                 .Include(p => p.Parameter).OrderByDescending(p => p.CalculatedDate);
             var currentSaltValue = await currentSaltQuery.FirstOrDefaultAsync();
-            double currentSaltWeightKg = Math.Round(currentSaltValue?.Value ?? 0, 2);
+            double currentSaltConcentrationPercent = Math.Round(currentSaltValue?.Value ?? 0, 2);
+            double currentSaltWeightKg = Math.Round((currentSaltConcentrationPercent / 100) * currentVolume, 2);
 
             // Tính nồng độ muối hiện tại
             double currentSaltConcentrationKgPerL = currentVolume > 0 ? currentSaltWeightKg / currentVolume : 0;
@@ -186,6 +188,9 @@ namespace KoiGuardian.Api.Services
             double excessSalt = 0.0;
             double waterToReplace = 0.0;
 
+            // Tính nồng độ muối cần thêm (%)
+            double additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((additionalSaltNeeded / currentVolume) * 100, 2) : 0;
+
             // Kiểm tra lượng muối hiện tại có trong khoảng tối ưu không
             if (currentSaltWeightKg >= lowerSaltWeightKg && currentSaltWeightKg <= upperSaltWeightKg)
             {
@@ -194,8 +199,9 @@ namespace KoiGuardian.Api.Services
             else if (currentSaltWeightKg < lowerSaltWeightKg)
             {
                 additionalSaltNeeded = saltDifference;
+                additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((additionalSaltNeeded / currentVolume) * 100, 2) : 0;
                 additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) thấp hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
-                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối để đạt mức mục tiêu.");
+                additionalNotes.Add($"Cần thêm: {additionalSaltNeeded:F2} kg muối (nồng độ hiện tại: {currentSaltConcentrationPercent:F2}%, nồng độ cần thêm: {additionalSaltConcentrationPercent:F2}%) để đạt mức mục tiêu.");
             }
             else
             {
@@ -210,7 +216,7 @@ namespace KoiGuardian.Api.Services
                         waterToReplace = currentVolume;
                     }
                     additionalNotes.Add($"Lượng muối hiện tại ({currentSaltWeightKg:F2} kg) cao hơn mức tối ưu ({lowerSaltWeightKg:F2} kg - {upperSaltWeightKg:F2} kg).");
-                    additionalNotes.Add($"Cần thay {waterToReplace:F2} lít nước (rút ra và thêm nước lọc) để đưa muối về mức tối ưu.");
+                    additionalNotes.Add($"Cần thay { waterToReplace:F2} lít nước (rút ra và thêm nước lọc) để đưa muối về mức tối ưu.");
                 }
                 else
                 {
@@ -332,7 +338,7 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<bool> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
+        public async Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
         {
             try
             {
@@ -341,7 +347,34 @@ namespace KoiGuardian.Api.Services
 
                 if (pond == null)
                 {
-                    return false;
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy hồ."
+                    };
+                }
+
+                // Kiểm tra số lần đã thêm muối trong ngày hôm nay
+                var today = DateTime.UtcNow.Date;
+                var tomorrow = today.AddDays(1);
+
+                // Lấy số lượng bản ghi thông số muối từ hôm nay
+                var saltUpdatesCountToday = await _pondParamRepository
+                    .GetQueryable(p => p.PondId == pondId &&
+                                  p.Parameter.Name.ToLower() == "salt" &&
+                                  p.CalculatedDate >= today &&
+                                  p.CalculatedDate < tomorrow)
+                    .Include(p => p.Parameter)
+                    .CountAsync(cancellationToken);
+
+                // Giới hạn chỉ được thêm muối 2 lần mỗi ngày
+                if (saltUpdatesCountToday >= 2)
+                {
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Bạn không được nhập quá 2 lần trong một ngày."
+                    };
                 }
 
                 // Lấy thông tin standardSaltParam để tạo bản ghi mới
@@ -351,10 +384,14 @@ namespace KoiGuardian.Api.Services
 
                 if (standardSaltParam == null)
                 {
-                    return false;
+                    return new SaltUpdateResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy thông số muối tiêu chuẩn."
+                    };
                 }
 
-                // Tạo bản ghi mới cho giá trị salt
+                // Tạo bản ghi mới cho giá trị muối
                 var newSaltParameter = new RelPondParameter
                 {
                     RelPondParameterId = Guid.NewGuid(),
@@ -376,12 +413,20 @@ namespace KoiGuardian.Api.Services
                     _saltCalculationCache[pondId] = cachedResponse;
                 }
 
-                return true;
+                return new SaltUpdateResponse
+                {
+                    Success = true,
+                    Message = $"Đã thêm thành công {addedSaltKg} % nồng độ muối."
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating salt amount: {ex.Message}");
-                return false;
+                Console.WriteLine($"Lỗi khi cập nhật lượng muối: {ex.Message}");
+                return new SaltUpdateResponse
+                {
+                    Success = false,
+                    Message = $"Đã xảy ra lỗi: {ex.Message}"
+                };
             }
         }
 
@@ -411,21 +456,27 @@ namespace KoiGuardian.Api.Services
                 return new List<SaltReminderRequest>();
             }
 
-            int numberOfAdditions = additionalSaltNeeded <= 0.5 ? 2 : 3;
+            int numberOfAdditions = additionalSaltNeeded <= 5 ? 2 : 3;
             double saltPerAddition = additionalSaltNeeded / numberOfAdditions;
 
+            double currentVolume = saltResponse.WaterNeeded > 0 ? saltResponse.WaterNeeded : pond.MaxVolume;
+            double additionalSaltConcentrationPercent = currentVolume > 0 ? Math.Round((saltPerAddition / currentVolume) * 100, 2) : 0;
+
             List<SaltReminderRequest> reminders = new List<SaltReminderRequest>();
-            DateTime startDate = DateTime.UtcNow.AddHours(2); 
+
+            
+            DateTime startTime = DateTime.UtcNow.AddMinutes(60*9);
 
             for (int i = 0; i < numberOfAdditions; i++)
             {
-                DateTime maintainDate = startDate.AddHours(cycleHours * i);
+                DateTime maintainDate = startTime.AddMinutes((cycleHours * i)*60);
+
                 reminders.Add(new SaltReminderRequest
                 {
                     PondId = pondId,
                     Title = "Thông báo thêm muối",
-                    Description = $"Thêm {saltPerAddition:F2} kg muối (Bước {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
-                    MaintainDate = maintainDate.ToUniversalTime()
+                    Description = $"Thêm {saltPerAddition:F2} kg muối (nồng độ: {additionalSaltConcentrationPercent:F2}%) (Lần {i + 1}/{numberOfAdditions}). Tổng cộng: {additionalSaltNeeded:F2} kg.",
+                    MaintainDate = maintainDate
                 });
             }
 
@@ -447,10 +498,14 @@ namespace KoiGuardian.Api.Services
                 {
                     _reminderRepository.Delete(reminder);
                 }
+                await _unitOfWork.SaveChangesAsync(); // Commit deletions
 
-                // Chuyển đổi từ SaltReminderRequest sang PondReminder và lưu
+                // Lưu reminders mới
                 foreach (var reminderRequest in request.Reminders)
                 {
+                    // Chuyển đổi từ LocalTime sang UTC trước khi lưu
+                    DateTime maintainDateUtc = reminderRequest.MaintainDate.ToUniversalTime();
+
                     var reminder = new PondReminder
                     {
                         PondReminderId = Guid.NewGuid(),
@@ -458,8 +513,8 @@ namespace KoiGuardian.Api.Services
                         ReminderType = ReminderType.Pond,
                         Title = reminderRequest.Title,
                         Description = reminderRequest.Description,
-                        MaintainDate = reminderRequest.MaintainDate.ToUniversalTime(),
-                        SeenDate = DateTime.MinValue.ToUniversalTime()
+                        MaintainDate = maintainDateUtc, // Lưu dưới dạng UTC
+                        SeenDate = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)
                     };
 
                     _reminderRepository.Insert(reminder);
@@ -474,6 +529,9 @@ namespace KoiGuardian.Api.Services
                 return false;
             }
         }
+
+
+
         public async Task<bool> UpdateSaltReminderDateAsync(UpdateSaltReminderRequest request)
         {
             if (request == null || request.PondReminderId == Guid.Empty)

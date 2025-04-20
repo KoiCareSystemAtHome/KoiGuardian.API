@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 public class Blog
 {
     public Guid BlogId { get; set; }
-    public bool IsApproved { get; set; }
+    public bool? IsApproved { get; set; }
     public string Type { get; set; }
     public string Title { get; set; }
     public string Content { get; set; }

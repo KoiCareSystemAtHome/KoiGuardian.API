@@ -34,6 +34,8 @@ public class KoiDiseaseService
     IRepository<MedicineDisease> medicineDiseaseRepo,
     IRepository<Disease> diseaseRepo,
     IRepository<Feedback> feedbackRepo,
+    IRepository<PondReminder> reminderRepo,
+    IRepository<Fish> fishRepo,
     IUnitOfWork<KoiGuardianDbContext> unitOfWork
     )
     : IKoiDiseaseService
@@ -42,6 +44,11 @@ public class KoiDiseaseService
     {
         try
         {
+            var fish = (await fishRepo.FindAsync(u => u.KoiID == request.FishId))
+                .FirstOrDefault();
+
+            if (fish == null) { return "Fish not found"; }
+
             var data = new KoiDiseaseProfile
             {
                 KoiDiseaseProfileId = Guid.NewGuid(),
@@ -55,7 +62,20 @@ public class KoiDiseaseService
                 Note = request.Note,
             };
 
+
             profileRepo.Insert(data);
+
+            reminderRepo.Insert( new PondReminder()
+            {
+                PondId = fish.PondID,
+                PondReminderId = Guid.NewGuid(),
+                ReminderType = ReminderType.Pond,
+                Title = "Kiểm tra sức khỏe cá ", 
+                Description = " Kiểm tra sức khỏe cá sau khi dùng thuốc",
+                MaintainDate =request.EndDate,
+                SeenDate = request.EndDate,
+            });
+
             await unitOfWork.SaveChangesAsync();
             return "Create successfully!";
         } catch (Exception ex) { 

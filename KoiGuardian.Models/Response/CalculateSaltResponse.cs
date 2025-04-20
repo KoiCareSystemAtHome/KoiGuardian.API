@@ -23,6 +23,12 @@ namespace KoiGuardian.Models.Response
         
     }
 
+    public class SaltUpdateResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+    }
+
     public class SuggestedSaltReminderResponse
     {
         public Guid TemporaryId { get; set; } // ID tạm thời để frontend theo dõi

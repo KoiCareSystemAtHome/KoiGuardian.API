@@ -7,7 +7,7 @@ namespace KoiGuardian.Api.Services
 {
     public interface INormFoodService
     {
-        Task<bool> UpdateNormFood(NormFoodAmount normFoodAmount, CancellationToken cancellationToken);
+        Task<bool> UpdateNormFood(Guid NormId, float foodPercent, CancellationToken cancellationToken);
         Task<List<NormFoodAmount>> GetAllNormFood(CancellationToken cancellationToken);
 
     }
@@ -23,10 +23,17 @@ namespace KoiGuardian.Api.Services
             return await normFoodRepo.GetAllAsync();
         }
 
-        public async Task<bool> UpdateNormFood(NormFoodAmount normFoodAmount, CancellationToken cancellationToken)
+        public async Task<bool> UpdateNormFood(Guid NormId, float foodPercent, CancellationToken cancellationToken)
         {
             try
             {
+                var norm = await normFoodRepo.FindAsync( u => u.NormFoodAmountId == NormId);
+                var normFoodAmount = norm.FirstOrDefault();
+                if (normFoodAmount == null)
+                {
+                    return false;
+                }
+
                 normFoodRepo.Update(normFoodAmount);
                 await uom.SaveChangesAsync();
                 return true;

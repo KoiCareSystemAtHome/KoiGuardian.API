@@ -12,9 +12,9 @@ namespace KoiGuardian.Api.Controllers
         INormFoodService service) : ControllerBase
     {
         [HttpPost]
-        public async Task<bool> update([FromBody] NormFoodAmount request, CancellationToken cancellationToken)
+        public async Task<bool> update([FromBody] Guid NormId, float foodPercent, CancellationToken cancellationToken)
         {
-            return await service.UpdateNormFood(request, cancellationToken);
+            return await service.UpdateNormFood(NormId, foodPercent, cancellationToken);
         }
 
         [HttpGet]

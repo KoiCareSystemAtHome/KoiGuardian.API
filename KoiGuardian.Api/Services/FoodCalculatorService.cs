@@ -54,7 +54,7 @@ public class FoodCalculatorService
                 u => u.AgeFrom <= koi.Age && u.AgeTo >= koi.Age
                 && req.TemperatureUpper <= u.Temperature,
                 CancellationToken.None);
-            var normPercent = normPercents.OrderByDescending(u => u.Temperature).FirstOrDefault();
+            var normPercent = normPercents.OrderBy(u => u.Temperature).FirstOrDefault();
             if (normPercent != null) { 
                 koiPercent = koiPercent + normPercent.StandardAmount;
                 often.Add(normPercent.FeedingFrequency);

@@ -24,9 +24,9 @@ public class FoodCalculatorService
 {
     private Dictionary<string, float> DesiredGrowthPercent = new Dictionary<string, float>
         {
-            { "Low", 0.5f },
-            { "Medium", 1f },
-            { "High", 1.5f }
+            { "low", 0.5f },
+            { "medium", 1f },
+            { "high", 1.5f }
         };
 
     public async Task<CalculateFoodResponse> Calculate(CalculateFoodRequest req)
@@ -79,7 +79,7 @@ public class FoodCalculatorService
             
         }
 
-        DesiredGrowthPercent.TryGetValue(req.DesiredGrowth, out var growth);
+        DesiredGrowthPercent.TryGetValue(req.DesiredGrowth.ToLower(), out var growth);
 
         if (growth != null && growth > 0)
         {

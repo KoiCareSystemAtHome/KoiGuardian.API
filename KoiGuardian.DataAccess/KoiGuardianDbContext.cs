@@ -108,7 +108,7 @@ public class KoiGuardianDbContext : IdentityDbContext<User>
             entity.Property(b => b.Images).HasMaxLength(1000);
             entity.Property(b => b.Tag).HasMaxLength(100);
             entity.Property(b => b.ReportedDate).HasColumnType("datetime");
-            entity.Property(b => b.IsApproved).IsRequired();
+            entity.Property(b => b.IsApproved);
             entity.Property(b => b.Type).HasMaxLength(50);
             entity.Property(b => b.ShopId).IsRequired().HasMaxLength(50);
 

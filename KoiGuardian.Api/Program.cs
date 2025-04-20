@@ -59,6 +59,7 @@ builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<IKoiDiseaseService, KoiDiseaseService>();
 builder.Services.AddScoped<IDiseaseService, DiseaseService>();
 builder.Services.AddScoped<IReportServices, ReportServices>();
+builder.Services.AddScoped<INormFoodService, NormFoodService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));

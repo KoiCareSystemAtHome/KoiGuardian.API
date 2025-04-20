@@ -24,7 +24,7 @@ public class SymptomService(
     IRepository<RelPredictSymptomDisease> relPredictSymptomDiseaseRepository,
     IRepository<RelSymptomDisease> relSymptomDiseaseRepository,
     IRepository<PondReminder> reminderRepository,
-    IUnitOfWork<KoiGuardianDbContext> uom
+    IUnitOfWork<KoiGuardianDbContext> uow
 
     ) : ISymptomService
 {
@@ -234,7 +234,7 @@ public class SymptomService(
             }
         }
 
-        await uom.SaveChangesAsync();
+        await uow.SaveChangesAsync();
 
 
         return new();
@@ -267,7 +267,7 @@ public class SymptomService(
                 SeenDate = DateTime.MinValue.ToUniversalTime(),
                 Title = "Phòng bệnh cho cá"
             });
-            await uom.SaveChangesAsync();
+            await uow.SaveChangesAsync();
             return "";
         } catch (Exception ex) {
             return ex.Message;

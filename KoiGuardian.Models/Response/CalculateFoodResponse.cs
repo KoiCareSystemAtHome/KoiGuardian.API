@@ -8,7 +8,7 @@ namespace KoiGuardian.Models.Response
 {
     public class CalculateFoodResponse
     {
-        public float FoodAmount {  get; set; }
+        public double FoodAmount {  get; set; }
         public string FeedingOften { get; set; }
         public int NumberOfFish { get; set; }
         public float TotalFishWeight { get; set; }

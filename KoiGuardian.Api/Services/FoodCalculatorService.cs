@@ -96,12 +96,12 @@ public class FoodCalculatorService
     .Select(s => int.Parse(s))
     .FirstOrDefault();
         if (number > 0) {
-            feedingoften +=  " Mỗi lần " + foodTotal/number;
+            feedingoften +=  ", mỗi lần " + Math.Round(foodTotal / number, 1);
         }
 
         return new CalculateFoodResponse()
         {
-            FoodAmount = foodTotal,
+            FoodAmount = Math.Round(foodTotal, 2),
             FeedingOften = feedingoften,
             NumberOfFish = pond.Fish.Count(),
             TotalFishWeight  = totalweight,

@@ -90,7 +90,7 @@ public class FoodCalculatorService
         return new CalculateFoodResponse()
         {
             FoodAmount = foodTotal,
-            FeedingOftenFeedingOften = often
+            FeedingOften = often
                 .GroupBy(x => x)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày",

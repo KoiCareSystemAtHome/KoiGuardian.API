@@ -85,15 +85,24 @@ public class FoodCalculatorService
         {
             foodTotal = foodTotal * growth;
         }
+        var feedingoften = often
+                .GroupBy(x => x)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày";
 
+        var number = feedingoften
+    .Split(' ')
+    .Where(s => int.TryParse(s, out _))
+    .Select(s => int.Parse(s))
+    .FirstOrDefault();
+        if (number > 0) {
+            feedingoften +=  " Mỗi lần " + foodTotal/number;
+        }
 
         return new CalculateFoodResponse()
         {
             FoodAmount = foodTotal,
-            FeedingOften = often
-                .GroupBy(x => x)
-                .OrderByDescending(g => g.Count())
-                .FirstOrDefault()?.Key ?? "2/3 lần 1 ngày",
+            FeedingOften = feedingoften,
             NumberOfFish = pond.Fish.Count(),
             TotalFishWeight  = totalweight,
             AddtionalInstruction = noteList

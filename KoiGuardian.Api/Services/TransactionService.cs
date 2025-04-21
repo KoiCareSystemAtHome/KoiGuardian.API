@@ -96,26 +96,26 @@ namespace KoiGuardian.Api.Services
             );
 
             // Map dữ liệu
-            var result = transactions.Select(t =>
-            {
-                var accountPackage = accountPackages.FirstOrDefault(ap => ap.AccountPackageid == t.DocNo);
-                var package = packages.FirstOrDefault(p => p.PackageId == accountPackage?.PackageId);
+            var result = transactions
+             .Where(t => accountPackages.Any(ap => ap.AccountPackageid == t.DocNo))
+             .Select(t =>
+             {
+                 var accountPackage = accountPackages.FirstOrDefault(ap => ap.AccountPackageid == t.DocNo);
+                 var package = packages.FirstOrDefault(p => p.PackageId == accountPackage?.PackageId);
 
-                return new TransactionPackageDto
-                {
-                    TransactionId = t.TransactionId,
-                    TransactionDate = t.TransactionDate,
-                    TransactionType = t.TransactionType,
-                    Description = t.VnPayTransactionid,
-                    ExpiryDate = (DateTime)(accountPackage != null && package != null
-                        ? accountPackage.PurchaseDate.AddDays(package.Peiod)
-                        : (DateTime?)null),
-                    PakageName = package?.PackageTitle ?? string.Empty,
-                    Amount = (decimal)t.Amount
-                };
-            })
-            .OrderByDescending(x => x.TransactionDate)
-            .ToList();
+                 return new TransactionPackageDto
+                 {
+                     TransactionId = t.TransactionId,
+                     TransactionDate = t.TransactionDate,
+                     TransactionType = t.TransactionType,
+                     Description = t.VnPayTransactionid,
+                     ExpiryDate = accountPackage.PurchaseDate.AddDays(package.Peiod),
+                     PakageName = package?.PackageTitle ?? string.Empty,
+                     Amount = (decimal)t.Amount
+                 };
+             })
+             .OrderByDescending(x => x.TransactionDate)
+             .ToList();
 
             return result;
         }

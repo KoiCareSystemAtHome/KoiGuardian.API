@@ -27,6 +27,7 @@ namespace KoiGuardian.Api.Services
          IRepository<Order> orderRepository,
          IRepository<Transaction> transactionRepository,
          IRepository<Package> packageRepository,
+         IRepository<AccountPackage> ACrepository,
          IUnitOfWork<KoiGuardianDbContext> uow
          ) : ITransactionService
     {
@@ -67,49 +68,71 @@ namespace KoiGuardian.Api.Services
 
         public async Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId)
         {
-            var packages = await packageRepository.FindAsync(
-                x => true, // Lấy tất cả packages
-                CancellationToken.None
-            );
-            var packageIds = packages.Select(p => p.PackageId).ToList();
-
+            // Lấy tất cả transactions của owner
             var transactions = await transactionRepository.FindAsync(
-                x => packageIds.Contains(x.DocNo) && x.UserId.Equals(ownerId.ToString()),
+                x => x.UserId.Equals(ownerId.ToString()),
                 CancellationToken.None
             );
 
+            if (!transactions.Any())
+                return new List<TransactionPackageDto>();
+
+            // Lấy tất cả AccountPackageId từ DocNo trong transaction
+            var accountPackageIds = transactions.Select(t => t.DocNo).ToList();
+
+            // Lấy danh sách AccountPackage theo Id
+            var accountPackages = await ACrepository.FindAsync(
+                x => accountPackageIds.Contains(x.AccountPackageid),
+                CancellationToken.None
+            );
+
+            // Lấy tất cả PackageId từ các accountPackages
+            var packageIds = accountPackages.Select(ap => ap.PackageId).Distinct().ToList();
+
+            // Lấy danh sách Package
+            var packages = await packageRepository.FindAsync(
+                x => packageIds.Contains(x.PackageId),
+                CancellationToken.None
+            );
+
+            // Map dữ liệu
             var result = transactions.Select(t =>
             {
-                var package = packages.FirstOrDefault(p => p.PackageId == t.DocNo);
+                var accountPackage = accountPackages.FirstOrDefault(ap => ap.AccountPackageid == t.DocNo);
+                var package = packages.FirstOrDefault(p => p.PackageId == accountPackage?.PackageId);
+
                 return new TransactionPackageDto
                 {
                     TransactionId = t.TransactionId,
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.TransactionType,
                     Description = t.VnPayTransactionid,
-                    ExpiryDate = package.EndDate.AddDays(package.Peiod),
-                    PakageName = package.PackageTitle,
-                    Amount = package != null ? package.PackagePrice : 0m // Lấy PackagePrice
+                    ExpiryDate = (DateTime)(accountPackage != null && package != null
+                        ? accountPackage.PurchaseDate.AddDays(package.Peiod)
+                        : (DateTime?)null),
+                    PakageName = package?.PackageTitle ?? string.Empty,
+                    Amount = (decimal)t.Amount
                 };
             })
-                .OrderByDescending(x => x.TransactionDate)
-                .ToList();
+            .OrderByDescending(x => x.TransactionDate)
+            .ToList();
 
             return result;
         }
+
 
         public async Task<List<TransactionDto>> GetTransactionDespositbyOwnerIdAsync(Guid ownerId)
         {
             var orders = await orderRepository.FindAsync(x => true, CancellationToken.None);
             var orderIds = orders.Select(o => o.OrderId).ToList();
 
-            var packages = await packageRepository.FindAsync(x => true, CancellationToken.None);
-            var packageIds = packages.Select(p => p.PackageId).ToList();
+            var ACpackages = await ACrepository.FindAsync(x => true, CancellationToken.None);
+            var ACpackageIds = ACpackages.Select(p => p.AccountPackageid).ToList();
 
             var transactions = await transactionRepository.FindAsync(
                 x => x.UserId == ownerId.ToString()
                     && !orderIds.Contains(x.DocNo)
-                    && !packageIds.Contains(x.DocNo),
+                    && !ACpackageIds.Contains(x.DocNo),
                 CancellationToken.None
             );
 
@@ -187,11 +210,11 @@ namespace KoiGuardian.Api.Services
             );
             var orderIds = orders.Select(o => o.OrderId).ToList();
 
-            var packages = await packageRepository.FindAsync(
+            var ACpackages = await ACrepository.FindAsync(
                 x => true,
                 CancellationToken.None
             );
-            var packageIds = packages.Select(p => p.PackageId).ToList();
+            var ACpackageIds = ACpackages.Select(p => p.AccountPackageid).ToList();
 
             var orderTransactions = transactions.Where(t => orderIds.Contains(t.DocNo)).ToList();
             result.OrderTransactionCount = orderTransactions.Count;
@@ -206,14 +229,14 @@ namespace KoiGuardian.Api.Services
                 }
             }
 
-            var packageTransactions = transactions.Where(t => packageIds.Contains(t.DocNo)).ToList();
+            var packageTransactions = transactions.Where(t => ACpackageIds.Contains(t.DocNo)).ToList();
             result.PackageTransactionCount = packageTransactions.Count;
             foreach (var transaction in packageTransactions)
             {
-                var package = packages.FirstOrDefault(p => p.PackageId == transaction.DocNo);
-                if (package != null)
+                var ACpackage = ACpackages.FirstOrDefault(p => p.AccountPackageid == transaction.DocNo);
+                if (ACpackage != null)
                 {
-                    result.PackageRevenue += package.PackagePrice;
+                    result.PackageRevenue += (decimal)transaction.Amount;
                 }
             }
 

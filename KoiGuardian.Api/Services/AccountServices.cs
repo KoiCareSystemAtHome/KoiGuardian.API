@@ -685,13 +685,14 @@ IImageUploadService imageUpload
                     user.PackageId = packageId;
 
                     // Thêm gói mới
-                    ACrepository.Insert(new AccountPackage
+                    var newAC = new AccountPackage
                     {
                         AccountPackageid = Guid.NewGuid(),
                         AccountId = user.Id,
                         PackageId = packageId,
                         PurchaseDate = newPurchaseDate,
-                    });
+                    };
+                    ACrepository.Insert(newAC);
 
                     // Ghi nhận giao dịch với ghi chú giảm giá
                     tranctionRepository.Insert(new Transaction
@@ -702,7 +703,7 @@ IImageUploadService imageUpload
                         VnPayTransactionid = $"Pay By Wallet - Discounted {discountValue:F2} from original {package.PackagePrice:F2}",
                         UserId = user.Id,
                         Amount = (float)discountedPrice,
-                        DocNo = package.PackageId
+                        DocNo = newAC.AccountPackageid,
                     });
 
                     // Cập nhật ví
@@ -726,15 +727,16 @@ IImageUploadService imageUpload
         wallet.Amount -= (float)package.PackagePrice;
         user.PackageId = packageId;
 
-        ACrepository.Insert(new AccountPackage
+        var newAc = new AccountPackage
         {
             AccountPackageid = Guid.NewGuid(),
             AccountId = user.Id,
             PackageId = packageId,
             PurchaseDate = purchaseDate,
-        });
+        };
+        ACrepository.Insert(newAc);
 
-        tranctionRepository.Insert(new Transaction
+       tranctionRepository.Insert(new Transaction
         {
             TransactionId = Guid.NewGuid(),
             TransactionDate = DateTime.UtcNow,
@@ -742,7 +744,7 @@ IImageUploadService imageUpload
             VnPayTransactionid = "Pay By Wallet",
             UserId = user.Id,
             Amount = (float)package.PackagePrice,
-            DocNo = package.PackageId
+            DocNo = newAc.AccountPackageid,
         });
 
         walletRepository.Update(wallet);

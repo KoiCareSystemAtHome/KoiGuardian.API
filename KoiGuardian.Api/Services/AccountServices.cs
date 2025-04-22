@@ -260,7 +260,7 @@ IImageUploadService imageUpload
                 return new AccountResponse()
                 {
                     Status = "500",
-                    Message = result.Errors.ToString()
+                    Message = result.Errors
                 };
             }
 

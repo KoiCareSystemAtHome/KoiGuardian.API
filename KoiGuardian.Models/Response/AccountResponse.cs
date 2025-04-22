@@ -9,6 +9,6 @@ namespace KoiGuardian.Models.Response
     public class AccountResponse
     {
         public string Status {  get; set; }
-        public string Message { get; set; }
+        public object Message { get; set; }
     }
 }

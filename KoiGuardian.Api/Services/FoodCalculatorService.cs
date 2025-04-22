@@ -153,13 +153,13 @@ public class FoodCalculatorService
             }
             );
 
-        var foodProductWeight = Math.Round(30 * foodCalRespone.FoodAmount);
+        var foodProductWeight = Math.Round(30 * foodCalRespone.FoodAmount)*1000;
 
 
         note = note    + $"Tổng trọng lượng cá là {foodCalRespone.TotalFishWeight} <kg>," +
             $" thức ăn nên ăn hết trong 30 ngày," +
             $" nên mua thức ăn có trọng lượng gần với mức " +
-            $"{foodProductWeight} <kg> \n";
+            $"{foodProductWeight/1000} <kg> \n";
 
         food = food.Where( u => u.Product.Weight <= foodProductWeight*1.5).ToList();
 

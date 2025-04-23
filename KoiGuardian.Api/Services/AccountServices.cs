@@ -299,6 +299,7 @@ IImageUploadService imageUpload
                        BizLicences = " ",
                        UserId = userToReturn.Id,
                        ShopAvatar = avatar,
+                       GHNId = ""
                     });
                 }
 

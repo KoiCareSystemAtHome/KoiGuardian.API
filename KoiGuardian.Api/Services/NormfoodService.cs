@@ -33,6 +33,7 @@ namespace KoiGuardian.Api.Services
                 {
                     return false;
                 }
+                normFoodAmount.StandardAmount = foodPercent/100;
 
                 normFoodRepo.Update(normFoodAmount);
                 await uom.SaveChangesAsync();

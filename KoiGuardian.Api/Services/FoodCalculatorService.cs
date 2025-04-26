@@ -60,11 +60,11 @@ public class FoodCalculatorService
                 often.Add(normPercent.FeedingFrequency);
             }
             var test = await koiProfileRepository.GetAllAsync();
-            var treatmentAmount = await koiProfileRepository.GetQueryable().Where(
-                 u => koi.KoiID == koi.KoiID
-                 && u.EndDate <= DateTime.UtcNow).Include(u => u.Disease)
-                 .OrderByDescending( u => u.Createddate )
-                 .FirstOrDefaultAsync();
+            var treatmentAmount = (await koiProfileRepository.FindAsync(
+                 u => koi.KoiID == koi.KoiID && u.EndDate <= DateTime.UtcNow,
+                 include: u => u.Include(u => u.Disease),
+                 orderBy: u=>u.OrderByDescending( u => u.Createddate )))
+                 .FirstOrDefault();
 
             if (treatmentAmount != null)
             {

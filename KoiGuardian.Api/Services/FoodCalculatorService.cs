@@ -61,7 +61,7 @@ public class FoodCalculatorService
             }
             var test = await koiProfileRepository.GetAllAsync();
             var treatmentAmount = (await koiProfileRepository.FindAsync(
-                 u => koi.KoiID == koi.KoiID && u.EndDate <= DateTime.UtcNow,
+                 u => u.FishId == koi.KoiID && u.EndDate <= DateTime.UtcNow,
                  include: u => u.Include(u => u.Disease),
                  orderBy: u=>u.OrderByDescending( u => u.Createddate )))
                  .FirstOrDefault();

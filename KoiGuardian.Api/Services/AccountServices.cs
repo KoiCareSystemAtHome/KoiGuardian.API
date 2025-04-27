@@ -255,6 +255,16 @@ IImageUploadService imageUpload
         {
             var result = await _userManager.CreateAsync(user, registrationRequestDto.Password);
 
+            if(result.Errors.Count() > 0)
+            {
+                return new AccountResponse()
+                {
+                    Status = "500",
+                    Message = result.Errors
+                };
+            }
+
+
             if (result.Succeeded)
             {
 
@@ -289,6 +299,7 @@ IImageUploadService imageUpload
                        BizLicences = " ",
                        UserId = userToReturn.Id,
                        ShopAvatar = avatar,
+                       GHNId = ""
                     });
                 }
 

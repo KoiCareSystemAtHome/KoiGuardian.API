@@ -10,7 +10,7 @@ public class KoiDiseaseProfile
 {
     public Guid KoiDiseaseProfileId { get; set; }
     public Guid? DiseaseId { get; set; }
-    public Guid MedicineId { get; set; }
+    public Guid? MedicineId { get; set; }
     public Guid FishId { get; set; }
     public DateTime Createddate { get; set; }
     public DateTime EndDate { get; set; }

@@ -60,11 +60,11 @@ public class FoodCalculatorService
                 often.Add(normPercent.FeedingFrequency);
             }
             var test = await koiProfileRepository.GetAllAsync();
-            var treatmentAmount = await koiProfileRepository.GetQueryable().Where(
-                 u => koi.KoiID == koi.KoiID
-                 && u.EndDate <= DateTime.UtcNow).Include(u => u.Disease)
-                 .OrderByDescending( u => u.Createddate )
-                 .FirstOrDefaultAsync();
+            var treatmentAmount = (await koiProfileRepository.FindAsync(
+                 u => koi.KoiID == koi.KoiID && u.EndDate <= DateTime.UtcNow,
+                 include: u => u.Include(u => u.Disease),
+                 orderBy: u=>u.OrderByDescending( u => u.Createddate )))
+                 .FirstOrDefault();
 
             if (treatmentAmount != null)
             {
@@ -153,13 +153,13 @@ public class FoodCalculatorService
             }
             );
 
-        var foodProductWeight = Math.Round(30 * foodCalRespone.FoodAmount);
+        var foodProductWeight = Math.Round(30 * foodCalRespone.FoodAmount)*1000;
 
 
         note = note    + $"Tổng trọng lượng cá là {foodCalRespone.TotalFishWeight} <kg>," +
             $" thức ăn nên ăn hết trong 30 ngày," +
             $" nên mua thức ăn có trọng lượng gần với mức " +
-            $"{foodProductWeight} <kg> \n";
+            $"{foodProductWeight/1000} <kg> \n";
 
         food = food.Where( u => u.Product.Weight <= foodProductWeight*1.5).ToList();
 

@@ -29,8 +29,10 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Fish> _fishRepository;
         private readonly IRepository<Pond> _pondRepository;
         private readonly IRepository<Variety> _varietyRepository;
+        private readonly IRepository<PondReminder> _reminderRepository;
         private readonly IRepository<KoiStandardParam> _koiParameterRepository;
         private readonly IRepository<KoiReport> _relKoiparameterRepository;
+        private readonly IRepository<KoiDiseaseProfile> _koiprofileRepository;
         private readonly IImageUploadService _imageUploadService;
 
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
@@ -38,6 +40,8 @@ namespace KoiGuardian.Api.Services
         public FishService(
             IRepository<Fish> fishRepository,
             IRepository<Pond> pondRepository,
+            IRepository<PondReminder> reminderRepository,
+            IRepository<KoiDiseaseProfile> profileRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
             IRepository<KoiStandardParam> parameterRepository,
             IRepository<KoiReport> relKoiparameterRepository,
@@ -51,6 +55,9 @@ namespace KoiGuardian.Api.Services
             _relKoiparameterRepository = relKoiparameterRepository;
             _koiParameterRepository = parameterRepository;
             _imageUploadService = imageUpload;
+            _unitOfWork = unitOfWork;
+            _koiprofileRepository = profileRepository;
+            _reminderRepository = reminderRepository;
         }
 
         public async Task<FishResponse> CreateFishAsync(FishRequest fishRequest, CancellationToken cancellationToken)
@@ -225,6 +232,26 @@ namespace KoiGuardian.Api.Services
                     fishResponse.Message = "Specified pond does not exist.";
                     return fishResponse;
                 }
+                try
+                {
+                    var profiles = await _koiprofileRepository
+                        .FindAsync(u => u.FishId == fishRequest.KoiID && u.EndDate > DateTime.Now);
+                    if (profiles != null)
+                    {
+                        foreach (var profile in profiles)
+                        {
+                            var diseaseReminder = await (_reminderRepository
+                                .FindAsync( u => u.PondId == fishRequest.PondID && u.MaintainDate == profile.EndDate));
+                            foreach(var reminder in diseaseReminder)
+                            {
+                                reminder.PondId = fishRequest.PondID;
+                                _reminderRepository.Update(reminder);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex) { }
+
             }
 
             var variety = await _varietyRepository

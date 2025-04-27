@@ -29,6 +29,7 @@ namespace KoiGuardian.Api.Services
             IRepository<Medicine> _medicineRepository,
             IRepository<MedicineDisease> _medicineDiseaseRepository,
             IRepository<PredictSymptoms> _predictSymtopmsRepository,
+            IRepository<Product> _productsRepository,
             IRepository<Symptom> _symtopmsRepository,
             IRepository<RelSymptomDisease> _relsymptompdeseaseSymtopmsRepository,
             IRepository<RelPredictSymptomDisease> _relpredictSymtopmsDiseaseRepository,
@@ -232,6 +233,10 @@ namespace KoiGuardian.Api.Services
                         Description = u.Symptom?.Name ?? ""
                     }).ToList();
 
+            var products = await _productsRepository.FindAsync(u =>
+            disease.MedicineDisease.Select(u => u.Medince.ProductId).Contains(u.ProductId));
+
+
             return new DiseaseResponse
             {
                 DiseaseId = disease.DiseaseId,
@@ -249,6 +254,7 @@ namespace KoiGuardian.Api.Services
                     ProductId = u.Medince?.ProductId,
                     Name = u.Medince?.Medicinename,
                     DosageForm = u.Medince?.DosageForm,
+                    Image = products.Where( a => a.ProductId == u.Medince?.ProductId).FirstOrDefault()?.Image
                 }),
                 SickSymtomps =sick,
                 SideEffect = effect,

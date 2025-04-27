@@ -232,7 +232,7 @@ namespace KoiGuardian.Api.Services
                 existingBlog.Content = !string.IsNullOrEmpty(blogUpdateRequest.Content) ? blogUpdateRequest.Content : existingBlog.Content;
                 existingBlog.Images = blogUpdateRequest.Images ?? existingBlog.Images;
                 existingBlog.Tag = "Pending";
-                existingBlog.IsApproved = false;
+                existingBlog.IsApproved = null;
                 existingBlog.Type = !string.IsNullOrEmpty(blogUpdateRequest.Type) ? blogUpdateRequest.Type : existingBlog.Type;
                 existingBlog.ShopId = blogUpdateRequest.ShopId != Guid.Empty ? blogUpdateRequest.ShopId : existingBlog.ShopId;
 

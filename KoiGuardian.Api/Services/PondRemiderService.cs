@@ -68,8 +68,8 @@ namespace KoiGuardian.Api.Services
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
                     ReminderType = ReminderType.Maintenance,
-                    Title = "Maintenance for Pond",
-                    Description = "No data available for the pond. Maintenance required.",
+                    Title = "Lịch bảo trì hồ",
+                    Description = "Khôing có đủ dữ liệu thích hợp. Yêu cầu bảo trì.",
                     MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
@@ -99,8 +99,8 @@ namespace KoiGuardian.Api.Services
                     PondReminderId = Guid.NewGuid(),
                     PondId = pondId,
                     ReminderType = ReminderType.Maintenance,
-                    Title = "Maintenance for Pond",
-                    Description = $"Quá lâu chưa cập nhật hồ (last update: {daysSinceLastUpdate} days ago).",
+                    Title = "Bảo trì cho hồ",
+                    Description = $"Quá lâu chưa cập nhật hồ (lần cập nhật cuối: {daysSinceLastUpdate} ngày trước).",
                     MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60*7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
@@ -154,7 +154,7 @@ namespace KoiGuardian.Api.Services
                         if (daysUntilMaintenance < 0)
                             continue;
                         maintenanceDate = DateTime.UtcNow.AddDays(daysUntilMaintenance);
-                        description = $"{parameter.Name} approaching unsafe limits ({currentValue}/{maxSafeDensity})";
+                        description = $"{parameter.Name} đang tiến gần đến giới hạn không an toàn ({currentValue}/{maxSafeDensity})";
                     }
                     else
                     {
@@ -175,7 +175,7 @@ namespace KoiGuardian.Api.Services
             if (!earliestMaintenanceDate.HasValue)
             {
                 earliestMaintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau nếu không có dữ liệu cụ thể
-                earliestDescription = "Routine maintenance scheduled (no critical parameters detected)";
+                earliestDescription = "Đã lên lịch bảo trì định kỳ (không phát hiện thông số quan trọng nào)";
                 earliestValue = 0;
                 earliestParamName = "Pond";
             }

@@ -655,7 +655,7 @@ IImageUploadService imageUpload
                 // Kiểm tra giá gói mới so với gói hiện tại
                 if (package.PackagePrice < currentPackageDetails.PackagePrice)
                 {
-                    return ("Downgrading to a lower-priced package is not supported!", false, null, null, false);
+                    return ("Hệ thông không hỗ trợ hạ gói thành viên !", false, null, null, false);
                 }
 
                 var expirationDate = currentPackage.PurchaseDate.AddDays(currentPackageDetails.Peiod);
@@ -678,14 +678,14 @@ IImageUploadService imageUpload
                     if (!confirmPurchase)
                     {
                         // Lần đầu gửi, thông báo số ngày còn lại và giá đã giảm
-                        return ($"Your current package is active until {expirationDate:dd/MM/yyyy HH:mm:ss UTC} ({remainingDays:F2} days left). You can upgrade to the new package for {discountedPrice:F2} (original: {package.PackagePrice:F2}, discounted: {discountValue:F2}). Confirm to proceed?",
+                        return ($"Gói thành viên của bạn vẫn còn thời hạn đến {expirationDate:dd/MM/yyyy HH:mm:ss UTC} ({remainingDays:F2} còn lại). Bạn có thể nâng cấp gói mới với giá {discountedPrice:F2} (giá gốc: {package.PackagePrice:F2}, được giảm: {discountValue:F2}). Xác nhận nâng cấp?",
                                 false, expirationDate, discountedPrice, true);
                     }
 
                     // Kiểm tra số dư ví
                     if ((decimal)wallet.Amount < discountedPrice)
                     {
-                        return ("Your balance is not enough for the discounted price!", false, null, null, false);
+                        return ("Số dư của bạn không đủ thanh toán!", false, null, null, false);
                     }
 
                     // Tiến hành nâng cấp gói
@@ -729,7 +729,7 @@ IImageUploadService imageUpload
         // Trường hợp không có gói hiện tại
         if ((decimal)wallet.Amount < package.PackagePrice)
         {
-            return ("Your balance is not enough!", false, null, null, false);
+            return ("số dư không đủ!", false, null, null, false);
         }
 
         // Mua gói mới như bình thường

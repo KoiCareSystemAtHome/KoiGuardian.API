@@ -390,6 +390,21 @@ namespace KoiGuardian.Api.Services
                     }
 
                 }
+                else
+                {
+                    spec = "🏥 Thiết bị hỗ trợ hồ cá cải thiện các thông số: \n";
+                    foreach (var effect in product.GetParameterImpacts()) { 
+                        if ( effect.Value == ParameterImpactType.Increased)
+                        {
+                        spec += $"🛟 Tăng {effect.Key} \n";
+
+                        }else if(effect.Value == ParameterImpactType.Decreased)
+                        {
+                        spec += $"🛟 Giảm {effect.Key} \n ";
+
+                        }
+                    }
+                }
 
             }
 

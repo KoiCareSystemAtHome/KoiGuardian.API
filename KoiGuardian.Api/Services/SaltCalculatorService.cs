@@ -339,98 +339,113 @@ namespace KoiGuardian.Api.Services
         }
 
 
-        public async Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var pond = await _pondRepository.GetQueryable(p => p.PondID == pondId)
-                    .FirstOrDefaultAsync(cancellationToken);
+         public async Task<SaltUpdateResponse> UpdateSaltAmount(Guid pondId, double addedSaltKg, CancellationToken cancellationToken)
+ {
+     try
+     {
+         var pond = await _pondRepository.GetQueryable(p => p.PondID == pondId)
+             .FirstOrDefaultAsync(cancellationToken);
 
-                if (pond == null)
-                {
-                    return new SaltUpdateResponse
-                    {
-                        Success = false,
-                        Message = "Không tìm thấy hồ."
-                    };
-                }
+         if (pond == null)
+         {
+             return new SaltUpdateResponse
+             {
+                 Success = false,
+                 Message = "Không tìm thấy hồ."
+             };
+         }
 
-                // Kiểm tra số lần đã thêm muối trong ngày hôm nay
-                var today = DateTime.UtcNow.Date;
-                var tomorrow = today.AddDays(1);
+         // Kiểm tra số lần đã thêm muối trong ngày hôm nay
+         var today = DateTime.UtcNow.Date;
+         var tomorrow = today.AddDays(1);
 
-                // Lấy số lượng bản ghi thông số muối từ hôm nay
-                var saltUpdatesCountToday = await _pondParamRepository
-                    .GetQueryable(p => p.PondId == pondId &&
-                                  p.Parameter.Name.ToLower() == "salt" &&
-                                  p.CalculatedDate >= today &&
-                                  p.CalculatedDate < tomorrow)
-                    .Include(p => p.Parameter)
-                    .CountAsync(cancellationToken);
+         // Lấy số lượng bản ghi thông số muối từ hôm nay
+         var saltUpdatesCountToday = await _pondParamRepository
+             .GetQueryable(p => p.PondId == pondId &&
+                           p.Parameter.Name.ToLower() == "salt" &&
+                           p.CalculatedDate >= today &&
+                           p.CalculatedDate < tomorrow)
+             .Include(p => p.Parameter)
+             .CountAsync(cancellationToken);
 
-                // Giới hạn chỉ được thêm muối 2 lần mỗi ngày
-                if (saltUpdatesCountToday >= 2)
-                {
-                    return new SaltUpdateResponse
-                    {
-                        Success = false,
-                        Message = "Bạn không được nhập quá 2 lần trong một ngày."
-                    };
-                }
+         // Giới hạn chỉ được thêm muối 2 lần mỗi ngày
+         if (saltUpdatesCountToday >= 2)
+         {
+             return new SaltUpdateResponse
+             {
+                 Success = false,
+                 Message = "Bạn không được nhập quá 2 lần trong một ngày."
+             };
+         }
 
-                // Lấy thông tin standardSaltParam để tạo bản ghi mới
-                var standardSaltParam = await _pondStandardParamRepository
-                    .GetQueryable(p => p.Name.ToLower() == "salt")
-                    .FirstOrDefaultAsync(cancellationToken);
+         // Lấy thông tin standardSaltParam để tạo bản ghi mới
+         var standardSaltParam = await _pondStandardParamRepository
+             .GetQueryable(p => p.Name.ToLower() == "salt")
+             .FirstOrDefaultAsync(cancellationToken);
 
-                if (standardSaltParam == null)
-                {
-                    return new SaltUpdateResponse
-                    {
-                        Success = false,
-                        Message = "Không tìm thấy thông số muối tiêu chuẩn."
-                    };
-                }
+         if (standardSaltParam == null)
+         {
+             return new SaltUpdateResponse
+             {
+                 Success = false,
+                 Message = "Không tìm thấy thông số muối tiêu chuẩn."
+             };
+         }
 
-                // Tạo bản ghi mới cho giá trị muối
-                var newSaltParameter = new RelPondParameter
-                {
-                    RelPondParameterId = Guid.NewGuid(),
-                    PondId = pondId,
-                    ParameterID = standardSaltParam.ParameterID,
-                    Value = (float)addedSaltKg, // Lưu giá trị mới trực tiếp
-                    CalculatedDate = DateTime.UtcNow,
-                    ParameterHistoryId = Guid.NewGuid()
-                };
-                _pondParamRepository.Insert(newSaltParameter);
+         // Lấy giá trị muối hiện tại từ database (bản ghi gần nhất)
+         double currentSalt = 0;
+         var latestSaltRecord = await _pondParamRepository
+             .GetQueryable(p => p.PondId == pondId && p.Parameter.Name.ToLower() == "salt")
+             .Include(p => p.Parameter)
+             .OrderByDescending(p => p.CalculatedDate)
+             .FirstOrDefaultAsync(cancellationToken);
 
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
+         if (latestSaltRecord != null)
+         {
+             currentSalt = latestSaltRecord.Value;
+         }
 
-                // Cập nhật cache với giá trị mới nhất
-                if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
-                {
-                    cachedResponse.CurrentSalt = addedSaltKg; // Cập nhật giá trị hiện tại trong cache
-                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
-                    _saltCalculationCache[pondId] = cachedResponse;
-                }
+         // Cộng dồn lượng muối mới và gán lại cho addedSaltKg
+         addedSaltKg = currentSalt + addedSaltKg;
 
-                return new SaltUpdateResponse
-                {
-                    Success = true,
-                    Message = $"Đã thêm thành công {addedSaltKg} % nồng độ muối."
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Lỗi khi cập nhật lượng muối: {ex.Message}");
-                return new SaltUpdateResponse
-                {
-                    Success = false,
-                    Message = $"Đã xảy ra lỗi: {ex.Message}"
-                };
-            }
-        }
+         // Tạo bản ghi mới cho giá trị muối
+         var newSaltParameter = new RelPondParameter
+         {
+             RelPondParameterId = Guid.NewGuid(),
+             PondId = pondId,
+             ParameterID = standardSaltParam.ParameterID,
+             Value = (float)addedSaltKg, // Dùng addedSaltKg nhưng đã được cộng dồn
+             CalculatedDate = DateTime.UtcNow,
+             ParameterHistoryId = Guid.NewGuid()
+         };
+         _pondParamRepository.Insert(newSaltParameter);
 
+         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+         // Cập nhật cache với giá trị mới nhất
+         if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
+         {
+             cachedResponse.CurrentSalt = addedSaltKg; // Cập nhật giá trị hiện tại trong cache
+             cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
+             _saltCalculationCache[pondId] = cachedResponse;
+         }
+
+         return new SaltUpdateResponse
+         {
+             Success = true,
+             Message = $"Đã thêm thành công {addedSaltKg} % nồng độ muối."
+         };
+     }
+     catch (Exception ex)
+     {
+         Console.WriteLine($"Lỗi khi cập nhật lượng muối: {ex.Message}");
+         return new SaltUpdateResponse
+         {
+             Success = false,
+             Message = $"Đã xảy ra lỗi: {ex.Message}"
+         };
+     }
+ }
 
 
         public async Task<List<SaltReminderRequest>> GenerateSaltAdditionRemindersAsync(Guid pondId, int cycleHours, CancellationToken cancellationToken)

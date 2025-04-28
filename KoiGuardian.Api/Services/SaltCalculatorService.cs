@@ -392,13 +392,29 @@ namespace KoiGuardian.Api.Services
                     };
                 }
 
+                // Lấy giá trị muối hiện tại từ database (bản ghi gần nhất)
+                double currentSalt = 0;
+                var latestSaltRecord = await _pondParamRepository
+                    .GetQueryable(p => p.PondId == pondId && p.Parameter.Name.ToLower() == "salt")
+                    .Include(p => p.Parameter)
+                    .OrderByDescending(p => p.CalculatedDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (latestSaltRecord != null)
+                {
+                    currentSalt = latestSaltRecord.Value;
+                }
+
+                // Cộng dồn lượng muối mới
+                double updatedSalt = currentSalt + addedSaltKg;
+
                 // Tạo bản ghi mới cho giá trị muối
                 var newSaltParameter = new RelPondParameter
                 {
                     RelPondParameterId = Guid.NewGuid(),
                     PondId = pondId,
                     ParameterID = standardSaltParam.ParameterID,
-                    Value = (float)addedSaltKg, // Lưu giá trị mới trực tiếp
+                    Value = (float)updatedSalt, // Lưu giá trị cộng dồn
                     CalculatedDate = DateTime.UtcNow,
                     ParameterHistoryId = Guid.NewGuid()
                 };
@@ -409,8 +425,8 @@ namespace KoiGuardian.Api.Services
                 // Cập nhật cache với giá trị mới nhất
                 if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
                 {
-                    cachedResponse.CurrentSalt = addedSaltKg; // Cập nhật giá trị hiện tại trong cache
-                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
+                    cachedResponse.CurrentSalt = updatedSalt; // Cập nhật giá trị cộng dồn trong cache
+                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - updatedSalt);
                     _saltCalculationCache[pondId] = cachedResponse;
                 }
 

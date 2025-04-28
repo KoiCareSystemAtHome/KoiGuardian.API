@@ -405,8 +405,8 @@ namespace KoiGuardian.Api.Services
                     currentSalt = latestSaltRecord.Value;
                 }
 
-                // Cộng dồn lượng muối mới
-                double updatedSalt = currentSalt + addedSaltKg;
+                // Cộng dồn lượng muối mới và gán lại cho addedSaltKg
+                addedSaltKg = currentSalt + addedSaltKg;
 
                 // Tạo bản ghi mới cho giá trị muối
                 var newSaltParameter = new RelPondParameter
@@ -414,7 +414,7 @@ namespace KoiGuardian.Api.Services
                     RelPondParameterId = Guid.NewGuid(),
                     PondId = pondId,
                     ParameterID = standardSaltParam.ParameterID,
-                    Value = (float)updatedSalt, // Lưu giá trị cộng dồn
+                    Value = (float)addedSaltKg, // Dùng addedSaltKg nhưng đã được cộng dồn
                     CalculatedDate = DateTime.UtcNow,
                     ParameterHistoryId = Guid.NewGuid()
                 };
@@ -425,8 +425,8 @@ namespace KoiGuardian.Api.Services
                 // Cập nhật cache với giá trị mới nhất
                 if (_saltCalculationCache.TryGetValue(pondId, out CalculateSaltResponse cachedResponse))
                 {
-                    cachedResponse.CurrentSalt = updatedSalt; // Cập nhật giá trị cộng dồn trong cache
-                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - updatedSalt);
+                    cachedResponse.CurrentSalt = addedSaltKg; // Cập nhật giá trị hiện tại trong cache
+                    cachedResponse.SaltNeeded = Math.Max(0, cachedResponse.TotalSalt - addedSaltKg);
                     _saltCalculationCache[pondId] = cachedResponse;
                 }
 

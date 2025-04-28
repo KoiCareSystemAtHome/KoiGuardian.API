@@ -150,7 +150,7 @@ namespace KoiGuardian.Api.Services
                 foreach (var fish in fishList)
                 {
                     var diseaseProfilesQuery = _koiDiseaseProfileRepository
-                        .GetQueryable(d => d.FishId == fish.KoiID  && d.EndDate <= DateTime.Now)
+                        .GetQueryable(d => d.FishId == fish.KoiID  && d.EndDate >= DateTime.Now)
                         .Include(d => d.Disease);
                     var diseaseProfiles = await diseaseProfilesQuery.ToListAsync();
 

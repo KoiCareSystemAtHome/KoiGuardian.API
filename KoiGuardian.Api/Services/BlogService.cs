@@ -204,6 +204,7 @@ namespace KoiGuardian.Api.Services
 
             try
             {
+                // Retrieve the existing blog
                 var existingBlog = await _blogRepository.GetAsync(x => x.BlogId.Equals(blogUpdateRequest.BlogId), cancellationToken);
                 if (existingBlog == null)
                 {
@@ -214,27 +215,44 @@ namespace KoiGuardian.Api.Services
                     };
                 }
 
-                if (blogUpdateRequest.ShopId != Guid.Empty && blogUpdateRequest.ShopId != existingBlog.ShopId)
+                // Determine the ShopId to use (new ShopId if provided, otherwise existing ShopId)
+                Guid shopId = blogUpdateRequest.ShopId != Guid.Empty ? blogUpdateRequest.ShopId : existingBlog.ShopId;
+
+                // Validate that the Shop exists
+                var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == shopId, cancellationToken);
+                if (!shopExists)
                 {
-                    var shopExists = await _shopRepository.AnyAsync(s => s.ShopId == blogUpdateRequest.ShopId, cancellationToken);
-                    if (!shopExists)
+                    return new BlogResponse
+                    {
+                        Status = "400",
+                        Message = "Shop does not exist."
+                    };
+                }
+
+                // Validate that all provided ProductIds belong to the specified ShopId
+                if (blogUpdateRequest.ProductIds != null && blogUpdateRequest.ProductIds.Any())
+                {
+                    var invalidProducts = await _productRepository
+                        .AnyAsync(p => blogUpdateRequest.ProductIds.Contains(p.ProductId) && p.ShopId != shopId, cancellationToken);
+
+                    if (invalidProducts)
                     {
                         return new BlogResponse
                         {
                             Status = "400",
-                            Message = "Shop with the provided ShopId does not exist."
+                            Message = "Sản phẩm không có trong shop"
                         };
                     }
                 }
 
-                // Update only provided fields
+                // Update blog fields only if provided
                 existingBlog.Title = !string.IsNullOrEmpty(blogUpdateRequest.Title) ? blogUpdateRequest.Title : existingBlog.Title;
                 existingBlog.Content = !string.IsNullOrEmpty(blogUpdateRequest.Content) ? blogUpdateRequest.Content : existingBlog.Content;
                 existingBlog.Images = blogUpdateRequest.Images ?? existingBlog.Images;
                 existingBlog.Tag = "Pending";
                 existingBlog.IsApproved = null;
                 existingBlog.Type = !string.IsNullOrEmpty(blogUpdateRequest.Type) ? blogUpdateRequest.Type : existingBlog.Type;
-                existingBlog.ShopId = blogUpdateRequest.ShopId != Guid.Empty ? blogUpdateRequest.ShopId : existingBlog.ShopId;
+                existingBlog.ShopId = shopId;
 
                 // Ensure ReportedDate is UTC if it exists
                 if (existingBlog.ReportedDate.HasValue)
@@ -242,10 +260,13 @@ namespace KoiGuardian.Api.Services
                     existingBlog.ReportedDate = DateTime.SpecifyKind(existingBlog.ReportedDate.Value, DateTimeKind.Utc);
                 }
 
+                // Update the blog in the repository
                 _blogRepository.Update(existingBlog);
 
+                // Handle BlogProduct updates
                 if (blogUpdateRequest.ProductIds != null)
                 {
+                    // Retrieve existing BlogProducts
                     var existingBlogProducts = await _blogProductRepository.FindAsync(bp => bp.BlogId == existingBlog.BlogId, cancellationToken);
                     var existingProductIds = existingBlogProducts
                         .Where(bp => bp.Product != null)
@@ -253,6 +274,7 @@ namespace KoiGuardian.Api.Services
                         .ToList();
                     var newProductIds = blogUpdateRequest.ProductIds;
 
+                    // Remove BlogProducts that are no longer in the new ProductIds
                     foreach (var existingBlogProduct in existingBlogProducts)
                     {
                         if (!newProductIds.Contains(existingBlogProduct.ProductId))
@@ -261,6 +283,7 @@ namespace KoiGuardian.Api.Services
                         }
                     }
 
+                    // Add new BlogProducts for new ProductIds
                     foreach (var productId in newProductIds)
                     {
                         if (!existingProductIds.Contains(productId))
@@ -276,6 +299,7 @@ namespace KoiGuardian.Api.Services
                     }
                 }
 
+                // Save all changes
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                 return new BlogResponse

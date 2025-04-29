@@ -155,50 +155,28 @@ namespace KoiGuardian.Api.Controllers
                 });
             }
         }
-
         [HttpPost("update-salt-amount")]
         public async Task<IActionResult> UpdateSaltAmount([FromBody] UpdateSaltAmountRequest request, CancellationToken cancellationToken)
         {
-            try
+            // Kiểm tra dữ liệu đầu vào
+            if (request == null || request.PondId == Guid.Empty || request.AddedSaltKg <= 0)
             {
-                if (request == null || request.PondId == Guid.Empty)
-                {
-                    return BadRequest(new { Success = false, Message = "Yêu cầu không hợp lệ: PondId là bắt buộc" });
-                }
-
-                if (request.AddedSaltKg < 0)
-                {
-                    return BadRequest(new { Success = false, Message = "Lượng muối không thể là số âm" });
-                }
-
-                var result = await _saltCalculatorService.UpdateSaltAmount(request.PondId, request.AddedSaltKg, cancellationToken);
-
-                if (!result.Success)
-                {
-                    return BadRequest(new
-                    {
-                        Success = false,
-                        Message = result.Message // Sử dụng thông báo từ service
-                    });
-                }
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = result.Message // Sử dụng thông báo thành công từ service
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
+                return Ok(new SaltUpdateResponse
                 {
                     Success = false,
-                    Message = $"Đã xảy ra lỗi khi cập nhật lượng muối: {ex.Message}"
+                    Message = "Dữ liệu đầu vào không hợp lệ. Vui lòng cung cấp PondId và AddedSaltKg hợp lệ."
                 });
             }
-        }
 
-        [HttpPost("save-reminders")]
+            // Gọi dịch vụ để cập nhật lượng muối
+            var response = await _saltCalculatorService.UpdateSaltAmount(request.PondId, request.AddedSaltKg, cancellationToken);
+
+            // Luôn trả về HTTP 200 với SaltUpdateResponse
+            return Ok(response);
+        }
+    
+
+    [HttpPost("save-reminders")]
         public async Task<IActionResult> SaveSelectedReminders([FromBody] SaveSaltRemindersRequest request)
         {
             try

@@ -373,7 +373,7 @@ namespace KoiGuardian.Api.Services
          {
              return new SaltUpdateResponse
              {
-                 Success = false,
+                 Success = true,
                  Message = "Bạn không được nhập quá 2 lần trong một ngày."
              };
          }

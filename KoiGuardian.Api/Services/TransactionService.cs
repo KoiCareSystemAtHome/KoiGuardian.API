@@ -301,8 +301,13 @@ namespace KoiGuardian.Api.Services
             );
 
             result.SuccessfulOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower());
-            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
-            result.PendingOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Pending.ToString().ToLower());
+            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Return.ToString().ToLower() 
+                                            || o.Status.ToLower() == OrderStatus.Cancel.ToString().ToLower()
+                                            || o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
+            result.PendingOrders = orders.Count(o => o.Status.ToLower() != OrderStatus.Return.ToString().ToLower() 
+                                            && o.Status.ToLower() != OrderStatus.Cancel.ToString().ToLower()
+                                            && o.Status.ToLower() != OrderStatus.Complete.ToString().ToLower()
+                                            && o.Status.ToLower() != OrderStatus.Fail.ToString().ToLower());
             result.TotalOrders = orders.Count();
 
             return result;
@@ -324,8 +329,13 @@ namespace KoiGuardian.Api.Services
             );
 
             result.SuccessfulOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower());
-            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
-            result.PendingOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Pending.ToString().ToLower());
+            result.FailedOrders = orders.Count(o => o.Status.ToLower() == OrderStatus.Return.ToString().ToLower()
+                                            || o.Status.ToLower() == OrderStatus.Cancel.ToString().ToLower()
+                                            || o.Status.ToLower() == OrderStatus.Fail.ToString().ToLower());
+            result.PendingOrders = orders.Count(o => o.Status.ToLower() != OrderStatus.Return.ToString().ToLower()
+                                            && o.Status.ToLower() != OrderStatus.Cancel.ToString().ToLower()
+                                            && o.Status.ToLower() != OrderStatus.Complete.ToString().ToLower()
+                                            && o.Status.ToLower() != OrderStatus.Fail.ToString().ToLower());
             result.TotalOrders = orders.Count();
 
             return result;

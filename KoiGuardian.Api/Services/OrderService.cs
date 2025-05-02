@@ -109,9 +109,9 @@ public class OrderService(
                     to_district_id = districtId,
                     to_ward_code = request.Address.WardId.ToString(),
                     weight = totalWeight,
-                    length = 50, // Giả sử giá trị mặc định
-                    width = 50,
-                    height = 50,
+                    length = 10, // Giả sử giá trị mặc định
+                    width = 10,
+                    height = 10,
                     insurance_value = 0,
                     coupon = "",
                     items = orderDetails.Select(d => new Item

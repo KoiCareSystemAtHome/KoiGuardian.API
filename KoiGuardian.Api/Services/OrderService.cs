@@ -109,9 +109,9 @@ public class OrderService(
                     to_district_id = districtId,
                     to_ward_code = request.Address.WardId.ToString(),
                     weight = totalWeight,
-                    length = 10, // Giả sử giá trị mặc định
-                    width = 10,
-                    height = 10,
+                    length = 50, // Giả sử giá trị mặc định
+                    width = 50,
+                    height = 50,
                     insurance_value = 0,
                     coupon = "",
                     items = orderDetails.Select(d => new Item
@@ -449,7 +449,7 @@ public class OrderService(
 
             if (status == OrderStatus.Complete.ToString().ToLower() && transaction.Payment == null)
             {
-                order.UpdatedDate = DateTime.UtcNow;
+                //order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 var paymentInfo = new PaymentInfo
                 {
@@ -480,7 +480,7 @@ public class OrderService(
             else if (status == OrderStatus.Fail.ToString().ToLower() && transaction.Refund == null && transaction.Payment !=null
                      && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow;
+                //order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
@@ -510,7 +510,7 @@ public class OrderService(
             else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Refund == null && transaction.Payment != null
                     && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow;
+                //order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
@@ -540,7 +540,7 @@ public class OrderService(
             else if (status == OrderStatus.Return.ToString().ToLower() && transaction.Payment == null
                    && transaction.TransactionType.ToLower() != TransactionType.Cancel.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow;
+                //order.UpdatedDate = DateTime.UtcNow;
                 order.Status = request.Status;
                 transaction.TransactionType = TransactionType.Cancel.ToString();
 
@@ -553,7 +553,7 @@ public class OrderService(
             {
                 order.Status = request.Status;
             }
-
+            order.UpdatedDate = DateTime.UtcNow;
             orderRepository.Update(order);
             await uow.SaveChangesAsync();
             return OrderResponse.Success("Order updated successfully");
@@ -703,6 +703,7 @@ public class OrderService(
                 order.UpdatedDate = DateTime.UtcNow;
                 order.Status = OrderStatus.Cancel.ToString();
                 order.Note = request.reason;
+                
 
                 var RefundInfo = new RefundInfo
                 {

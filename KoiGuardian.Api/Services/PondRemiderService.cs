@@ -69,7 +69,7 @@ namespace KoiGuardian.Api.Services
                     PondId = pondId,
                     ReminderType = ReminderType.Maintenance,
                     Title = "Lịch bảo trì hồ",
-                    Description = "Khôing có đủ dữ liệu thích hợp. Yêu cầu bảo trì.",
+                    Description = "Không có đủ dữ liệu thích hợp. Yêu cầu bảo trì.",
                     MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
@@ -101,7 +101,7 @@ namespace KoiGuardian.Api.Services
                     ReminderType = ReminderType.Maintenance,
                     Title = "Bảo trì cho hồ",
                     Description = $"Quá lâu chưa cập nhật hồ (lần cập nhật cuối: {daysSinceLastUpdate} ngày trước).",
-                    MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60*7).ToUniversalTime(), // Ngày hôm sau
+                    MaintainDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7).ToUniversalTime(), // Ngày hôm sau
                     SeenDate = DateTime.MinValue.ToUniversalTime()
                 };
             }
@@ -109,7 +109,7 @@ namespace KoiGuardian.Api.Services
             // Tính toán ngày bảo trì cho từng parameter
             foreach (var paramId in parameterGroups.Keys)
             {
-                if (!parameterLookup.TryGetValue(paramId, out var parameter) || parameter.DangerUpper == null)
+                if (!parameterLookup.TryGetValue(paramId, out var parameter))
                     continue;
 
                 var paramData = parameterGroups[paramId];
@@ -117,48 +117,75 @@ namespace KoiGuardian.Api.Services
                     continue;
 
                 var currentValue = paramData.Last().Value;
-                var maxSafeDensity = (double)parameter.DangerUpper;
+                var maxSafeDensity = parameter.DangerUpper;
+                var minSafeDensity = parameter.DangerLower;
                 var warningUpper = parameter.WarningUpper;
+                var warningLower = parameter.WarningLowwer;
+
+                // Bỏ qua nếu không có ngưỡng nào được định nghĩa
+                if (!maxSafeDensity.HasValue && !minSafeDensity.HasValue &&
+                    !warningUpper.HasValue && !warningLower.HasValue)
+                    continue;
 
                 DateTime maintenanceDate;
                 string description;
 
-                // Kiểm tra ngưỡng nguy hiểm
-                if (currentValue >= maxSafeDensity)
+                // Kiểm tra ngưỡng nguy hiểm (quá cao)
+                if (maxSafeDensity.HasValue && currentValue >= maxSafeDensity.Value)
                 {
                     maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
-                    description = $"{parameter.Name} chạm ngưỡng nguy hiểm ({currentValue}/{maxSafeDensity})";
+                    description = $"{parameter.Name} chạm ngưỡng nguy hiểm cao ({currentValue}/{maxSafeDensity.Value})";
                 }
-                // Kiểm tra ngưỡng cảnh báo
+                // Kiểm tra ngưỡng nguy hiểm (quá thấp)
+                else if (minSafeDensity.HasValue && currentValue <= minSafeDensity.Value)
+                {
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
+                    description = $"{parameter.Name} chạm ngưỡng nguy hiểm thấp ({currentValue}/{minSafeDensity.Value})";
+                }
+                // Kiểm tra ngưỡng cảnh báo (quá cao)
                 else if (warningUpper.HasValue && currentValue > warningUpper.Value)
                 {
                     maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
-                    description = $"{parameter.Name} vượt ngưỡng cảnh báo ({currentValue}/{warningUpper.Value})";
+                    description = $"{parameter.Name} vượt ngưỡng cảnh báo cao ({currentValue}/{warningUpper.Value})";
                 }
-                // Tính ngày bảo trì dựa trên gia tăng
+                // Kiểm tra ngưỡng cảnh báo (quá thấp)
+                else if (warningLower.HasValue && currentValue < warningLower.Value)
+                {
+                    maintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau
+                    description = $"{parameter.Name} dưới ngưỡng cảnh báo thấp ({currentValue}/{warningLower.Value})";
+                }
+                // Tính ngày bảo trì dựa trên gia tăng hoặc giảm
                 else
                 {
-                    double totalIncrease = 0;
+                    double totalChange = 0;
                     int count = 0;
                     for (int i = 1; i < paramData.Count; i++)
                     {
-                        double increase = paramData[i].Value - paramData[i - 1].Value;
-                        totalIncrease += increase;
+                        double change = paramData[i].Value - paramData[i - 1].Value;
+                        totalChange += change;
                         count++;
                     }
-                    double avgIncrease = count > 0 ? totalIncrease / count : 0;
+                    double avgChange = count > 0 ? totalChange / count : 0;
 
-                    if (avgIncrease > 0)
+                    if (avgChange > 0 && maxSafeDensity.HasValue)
                     {
-                        int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity - currentValue) / avgIncrease);
+                        int daysUntilMaintenance = (int)Math.Ceiling((maxSafeDensity.Value - currentValue) / avgChange);
                         if (daysUntilMaintenance < 0)
                             continue;
                         maintenanceDate = DateTime.UtcNow.AddDays(daysUntilMaintenance);
-                        description = $"{parameter.Name} đang tiến gần đến giới hạn không an toàn ({currentValue}/{maxSafeDensity})";
+                        description = $"{parameter.Name} đang tiến gần đến giới hạn không an toàn cao ({currentValue}/{maxSafeDensity.Value})";
+                    }
+                    else if (avgChange < 0 && minSafeDensity.HasValue)
+                    {
+                        int daysUntilMaintenance = (int)Math.Ceiling((currentValue - minSafeDensity.Value) / -avgChange);
+                        if (daysUntilMaintenance < 0)
+                            continue;
+                        maintenanceDate = DateTime.UtcNow.AddDays(daysUntilMaintenance);
+                        description = $"{parameter.Name} đang tiến gần đến giới hạn không an toàn thấp ({currentValue}/{minSafeDensity.Value})";
                     }
                     else
                     {
-                        continue; // Không có gia tăng thì bỏ qua parameter này
+                        continue; // Không có thay đổi đáng kể hoặc không có ngưỡng để so sánh
                     }
                 }
 
@@ -175,7 +202,7 @@ namespace KoiGuardian.Api.Services
             if (!earliestMaintenanceDate.HasValue)
             {
                 earliestMaintenanceDate = DateTime.UtcNow.AddDays(1); // Ngày hôm sau nếu không có dữ liệu cụ thể
-                earliestDescription = "Đã lên lịch bảo trì định kỳ (không phát hiện thông số quan trọng nào)";
+                earliestDescription = "Đã lên lịch bảo trì (Hồ mới hoặc không đủ thông số)";
                 earliestValue = 0;
                 earliestParamName = "Pond";
             }
@@ -186,12 +213,11 @@ namespace KoiGuardian.Api.Services
                 PondId = pondId,
                 ReminderType = ReminderType.Maintenance,
                 Title = $"Lịch Bảo Dưỡng Hồ Cho {earliestParamName}",
-                Description = $"Nồng Độ Hiẹn tại: {earliestValue} - {earliestDescription}. Cần Được Bảo Trì.",
+                Description = $"Nồng Độ Hiện tại: {earliestValue} - {earliestDescription}. Cần Được Bảo Trì.",
                 MaintainDate = earliestMaintenanceDate.Value.AddMinutes(60 * 7).ToUniversalTime(),
                 SeenDate = DateTime.MinValue.ToUniversalTime()
             };
         }
-
         // Lấy thông tin nhắc nhở theo ID
         public async Task<PondRemiderResponse> GetRemindersByIdAsync(Guid id, CancellationToken cancellationToken)
         {

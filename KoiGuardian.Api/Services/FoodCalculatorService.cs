@@ -137,7 +137,7 @@ public class FoodCalculatorService
 
         if (food == null || food.Count() == 0)
         {
-            food = await foodRepository.FindAsync(u => u.AgeFrom < minFishAge,
+            food = await foodRepository.FindAsync(u => u.AgeTo > minFishAge,
                 include: u => u.Include(u => u.Product));
         }
 

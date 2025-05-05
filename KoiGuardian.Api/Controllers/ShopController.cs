@@ -50,5 +50,11 @@ namespace KoiGuardian.Api.Controllers
         {
             return await _shopService.GetShopByUserId(userId, cancellationToken);
         }
+
+        [HttpGet("get-shop-with-balance")]
+        public async Task<List<ShopBalanceResponseDto>> GetAllShopWithBalances(CancellationToken cancellationToken)
+        {
+            return await _shopService.GetAllShopsWithBalancesAsync(cancellationToken);
+        }
     }
 }

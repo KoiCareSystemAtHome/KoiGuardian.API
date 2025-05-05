@@ -26,6 +26,8 @@ public interface IOrderService
     Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request);
     Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId);
     Task<List<OrderFilterResponse>> GetAllOrders(CancellationToken cancellationToken = default);
+
+    Task<List<InvoiceDetailResponse>> CalculateOrderInvoicesAsync(CreateOrderRequest request);
 }
 
 public class OrderService(
@@ -817,5 +819,125 @@ public class OrderService(
                 }).ToList()
             };
         }).ToList();
+    }
+
+    public async Task<List<InvoiceDetailResponse>> CalculateOrderInvoicesAsync(CreateOrderRequest request)
+    {
+        try
+        {
+            if (request == null || request.OrderDetails == null || !request.OrderDetails.Any())
+            {
+                throw new ArgumentException("Invalid request data");
+            }
+
+            string addressNote = JsonSerializer.Serialize(new
+            {
+                ProvinceName = request.Address.ProvinceName,
+                ProvinceId = request.Address.ProvinceId,
+                DistrictName = request.Address.DistrictName,
+                DistrictId = request.Address.DistrictId,
+                WardName = request.Address.WardName,
+                WardId = request.Address.WardId
+            });
+
+            // Lấy danh sách Product trước (tránh gọi DB nhiều lần)
+            var productIds = request.OrderDetails.Select(d => d.ProductId).ToList();
+            var products = await productRepository.FindAsync(x => productIds.Contains(x.ProductId));
+
+            // Nhóm sản phẩm theo ShopId
+            var groupedOrderDetails = request.OrderDetails
+                .GroupBy(d => products.FirstOrDefault(p => p.ProductId == d.ProductId)?.ShopId ?? Guid.Empty)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            List<InvoiceDetailResponse> invoiceResponses = new List<InvoiceDetailResponse>();
+
+            foreach (var group in groupedOrderDetails)
+            {
+                Guid shopId = group.Key;
+                var orderDetails = group.Value;
+                var shop = await shopRepository.GetAsync(x => x.ShopId.Equals(shopId), CancellationToken.None);
+
+                // Tính tổng giá trị đơn hàng và tổng trọng lượng cho từng ShopId
+                decimal totalProductPrice = 0;
+                int totalWeight = 0;
+                var items = new List<OrderItemResponse>();
+
+                foreach (var detail in orderDetails)
+                {
+                    var product = products.FirstOrDefault(p => p.ProductId == detail.ProductId);
+                    if (product == null)
+                    {
+                        throw new InvalidOperationException($"Product with ID {detail.ProductId} not found");
+                    }
+
+                    if (product.StockQuantity < detail.Quantity)
+                    {
+                        throw new InvalidOperationException($"Insufficient stock for product {product.ProductName}");
+                    }
+
+                    decimal itemTotal = product.Price * detail.Quantity;
+                    totalProductPrice += itemTotal;
+                    totalWeight += (int)product.Weight * detail.Quantity;
+
+                    items.Add(new OrderItemResponse
+                    {
+                        ProductId = product.ProductId,
+                        ProductName = product.ProductName,
+                        Quantity = detail.Quantity,
+                        UnitPrice = product.Price,
+                        TotalItemPrice = itemTotal
+                    });
+                }
+
+                int districtId;
+                if (!int.TryParse(request.Address.DistrictId, out districtId))
+                {
+                    throw new ArgumentException("Invalid DistrictId format. Must be a valid integer.");
+                }
+
+                var feeRequest = new GHNShippingFeeReuqest
+                {
+                    service_type_id = 2,
+                    to_district_id = districtId,
+                    to_ward_code = request.Address.WardId.ToString(),
+                    weight = totalWeight,
+                    length = 10, // Giả sử giá trị mặc định
+                    width = 10,
+                    height = 10,
+                    insurance_value = 0,
+                    coupon = "",
+                    items = orderDetails.Select(d => new Item
+                    {
+                        name = products.FirstOrDefault(p => p.ProductId == d.ProductId)?.ProductName ?? "Product",
+                        quantity = d.Quantity,
+                        weight = (int)products.FirstOrDefault(p => p.ProductId == d.ProductId).Weight,
+                    }).ToList()
+                };
+
+                var shippingFeeResponse = await ghnService.CalculateShippingFee(feeRequest, shop.GHNId);
+                if (shippingFeeResponse == null)
+                {
+                    throw new InvalidOperationException("Không thể tính phí vận chuyển");
+                }
+                decimal shippingFee = shippingFeeResponse.Data.Total;
+
+                // Tạo response cho hóa đơn của cửa hàng này
+                invoiceResponses.Add(new InvoiceDetailResponse
+                {
+                    ShopId = shopId,
+                    ShopName = shop?.ShopName ?? "Unknown Shop",
+                    TotalProductPrice = totalProductPrice,
+                    ShippingFee = shippingFee,
+                    TotalOrderPrice = totalProductPrice + shippingFee,
+                    Items = items
+                });
+            }
+
+            return invoiceResponses;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to create order: {ex.Message}", ex);
+        }
     }
 }

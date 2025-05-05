@@ -16,7 +16,13 @@ namespace KoiGuardian.Models.Response
 
     }
 
-    
+    // Response DTO for shop with balance
+    public class ShopBalanceResponseDto
+    {
+        public Guid ShopId { get; set; }
+        public string ShopName { get; set; }
+        public decimal ShopBalance { get; set; }
+    }
 
 
 

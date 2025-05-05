@@ -23,18 +23,23 @@ namespace KoiGuardian.Api.Services
         Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken);
 
         Task<ShopResponse> GetShopByUserId(Guid userId, CancellationToken cancellation);
+
+        Task<List<ShopBalanceResponseDto>> GetAllShopsWithBalancesAsync(CancellationToken cancellationToken = default);
     }
 
     public class ShopService : IShopService
     {
         private readonly IRepository<Shop> _shopRepository;
+        private readonly IRepository<Wallet> _walletRepository;
         private readonly IUnitOfWork<KoiGuardianDbContext> _unitOfWork;
 
         public ShopService(
             IRepository<Shop> shopRepository,
+            IRepository<Wallet> walletRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork)
         {
             _shopRepository = shopRepository;
+            _walletRepository = walletRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -362,6 +367,41 @@ namespace KoiGuardian.Api.Services
             }
 
             return shopResponse;
+        }
+
+        public async Task<List<ShopBalanceResponseDto>> GetAllShopsWithBalancesAsync(CancellationToken cancellationToken = default)
+        {
+            // Retrieve all shops
+            var shops = await _shopRepository
+                .GetQueryable()
+                .Where(w => w.GHNId != "")
+                .ToListAsync(cancellationToken);
+
+            if (!shops.Any())
+            {
+                return new List<ShopBalanceResponseDto>();
+            }
+
+            // Retrieve wallets for all shop UserIds
+            var userIds = shops.Select(s => s.UserId).ToList();
+            var wallets = await _walletRepository
+                .GetQueryable()
+                .Where(w => userIds.Contains(w.UserId))
+                .ToListAsync(cancellationToken);
+
+            // Map shops to response DTO
+            var response = shops.Select(s =>
+            {
+                var wallet = wallets.FirstOrDefault(w => w.UserId == s.UserId);
+                return new ShopBalanceResponseDto
+                {
+                    ShopId = s.ShopId,
+                    ShopName = s.ShopName,
+                    ShopBalance = wallet != null ? (decimal)wallet.Amount : 0m
+                };
+            }).ToList();
+
+            return response;
         }
     }
 }

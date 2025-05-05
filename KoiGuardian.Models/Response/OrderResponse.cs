@@ -49,3 +49,23 @@ public class OrderDetailResponse
     public string RecieverPhone { get; set; }
     public object Details { get; set; }
 }
+
+
+public class InvoiceDetailResponse
+{
+    public Guid ShopId { get; set; }
+    public string ShopName { get; set; }
+    public decimal TotalProductPrice { get; set; }
+    public decimal ShippingFee { get; set; }
+    public decimal TotalOrderPrice { get; set; }
+    public List<OrderItemResponse> Items { get; set; }
+}
+
+public class OrderItemResponse
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal TotalItemPrice { get; set; }
+}

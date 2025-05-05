@@ -92,5 +92,13 @@ namespace KoiGuardian.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPost("CalculateOrderInvoices")]
+        public async Task<IActionResult> CreatCalculateOrderInvoicesAsync([FromBody] CreateOrderRequest request)
+        {
+            var response = await service.CalculateOrderInvoicesAsync(request);
+
+            return Ok(response);
+        }
+
     }
 }

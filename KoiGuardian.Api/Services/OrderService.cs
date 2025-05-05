@@ -25,6 +25,7 @@ public interface IOrderService
   /*  Task<OrderResponse> UpdateOrderShipFeeAsync(UpdateOrderShipFeeRequest request);*/
     Task<OrderResponse> UpdateOrderShipTypeAsync(UpdateOrderShipTypeRequest request);
     Task<List<OrderDetailResponse>> GetOrdersByShopIdAsync(Guid shopId);
+    Task<List<OrderFilterResponse>> GetAllOrders(CancellationToken cancellationToken = default);
 }
 
 public class OrderService(
@@ -740,5 +741,81 @@ public class OrderService(
 
             return OrderResponse.Error($"Failed to update order: {ex.Message}");
         }
+    }
+
+    public async Task<List<OrderFilterResponse>> GetAllOrders(CancellationToken cancellationToken = default)
+    {
+        // Retrieve all orders with related entities
+        var result = (await orderRepository.FindAsync(
+            predicate: _ => true, // No specific filter to get all orders
+            include: u => u.Include(u => u.Shop)
+                           .Include(u => u.User)
+                           .Include(u => u.OrderDetail)
+                           .Include(u => u.Report),
+            cancellationToken
+        )).OrderByDescending(u => u.CreatedDate).ToList();
+
+        // Retrieve transactions for all orders
+        var transactionList = await transactionRepository.FindAsync(
+            t => result.Select(o => o.OrderId).Contains(t.DocNo),
+            cancellationToken
+        );
+
+        // Retrieve user membership data
+        var mem = await memRepository.FindAsync(
+            u => result.Select(u => u.UserId).Contains(u.UserId),
+            cancellationToken
+        );
+
+        // Map orders to response DTO
+        return result.Select(u =>
+        {
+            var address = !string.IsNullOrEmpty(u.Address)
+                ? JsonSerializer.Deserialize<AddressDto>(u.Address)
+                : new AddressDto { ProvinceName = "No address info" };
+
+            var transaction = transactionList.FirstOrDefault(t => t.DocNo == u.OrderId);
+
+            return new OrderFilterResponse()
+            {
+                OrderId = u.OrderId,
+                ShopName = u.Shop.ShopName,
+                CustomerName = u.User.UserName,
+                CustomerAddress = address?.ToString(),
+                CustomerPhoneNumber = u.User.PhoneNumber,
+                ShipFee = u.ShipFee,
+                oder_code = u.oder_code,
+                Status = u.Status,
+                ShipType = u.ShipType,
+                Note = u.Note,
+                TransactionInfo = transaction != null ? new TransactionDto
+                {
+                    TransactionId = transaction.TransactionId,
+                    TransactionDate = transaction.TransactionDate,
+                    TransactionType = transaction.TransactionType,
+                    VnPayTransactionId = transaction.VnPayTransactionid,
+                    Payment = !string.IsNullOrEmpty(transaction.Payment)
+                        ? JsonSerializer.Deserialize<PaymentInfo>(transaction.Payment)
+                        : null,
+                    Refund = !string.IsNullOrEmpty(transaction.Refund)
+                        ? JsonSerializer.Deserialize<RefundInfo>(transaction.Refund)
+                        : null
+                } : null,
+                ReportDetail = u.Report != null ? new ReportDetailResponse
+                {
+                    ReportId = u.Report.ReportId,
+                    CreatedDate = u.Report.CreatedDate,
+                    image = u.Report.image,
+                    status = u.Report.status,
+                    Reason = u.Report.Reason,
+                    OrderId = u.Report.OrderId
+                } : null,
+                Details = u.OrderDetail.Select(d => new OrderDetailDto
+                {
+                    ProductId = d.ProductId,
+                    Quantity = d.Quantity
+                }).ToList()
+            };
+        }).ToList();
     }
 }

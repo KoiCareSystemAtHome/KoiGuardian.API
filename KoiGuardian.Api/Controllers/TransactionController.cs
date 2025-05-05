@@ -14,7 +14,7 @@ namespace KoiGuardian.Api.Controllers
         : ControllerBase
     {
         [HttpGet("transaction-by-shop")]
-        public async Task<List<TransactionDto>> GetTransactionbyShopId(Guid shopid)
+        public async Task<ShopTransactionResponseDto> GetTransactionbyShopId(Guid shopid)
         {
             return await service.GetTransactionbyShopIdAsync(shopid);
         }

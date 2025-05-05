@@ -82,4 +82,11 @@ namespace KoiGuardian.Models.Response
         public string Description { get; set; }
     }
 
+
+    public class ShopTransactionResponseDto
+    {
+        public decimal ShopBalance { get; set; }
+        public List<TransactionDto> Transactions { get; set; }
+       
+    }
 }

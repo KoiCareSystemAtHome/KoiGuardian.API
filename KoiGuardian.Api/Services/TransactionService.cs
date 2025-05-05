@@ -11,7 +11,7 @@ namespace KoiGuardian.Api.Services
 {
     public interface ITransactionService
     {
-        Task<List<TransactionDto>> GetTransactionbyShopIdAsync(Guid shopId);
+        Task<ShopTransactionResponseDto> GetTransactionbyShopIdAsync(Guid shopId, CancellationToken cancellationToken = default);
         Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId);
         Task<List<TransactionDto>> GetTransactionDespositbyOwnerIdAsync(Guid ownerId);
         Task<List<TransactionDto>> GetTransactionOrderbyOwnerIdAsync(Guid ownerId);
@@ -28,22 +28,41 @@ namespace KoiGuardian.Api.Services
          IRepository<Transaction> transactionRepository,
          IRepository<Package> packageRepository,
          IRepository<AccountPackage> ACrepository,
+         IRepository<Shop> shopRepository,
+        IRepository<Wallet> walletRepository,
          IUnitOfWork<KoiGuardianDbContext> uow
          ) : ITransactionService
     {
         private const decimal FeePercentage = 0.03m; // 3% phí trên mỗi đơn hàng
 
-        public async Task<List<TransactionDto>> GetTransactionbyShopIdAsync(Guid shopId)
+        public async Task<ShopTransactionResponseDto> GetTransactionbyShopIdAsync(Guid shopId, CancellationToken cancellationToken = default)
         {
-            var orders = await orderRepository.FindAsync(x => x.ShopId == shopId, CancellationToken.None);
+            // Retrieve orders for the shop
+            var orders = await orderRepository.FindAsync(x => x.ShopId == shopId, cancellationToken);
             var orderIds = orders.Select(o => o.OrderId).ToList();
 
+            // Retrieve transactions for the orders
             var transactions = await transactionRepository.FindAsync(
                 x => orderIds.Contains(x.DocNo),
-                CancellationToken.None
+                cancellationToken
             );
 
-            var result = transactions.Select(t =>
+            // Retrieve the shop's wallet
+            var shop = (await shopRepository.FindAsync(s => s.ShopId == shopId, cancellationToken)).FirstOrDefault();
+            if (shop == null)
+            {
+                return new ShopTransactionResponseDto
+                {
+                    Transactions = new List<TransactionDto>(),
+                    ShopBalance = 0m,
+                };
+            }
+
+            var wallet = (await walletRepository.FindAsync(w => w.UserId == shop.UserId, cancellationToken)).FirstOrDefault();
+            var shopBalance = wallet != null ? (decimal)wallet.Amount : 0m;
+
+            // Map transactions to TransactionDto
+            var transactionList = transactions.Select(t =>
             {
                 var order = orders.FirstOrDefault(o => o.OrderId == t.DocNo);
                 return new TransactionDto
@@ -52,18 +71,23 @@ namespace KoiGuardian.Api.Services
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.TransactionType,
                     VnPayTransactionId = t.VnPayTransactionid,
-                    Amount = order != null ? (decimal)order.Total : 0m ,// Lấy Total từ Order
+                    Amount = order != null ? (decimal)order.Total : 0m,
                     Payment = !string.IsNullOrEmpty(t.Payment)
-                ? JsonSerializer.Deserialize<PaymentInfo>(t.Payment)
-                : null,
-
+                        ? JsonSerializer.Deserialize<PaymentInfo>(t.Payment)
+                        : null,
                     Refund = !string.IsNullOrEmpty(t.Refund)
-                ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
-                : null,
+                        ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
+                        : null
                 };
             }).ToList();
 
-            return result;
+            // Return response DTO
+            return new ShopTransactionResponseDto
+            {
+                ShopBalance = shopBalance,
+                Transactions = transactionList,
+                
+            };
         }
 
         public async Task<List<TransactionPackageDto>> GetTransactionPackagebyOwnerIdAsync(Guid ownerId)

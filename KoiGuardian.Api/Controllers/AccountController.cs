@@ -170,5 +170,11 @@ namespace KoiGuardian.Api.Controllers
             return await service.GetWalletByOwnerId(ownerid);
         }
 
+        [HttpPost("process-pending-transactions-by-id")]
+        public async Task<string> ProcessPendingTransactionsById([FromBody]  Guid orderId)
+        {
+            return await service.ProcessSingleOrderTransaction(orderId);
+        }
+
     }
 }

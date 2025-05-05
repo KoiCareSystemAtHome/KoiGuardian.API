@@ -66,16 +66,16 @@ namespace KoiGuardian.Api.Services
                     return ("Wallet not found!", false);
                 }
 
-                if (wallet.Amount < amount || amount <= 0)
+                if ((wallet.Amount * 0.7) < amount || amount <= 0)
                 {
-                    return ("Insufficient balance or invalid amount!", false);
+                    return ($"Sô tiền rút ra không được nhiều hơn {wallet.Amount*0.7}", false);
                 }
 
                 var walletWithdraw = new WalletWithdraw
                 {
                     AccountPackageId = Guid.NewGuid(),
                     UserId = userId,
-                    PackageId = Guid.NewGuid(), // Assuming PackageId is required; adjust if not needed
+                    PackageId = Guid.Empty, // Assuming PackageId is required; adjust if not needed
                     Code = SD.RandomCode(), // Assuming SD.RandomCode() generates a random code as in AccountService
                     Status = WalletWithdrawEnums.Pending.ToString(),
                     CreateDate = DateTime.UtcNow.AddHours(7),
@@ -88,7 +88,7 @@ namespace KoiGuardian.Api.Services
                 _walletRepository.Update(wallet);
 
                 await _uow.SaveChangesAsync(cancellationToken);
-                return ("Wallet withdraw request created successfully!", true);
+                return ("Tạo yêu cầu rút tiền thành công!", true);
             }
             catch (Exception ex)
             {

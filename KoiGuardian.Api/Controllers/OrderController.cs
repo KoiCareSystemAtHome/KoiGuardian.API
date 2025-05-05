@@ -17,6 +17,12 @@ namespace KoiGuardian.Api.Controllers
             return await service.FilterOrder(request);
         }
 
+        [HttpGet("getAll")]
+        public async Task<List<OrderFilterResponse>> GetAll()
+        {
+            return await service.GetAllOrders();
+        }
+
 
         [HttpGet("detail")]
         public async Task<OrderDetailResponse> OrderDetail( Guid orderId)

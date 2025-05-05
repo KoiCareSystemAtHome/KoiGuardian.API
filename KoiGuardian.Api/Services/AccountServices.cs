@@ -50,6 +50,8 @@ public interface IAccountServices
     Task<string> ConfirmResetPassCode(string email, int code, string newPass);
 
     Task<WalletResponse> GetWalletByOwnerId(Guid OwnerId);
+
+    Task<string> ProcessSingleOrderTransaction(Guid orderId, CancellationToken cancellationToken = default);
 }
 
 public class AccountService
@@ -945,6 +947,69 @@ IImageUploadService imageUpload
             Status = wallet.Status,
             PurchaseDate = wallet.PurchaseDate,
         };
+    }
+
+    public async Task<string> ProcessSingleOrderTransaction(Guid orderId, CancellationToken cancellationToken = default)
+    {
+        // Retrieve the transaction for the specific OrderId with Pending status
+        var transaction = (await tranctionRepository.FindAsync(
+            t => t.DocNo == orderId && t.TransactionType.ToLower() == TransactionType.Pending.ToString().ToLower(),
+            cancellationToken
+        )).FirstOrDefault();
+
+        if (transaction == null)
+        {
+            return "No pending transaction found for the specified order!";
+        }
+
+        // Retrieve the order with the specified OrderId and Complete status
+        var order = (await orderRepository.FindAsync(
+            o => o.OrderId == orderId && o.Status.ToLower() == OrderStatus.Complete.ToString().ToLower(),
+            cancellationToken
+        )).FirstOrDefault();
+
+        if (order == null)
+        {
+            return "Order is not in Complete status!";
+        }
+
+        // Retrieve the shop associated with the order
+        var shop = (await shopRepository.FindAsync(
+            s => s.ShopId == order.ShopId,
+            cancellationToken
+        )).FirstOrDefault();
+
+        if (shop == null)
+        {
+            return "Shop not found!";
+        }
+
+        // Retrieve the shop's wallet
+        var shopWallet = (await walletRepository.FindAsync(
+            w => w.UserId == shop.UserId,
+            cancellationToken
+        )).FirstOrDefault();
+
+        if (shopWallet == null)
+        {
+            return "Shop wallet is not valid!";
+        }
+
+        // Calculate the amount to add to the wallet (97% of order total)
+        var amountToAdd = order.Total * 0.97;
+
+        // Update the wallet amount
+        shopWallet.Amount += (float)amountToAdd;
+        walletRepository.Update(shopWallet);
+
+        // Update the transaction status to Success
+        transaction.TransactionType = TransactionType.Success.ToString();
+        tranctionRepository.Update(transaction);
+
+        // Save changes
+        await uow.SaveChangesAsync(cancellationToken);
+
+        return "Wallet update successful for the order!";
     }
 }
 

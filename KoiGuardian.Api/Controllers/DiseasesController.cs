@@ -47,7 +47,23 @@ namespace KoiGuardian.Api.Controllers
             return await _service.GetDiseaseById(id, cancellationToken);
         }
 
-       
-        
+
+        [HttpGet("sickSymtomps")]
+        public async Task<object> getSymptom()
+        {
+            return await _service.sickSymtomps();
+        }
+
+
+        [HttpGet("sideEffects")]
+        public async Task<object> getPredictSymptom()
+        {
+            return await _service.sideEffects();
+        }
+
+
+
+
+
     }
 }

@@ -279,7 +279,7 @@ namespace KoiGuardian.Api.Services
             // Lấy giờ từ endDate
             TimeSpan timeOfDay = endDate.TimeOfDay;
             // Bắt đầu từ ngày mai, với giờ lấy từ endDate
-            DateTime startDate = DateTime.UtcNow.AddDays(1).Date + timeOfDay;
+            DateTime startDate = DateTime.UtcNow.AddDays(1).AddHours(7).Date + timeOfDay;
 
             while (startDate <= endDate)
             {

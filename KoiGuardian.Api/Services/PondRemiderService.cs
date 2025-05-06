@@ -276,7 +276,10 @@ namespace KoiGuardian.Api.Services
             }
 
             List<PondReminder> reminders = new List<PondReminder>();
-            DateTime startDate = DateTime.UtcNow.AddDays(1).AddMinutes(60 * 7);
+            // Lấy giờ từ endDate
+            TimeSpan timeOfDay = endDate.TimeOfDay;
+            // Bắt đầu từ ngày mai, với giờ lấy từ endDate
+            DateTime startDate = DateTime.UtcNow.AddDays(1).Date + timeOfDay;
 
             while (startDate <= endDate)
             {

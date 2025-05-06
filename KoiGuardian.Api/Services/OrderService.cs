@@ -822,6 +822,7 @@ public class OrderService(
                     TransactionDate = transaction.TransactionDate,
                     TransactionType = transaction.TransactionType,
                     VnPayTransactionId = transaction.VnPayTransactionid,
+                    DocNo = transaction.DocNo,
                     Payment = !string.IsNullOrEmpty(transaction.Payment)
                         ? JsonSerializer.Deserialize<PaymentInfo>(transaction.Payment)
                         : null,

@@ -786,7 +786,7 @@ IImageUploadService imageUpload
           
 
         if (!orders.Any()) return "No valid orders found";
-        float totalAmount = orders.Sum(o => o.Total);
+        float totalAmount = orders.Sum(o => o.Total) + orders.Sum(b => long.Parse(b.ShipFee));
 
         if (wallet.Amount < totalAmount)
         {
@@ -807,7 +807,7 @@ IImageUploadService imageUpload
             // Tạo payment info object
             var paymentInfo = new PaymentInfo
             {
-                Amount = (decimal)order.Total,
+                Amount = (decimal)(order.Total + long.Parse(order.ShipFee)),
                 Date = DateTime.UtcNow,
                 PaymentMethod = "Wallet",
                 Description = $"Thanh toán cho hóa đơn {order.OrderId}"

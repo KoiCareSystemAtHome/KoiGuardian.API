@@ -20,7 +20,7 @@ namespace KoiGuardian.Api.Services
     {
         public async Task<List<NormFoodAmount>> GetAllNormFood(CancellationToken cancellationToken)
         {
-            return await normFoodRepo.GetAllAsync();
+            return (await normFoodRepo.GetAllAsync()).OrderBy(u => u.AgeFrom).ThenBy(u => u.AgeTo).ToList();
         }
 
         public async Task<bool> UpdateNormFood(Guid NormId, float foodPercent, CancellationToken cancellationToken)

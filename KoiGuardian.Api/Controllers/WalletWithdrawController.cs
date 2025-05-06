@@ -102,6 +102,14 @@ namespace KoiGuardian.Api.Controllers
             var result = await _walletWithdrawService.GetWalletWithdrawByShopId(shopId, cancellationToken);
             return Ok(result);
         }
+
+        /// <returns>A list of wallet withdrawal responses including transactions.</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetAllWalletWithdraw(CancellationToken cancellationToken)
+        {
+            var result = await _walletWithdrawService.GetAllWalletWithdraw(cancellationToken);
+            return Ok(result);
+        }
     }
 
   

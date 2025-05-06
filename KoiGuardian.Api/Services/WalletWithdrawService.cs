@@ -21,6 +21,7 @@ namespace KoiGuardian.Api.Services
         Task<(string Message, bool IsSuccess)> UpdateWalletWithdraw(Guid withdrawId, string status, CancellationToken cancellationToken);
         Task<List<WalletWithdrawResponse>> GetWalletWithdrawByUserId(string userId, CancellationToken cancellationToken);
         Task<List<WalletWithdrawResponse>> GetWalletWithdrawByShopId(Guid shopId, CancellationToken cancellationToken);
+        Task<List<WalletWithdrawResponse>> GetAllWalletWithdraw(CancellationToken cancellationToken);
     }
 
     public class WalletWithdrawService : IWalletWithdrawService
@@ -68,7 +69,7 @@ namespace KoiGuardian.Api.Services
 
                 if ((wallet.Amount * 0.7) < amount || amount <= 0)
                 {
-                    return ($"Sô tiền rút ra không được nhiều hơn {wallet.Amount*0.7}", false);
+                    return ($"Sô tiền rút ra không được nhiều hơn {wallet.Amount*0.7}", true);
                 }
 
                 var walletWithdraw = new WalletWithdraw
@@ -213,6 +214,32 @@ namespace KoiGuardian.Api.Services
                         Payment = null,
                         Refund = null
                     }).ToList()
+            }).ToList();
+
+            return response;
+        }
+
+        public async Task<List<WalletWithdrawResponse>> GetAllWalletWithdraw(CancellationToken cancellationToken)
+        {
+            var walletWithdraws = await _walletWithdrawRepository
+                .GetQueryable()
+                .ToListAsync(cancellationToken);
+
+            // Nếu không có dữ liệu, trả về danh sách rỗng
+            if (walletWithdraws == null || !walletWithdraws.Any())
+            {
+                return new List<WalletWithdrawResponse>();
+            }
+
+            var response = walletWithdraws.Select(w => new WalletWithdrawResponse
+            {
+                Id = w.AccountPackageId,
+                UserId = w.UserId,
+                //Code = w.Code, // Đã bị comment trong hàm gốc, giữ nguyên
+                Status = w.Status,
+                CreateDate = w.CreateDate,
+                PurchaseDate = w.PurchaseDate,
+                Money = w.Money
             }).ToList();
 
             return response;

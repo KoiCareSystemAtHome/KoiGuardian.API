@@ -222,7 +222,7 @@ namespace KoiGuardian.Api.Services
                     MedicineId = md.Medince.MedicineId,
                     Name = md.Medince.Medicinename, 
                 }).ToList<object>() ?? new List<object>()
-            }).ToList();
+            }).OrderBy(u => u.Name).ToList();
         }
 
 

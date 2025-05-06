@@ -456,7 +456,7 @@ public class OrderService(
                 order.Status = request.Status;
                 var paymentInfo = new PaymentInfo
                 {
-                    Amount = (decimal)order.Total,
+                    Amount = (decimal)(order.Total + long.Parse(order.ShipFee)),
                     Date = DateTime.UtcNow,
                     PaymentMethod = "COD",
                     Description = $"Thanh toán cho hóa đơn {order.OrderId}"
@@ -577,7 +577,7 @@ public class OrderService(
                 return OrderResponse.Error("Order not found");
             }
             order.oder_code = request.order_code;
-            order.ShipFee = request.ShipFee;
+            //order.ShipFee = request.ShipFee;
             orderRepository.Update(order);
             await uow.SaveChangesAsync();
 
@@ -684,64 +684,90 @@ public class OrderService(
     {
         try
         {
+            // Lấy thông tin đơn hàng
             var order = await orderRepository.GetAsync(o => o.OrderId == request.OrderId, CancellationToken.None);
             if (order == null)
             {
                 return OrderResponse.Error("Order not found");
             }
 
+            // Lấy thông tin giao dịch
             var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
-            //string status = request.Status.ToLower();
-
-            if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment == null)
+            if (transaction == null)
             {
-                order.UpdatedDate = DateTime.UtcNow;
-                order.Status = OrderStatus.Cancel.ToString();
-                order.Note = request.reason;
-              
+                return OrderResponse.Error("Transaction not found");
             }
 
-            if (order.Status.ToLower() == OrderStatus.Pending.ToString().ToLower() && transaction.Payment != null)
+            // Kiểm tra trạng thái đơn hàng
+            if (order.Status.ToLower() != OrderStatus.Pending.ToString().ToLower())
             {
-                order.UpdatedDate = DateTime.UtcNow;
-                order.Status = OrderStatus.Cancel.ToString();
-                order.Note = request.reason;
-                
+                return OrderResponse.Error("Only pending orders can be canceled");
+            }
 
-                var RefundInfo = new RefundInfo
+            // Lấy danh sách OrderDetail của đơn hàng
+            var orderDetails = await orderDetailRepository.FindAsync(od => od.OrderId == order.OrderId);
+            if (!orderDetails.Any())
+            {
+                return OrderResponse.Error("No order details found");
+            }
+
+            // Cập nhật trạng thái đơn hàng
+            order.UpdatedDate = DateTime.UtcNow;
+            order.Status = OrderStatus.Cancel.ToString();
+            order.Note = request.reason;
+
+            // Hoàn lại số lượng sản phẩm vào kho
+            foreach (var orderDetail in orderDetails)
+            {
+                var product = await productRepository.GetAsync(p => p.ProductId == orderDetail.ProductId, CancellationToken.None);
+                if (product != null)
                 {
-                    Amount = (decimal)order.Total,
+                    product.StockQuantity += orderDetail.Quantity; // Hoàn lại số lượng
+                    productRepository.Update(product);
+                }
+            }
+
+            // Xử lý hoàn tiền nếu có thanh toán
+            if (transaction.Payment != null)
+            {
+                var refundInfo = new RefundInfo
+                {
+                    Amount = (decimal)(order.Total + long.Parse(order.ShipFee)),
                     Date = DateTime.UtcNow,
                     Description = $"Hoàn Tiền cho hóa đơn bị hủy {order.OrderId}"
                 };
                 var jsonOptions = new JsonSerializerOptions
                 {
-                    WriteIndented = true,  // Tạo định dạng xuống dòng và thụt đầu dòng
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping  // Hỗ trợ ký tự tiếng Việt
+                    WriteIndented = true,
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                 };
-                string refundJson = JsonSerializer.Serialize(RefundInfo, jsonOptions);
+                string refundJson = JsonSerializer.Serialize(refundInfo, jsonOptions);
                 transaction.Refund = refundJson;
+
+                // Cập nhật số dư ví
                 var wallet = await walletRepository.GetAsync(x => x.UserId.Equals(order.UserId), CancellationToken.None);
                 if (wallet != null)
                 {
-                    wallet.Amount += order.Total;
+                    wallet.Amount += (order.Total + long.Parse(order.ShipFee));
                     walletRepository.Update(wallet);
                 }
-
             }
 
-
+            // Cập nhật giao dịch
             transaction.TransactionType = TransactionType.Cancel.ToString();
             transactionRepository.Update(transaction);
-            orderRepository.Update(order);
-            await uow.SaveChangesAsync();
-            return OrderResponse.Success("Order cancel successfully");
 
+            // Cập nhật đơn hàng
+            orderRepository.Update(order);
+
+            // Lưu tất cả thay đổi
+            await uow.SaveChangesAsync();
+
+            return OrderResponse.Success("Order canceled successfully");
         }
         catch (Exception ex)
         {
-
-            return OrderResponse.Error($"Failed to update order: {ex.Message}");
+            return OrderResponse.Error($"Failed to cancel order: {ex.Message}");
         }
     }
 

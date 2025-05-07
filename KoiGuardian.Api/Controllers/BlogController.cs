@@ -46,7 +46,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for getting all approved blogs
         [HttpGet("approved-blogs")]
-        [Authorize(Roles = ConstantValue.AdminRole)]
+        [Authorize]
         public async Task<IList<BlogDto>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken)
         {
             return await _services.GetAllBlogsIsApprovedTrueAsync(cancellationToken);

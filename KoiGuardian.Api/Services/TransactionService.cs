@@ -223,7 +223,8 @@ namespace KoiGuardian.Api.Services
             var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
 
             var transactions = await transactionRepository.FindAsync(
-                x => (!startDateUtc.HasValue || x.TransactionDate >= startDateUtc.Value) &&
+                x => (x.TransactionType.ToLower().Equals(TransactionType.Success.ToString().ToLower())) &&
+                     (!startDateUtc.HasValue || x.TransactionDate >= startDateUtc.Value) &&
                      (!endDateUtc.HasValue || x.TransactionDate <= endDateUtc.Value),
                 CancellationToken.None
             );
@@ -284,7 +285,8 @@ namespace KoiGuardian.Api.Services
             var endDateUtc = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : (DateTime?)null;
 
             var transactions = await transactionRepository.FindAsync(
-                x => orderIds.Contains(x.DocNo) &&
+                x => orderIds.Contains(x.DocNo) && 
+                     (x.TransactionType.ToLower().Equals(TransactionType.Success.ToString().ToLower()))&&
                      (!startDateUtc.HasValue || x.TransactionDate >= startDateUtc.Value) &&
                      (!endDateUtc.HasValue || x.TransactionDate <= endDateUtc.Value),
                 CancellationToken.None

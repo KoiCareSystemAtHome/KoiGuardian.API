@@ -225,21 +225,39 @@ namespace KoiGuardian.Api.Services
                 .GetQueryable()
                 .ToListAsync(cancellationToken);
 
-            // Nếu không có dữ liệu, trả về danh sách rỗng
             if (walletWithdraws == null || !walletWithdraws.Any())
             {
                 return new List<WalletWithdrawResponse>();
             }
 
-            var response = walletWithdraws.Select(w => new WalletWithdrawResponse
+            // Fetch all users and wallets in one go to optimize performance
+            var userIds = walletWithdraws.Select(w => w.UserId).Distinct().ToList();
+            var users = await _userRepository
+                .GetQueryable()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.UserName, cancellationToken);
+
+            var wallets = await _walletRepository
+                .GetQueryable()
+                .Where(w => userIds.Contains(w.UserId))
+                .ToDictionaryAsync(w => w.UserId, w => w.Amount, cancellationToken);
+
+            var response = walletWithdraws.Select(w =>
             {
-                Id = w.AccountPackageId,
-                UserId = w.UserId,
-                //Code = w.Code, // Đã bị comment trong hàm gốc, giữ nguyên
-                Status = w.Status,
-                CreateDate = w.CreateDate,
-                PurchaseDate = w.PurchaseDate,
-                Money = w.Money
+                var userName = users.ContainsKey(w.UserId) ? users[w.UserId] : "Unknown";
+                var currentBalance = wallets.ContainsKey(w.UserId) ? wallets[w.UserId].ToString("F2") : "0.00";
+
+                return new WalletWithdrawResponse
+                {
+                    Id = w.AccountPackageId,
+                    UserId = w.UserId,
+                    UserName = userName,
+                    CurrentBalance = currentBalance,
+                    Status = w.Status,
+                    CreateDate = w.CreateDate,
+                    PurchaseDate = w.PurchaseDate,
+                    Money = w.Money
+                };
             }).ToList();
 
             return response;
@@ -251,6 +269,8 @@ namespace KoiGuardian.Api.Services
     {
         public Guid Id { get; set; }
         public string UserId { get; set; }
+        public string UserName { get; set; }
+        public string CurrentBalance { get; set; }
         public string Status { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime PurchaseDate { get; set; }

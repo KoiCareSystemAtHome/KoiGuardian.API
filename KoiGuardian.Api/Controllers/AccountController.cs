@@ -83,6 +83,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("Updateprofile")]
+        [Authorize]
         public async Task<string> UpdateProfile([FromBody]UpdateProfileRequest request)
         {
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
@@ -105,6 +106,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("pay-package")]
+        [Authorize]
         public async Task<IActionResult> UpdateAccountPackage(string email, Guid packageId, bool forceRenew = false, bool confirmPurchase = false)
         {
             if (string.IsNullOrWhiteSpace(email) || packageId == Guid.Empty)
@@ -146,6 +148,8 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("pay-orders")]
+        [Authorize]
+
         public async Task<string> UpdateAccountOrder(UpdateOrderAccountRequest request)
         {
             return await service.UpdateAccountOrder(request.email, request.orderIds);
@@ -159,18 +163,21 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("member")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<List<User>> GetMember()
         {
             return await service.GetMember();
         }
 
         [HttpGet("wallet")]
+        [Authorize]
         public async Task<WalletResponse> GetWallet(Guid ownerid)
         {
             return await service.GetWalletByOwnerId(ownerid);
         }
 
         [HttpPost("process-pending-transactions-by-id")]
+        [Authorize]
         public async Task<string> ProcessPendingTransactionsById([FromBody]  Guid orderId)
         {
             return await service.ProcessSingleOrderTransaction(orderId);

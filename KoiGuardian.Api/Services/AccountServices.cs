@@ -935,7 +935,7 @@ IImageUploadService imageUpload
                 Status = u.Wallet.Status.ToString(),
             } : null,
             Member = u.Member != null ? u.Member : null
-        }).ToList();
+        }).OrderBy(u => u.UserName).ToList();
     }
 
     public async Task<WalletResponse> GetWalletByOwnerId(Guid OwnerId)

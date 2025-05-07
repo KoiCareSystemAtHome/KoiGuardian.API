@@ -1,6 +1,8 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +14,7 @@ namespace KoiGuardian.Api.Controllers
         INormFoodService service) : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<bool> update([FromBody] Guid NormId, float foodPercent, CancellationToken cancellationToken)
         {
             return await service.UpdateNormFood(NormId, foodPercent, cancellationToken);

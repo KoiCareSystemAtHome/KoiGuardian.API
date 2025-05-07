@@ -1,7 +1,9 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,17 +21,20 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("create")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<DiseaseResponse> CreateDiseases([FromBody] CreateDiseaseRequest request, CancellationToken cancellation)
         {
             return await _service.CreateDisease(request, cancellation);
         }
 
         [HttpPut("update")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<DiseaseResponse> UpdateDisease([FromBody] UpdateDiseaseRequest request, CancellationToken cancellation)
         {
             return await _service.UpdateDisease(request, cancellation);
         }
         [HttpDelete("delete")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<DiseaseResponse> DeleteDisease([FromQuery] Guid diseaseId, CancellationToken cancellationToken)
         {
             return await _service.DeleteDisease(diseaseId, cancellationToken);

@@ -2,6 +2,7 @@
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KoiGuardian.Api.Controllers
@@ -23,6 +24,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("create")]
+        [Authorize]
         public async Task<string> CreateKoiDiseaseProfile (DiseaseProfileRequest request)
         {
             return await _services.CreateProfile(request);
@@ -34,12 +36,14 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet("active")]
+        [Authorize]
         public async Task<List<KoiDiseaseProfile>> GetActiveProfiles()
         {
             return await _services.GetActiveDiseaseProfiles();
         }
 
         [HttpPut("update/{profileId}")]
+        [Authorize]
         public async Task<string> UpdateProfile(Guid profileId, [FromBody] UpdateDiseaseProfileRequest request, CancellationToken cancellationToken)
         {
             return await _services.UpdateProfile(profileId, request, cancellationToken);

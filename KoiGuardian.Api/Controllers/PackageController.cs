@@ -1,7 +1,9 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +15,7 @@ namespace KoiGuardian.Api.Controllers
     {
 
         [HttpPost("create-package")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<PackageResponse> CreatePackage([FromBody]CreatePackageRequest createPackage,CancellationToken cancellationToken)
         {
             return await services.CreatePackage(createPackage, cancellationToken);
@@ -25,6 +28,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPut("update-package")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<PackageResponse> Update([FromBody] UpdatePackageRequest createPackage, CancellationToken cancellationToken)
         {
             return await services.UpdatePackage(createPackage, cancellationToken);

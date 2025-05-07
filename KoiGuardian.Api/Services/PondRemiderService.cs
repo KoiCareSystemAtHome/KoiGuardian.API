@@ -51,7 +51,7 @@ namespace KoiGuardian.Api.Services
             var cutoffDate = DateTime.UtcNow.AddMonths(-LookbackMonths);
             DateTime? earliestMaintenanceDate = null;
             string? earliestDescription = null;
-            double earliestValue = 0;
+            float earliestValue = 0;
             string? earliestParamName = null;
 
             // Load tất cả dữ liệu của hồ trong 3 tháng gần nhất

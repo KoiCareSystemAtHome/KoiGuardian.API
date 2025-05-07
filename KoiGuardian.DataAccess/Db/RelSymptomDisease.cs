@@ -7,6 +7,7 @@ public class RelSymptomDisease
     [Key]
     public Guid RelSymptomDiseaseId { get; set; }
     public Guid DiseaseId { get; set; }
+    public Guid SymptomSymtompId { get; set; }
     public Guid SymtompId { get; set; }
     public float DiseaseUpper { get; set; }
     public float DiseaseLower { get; set; }

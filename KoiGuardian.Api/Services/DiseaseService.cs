@@ -73,13 +73,16 @@ namespace KoiGuardian.Api.Services
             {
                 foreach (var id in request.SideEffect)
                 {
+                    var symptomp =( await _symtopmsRepository
+                        .FindAsync( u => u.SymtompId == id)).FirstOrDefault();
                     var rel = new RelSymptomDisease
                     {
                         RelSymptomDiseaseId = Guid.NewGuid() ,
                         DiseaseId = disease.DiseaseId,
-                        SymtompId = id,
+                        SymptomSymtompId = id,
                         DiseaseLower = 0,
                         DiseaseUpper = 100,
+                        SymtompId = id
                     };
                     _relsymptompdeseaseSymtopmsRepository.Insert(rel);
                 }
@@ -261,7 +264,7 @@ namespace KoiGuardian.Api.Services
                         include: u => u.Include(u => u.Symptom)))
                     .Select(u => new
                     {
-                        Id = u.SymtompId,
+                        Id = u.SymptomSymtompId,
                         DiseaseUpper = u.DiseaseUpper,
                         DiseaseLower = u.DiseaseLower,
                         Description = u.Symptom?.Name ?? ""

@@ -226,7 +226,7 @@ public class SymptomService(
                 relSymptomDiseaseRepository.Insert(new RelSymptomDisease()
                 {
                     DiseaseId = d.DiseaseId,
-                    SymtompId = s.SymtompId,
+                    SymptomSymtompId = s.SymtompId,
                     RelSymptomDiseaseId = Guid.NewGuid(),
                     DiseaseLower = 0,
                     DiseaseUpper = 100

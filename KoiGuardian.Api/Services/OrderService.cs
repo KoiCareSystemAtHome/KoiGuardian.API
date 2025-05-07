@@ -429,6 +429,8 @@ public class OrderService(
             Status = order.Status,
             ShipType = order.ShipType,
             Note = order.Note,
+            RecieverName = order.Name,
+            RecieverPhone = order.PhoneNumber,
             Details = order.OrderDetail.Select(d => new OrderDetailDto
             {
                 ProductId = d.ProductId,

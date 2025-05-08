@@ -178,9 +178,9 @@ namespace KoiGuardian.Api.Controllers
 
         [HttpPost("process-pending-transactions-by-id")]
         [Authorize]
-        public async Task<string> ProcessPendingTransactionsById([FromBody]  Guid orderId)
+        public async Task<string> ProcessPendingTransactionsById(Guid id)
         {
-            return await service.ProcessSingleOrderTransaction(orderId);
+            return await service.ProcessSingleOrderTransaction(id);
         }
 
     }

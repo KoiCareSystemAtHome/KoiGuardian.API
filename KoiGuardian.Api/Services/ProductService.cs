@@ -500,7 +500,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.ProductName);
         }
 
         public async Task<IEnumerable<ProductGetRequest>> GetAllProductsAsync(CancellationToken cancellationToken)
@@ -533,7 +533,7 @@ namespace KoiGuardian.Api.Services
                     Content = p.Feedbacks.FirstOrDefault() != null ? p.Feedbacks.FirstOrDefault().Content : null,
 
                     Type = p.Type
-                })
+                }).OrderBy(u => u.ProductName)
                 .ToListAsync(cancellationToken);
         }
 
@@ -709,7 +709,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.ProductName);
         }
 
         public async Task<IEnumerable<MedicineResponse>> GetAllMedicineAsync(CancellationToken cancellationToken)
@@ -762,7 +762,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.ProductName);
         }
 
         public async Task<IEnumerable<FoodResponse>> GetAllFoodAsync(CancellationToken cancellationToken)
@@ -813,7 +813,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.Name);
         }
 
         public async Task<IEnumerable<ProductSearchResponse>> GetProductsByShopIdAsync(Guid shopId, CancellationToken cancellationToken)
@@ -853,7 +853,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.ProductName);
         }
 
         public async Task<IEnumerable<ProductSearchResponse>> GetProductsByCategoryNameAsync(string categoryName, CancellationToken cancellationToken)
@@ -892,7 +892,7 @@ namespace KoiGuardian.Api.Services
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            return results;
+            return results.OrderBy(u => u.ProductName);
         }
     }
 

@@ -22,6 +22,8 @@ namespace KoiGuardian.Api.Services
         Task<FinalDiseaseTypePredictResponse> Examination(List<DiseaseTypePredictRequest> symptoms);
         Task<DiseaseTypePredictResponse> DiseaseTypePredict(List<DiseaseTypePredictRequest> symptoms);
         Task<List<PredictSymptoms>> GetByType(string? type);
+        Task<object> sideEffects();
+        Task<object> sickSymtomps();
     }
 
 
@@ -64,6 +66,41 @@ namespace KoiGuardian.Api.Services
                         DiseaseId = disease.DiseaseId
                     };
                     _medicineDiseaseRepository.Insert(medicineDisease);
+                }
+            }
+
+            if (request.SideEffect?.Any() == true)
+            {
+                foreach (var id in request.SideEffect)
+                {
+                    var symptomp =( await _symtopmsRepository
+                        .FindAsync( u => u.SymtompId == id)).FirstOrDefault();
+                    var rel = new RelSymptomDisease
+                    {
+                        RelSymptomDiseaseId = Guid.NewGuid() ,
+                        DiseaseId = disease.DiseaseId,
+                        SymptomSymtompId = id,
+                        DiseaseLower = 0,
+                        DiseaseUpper = 100,
+                        SymtompId = id
+                    };
+                    _relsymptompdeseaseSymtopmsRepository.Insert(rel);
+                }
+            }
+
+            if (request.SickSymtomps?.Any() == true)
+            {
+                foreach (var id in request.SickSymtomps)
+                {
+                    var rel = new RelPredictSymptomDisease
+                    {
+                        RelSymptomDiseaseId = Guid.NewGuid(),
+                        DiseaseId = disease.DiseaseId,
+                        PredictSymptomsId = id,
+                        DiseaseLower = 0,
+                        DiseaseUpper = 100,
+                    };
+                    _relpredictSymtopmsDiseaseRepository.Insert(rel);
                 }
             }
 
@@ -188,7 +225,7 @@ namespace KoiGuardian.Api.Services
                     MedicineId = md.Medince.MedicineId,
                     Name = md.Medince.Medicinename, 
                 }).ToList<object>() ?? new List<object>()
-            }).ToList();
+            }).OrderBy(u => u.Name).ToList();
         }
 
 
@@ -227,7 +264,7 @@ namespace KoiGuardian.Api.Services
                         include: u => u.Include(u => u.Symptom)))
                     .Select(u => new
                     {
-                        Id = u.SymtompId,
+                        Id = u.SymptomSymtompId,
                         DiseaseUpper = u.DiseaseUpper,
                         DiseaseLower = u.DiseaseLower,
                         Description = u.Symptom?.Name ?? ""
@@ -439,8 +476,27 @@ namespace KoiGuardian.Api.Services
                 .FindAsync(u => u.Type.ToLower() == type.ToLower(), CancellationToken.None)).ToList();
         }
 
+        public async Task<object> sideEffects()
+        {
+            return (await _symtopmsRepository.GetAllAsync()).Select(
+                u => new
+                {
+                    Id = u.SymtompId,
+                    Name = u.Name
+                }
+                );
+        }
 
-
+        public async Task<object> sickSymtomps()
+        {
+            return (await _predictSymtopmsRepository.GetAllAsync()).Select(
+                u => new
+                {
+                    Id = u.SymtompId,
+                    Name = u.Name
+                }
+                );
+        }
     }
 }
 

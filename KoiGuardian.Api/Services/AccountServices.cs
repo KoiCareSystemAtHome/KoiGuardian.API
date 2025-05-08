@@ -563,7 +563,13 @@ IImageUploadService imageUpload
             m => m.UserId != null && m.UserId.Equals(user.Id),
             CancellationToken.None);
             if (shop == null)
-            { return "Accoutn not found"; }    
+            {
+                user.UserName = request.Name;
+                userRepository.Update(user);
+                await uow.SaveChangesAsync();
+
+                return "Admin profile updated successfully!";
+            }    
             shop.ShopDescription = request.ShopDescription ?? "";
             shop.ShopAvatar = request.Avatar;
             shop.BizLicences = request.BizLicense ?? "";
@@ -929,7 +935,7 @@ IImageUploadService imageUpload
                 Status = u.Wallet.Status.ToString(),
             } : null,
             Member = u.Member != null ? u.Member : null
-        }).ToList();
+        }).OrderBy(u => u.UserName).ToList();
     }
 
     public async Task<WalletResponse> GetWalletByOwnerId(Guid OwnerId)

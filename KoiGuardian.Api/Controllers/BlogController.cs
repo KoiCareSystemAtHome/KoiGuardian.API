@@ -1,4 +1,5 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +23,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for creating a blog
         [HttpPost("create-blog")]
+        [Authorize]
         public async Task<BlogResponse> CreateBlog([FromBody] BlogRequest createBlog, CancellationToken cancellationToken)
         {
             return await _services.CreateBlogAsync(createBlog, cancellationToken);
@@ -29,6 +31,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for updating a blog
         [HttpPut("update-blog")]
+        [Authorize]
         public async Task<BlogResponse> UpdateBlog([FromBody] BlogUpdateRequest updateBlog, CancellationToken cancellationToken)
         {
             return await _services.UpdateBlogAsync(updateBlog, cancellationToken);
@@ -43,6 +46,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for getting all approved blogs
         [HttpGet("approved-blogs")]
+        
         public async Task<IList<BlogDto>> GetAllBlogsIsApprovedTrueAsync(CancellationToken cancellationToken)
         {
             return await _services.GetAllBlogsIsApprovedTrueAsync(cancellationToken);
@@ -50,6 +54,7 @@ namespace KoiGuardian.Api.Controllers
 
         // Endpoint for getting all unapproved blogs
         [HttpGet("unapproved-blogs")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<IList<Blog>> GetAllUnapprovedBlogs(CancellationToken cancellationToken)
         {
             return await _services.GetAllBlogsIsApprovedFalseAsync(cancellationToken);
@@ -107,6 +112,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPut("{blogId}/approve")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<IActionResult> ApproveOrRejectBlog(Guid blogId, [FromBody] bool isApproved, CancellationToken cancellationToken)
         {
             var response = await _services.ApproveOrRejectBlogAsync(blogId, isApproved, cancellationToken);

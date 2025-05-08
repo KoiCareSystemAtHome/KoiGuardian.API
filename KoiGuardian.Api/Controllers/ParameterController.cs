@@ -1,6 +1,8 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,7 @@ namespace KoiGuardian.Api.Controllers
 
         [HttpPost]
         [Route("upsert-from-excel")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<IActionResult> UpsertParametersFromExcel(IFormFile file, CancellationToken cancellationToken)
         {
             if (file == null || file.Length == 0)
@@ -50,6 +53,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost("edit-pond-param")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<string> EditPondParam(PondStandardParam type, CancellationToken cancellationToken)
         {
             return await _parameterService.EditPondParam(type, cancellationToken);
@@ -57,6 +61,7 @@ namespace KoiGuardian.Api.Controllers
 
 
         [HttpPost("edit-fish-param")]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<string> EditFishParam(KoiStandardParam type, CancellationToken cancellationToken)
         {
             return await _parameterService.EditFishParam(type, cancellationToken);

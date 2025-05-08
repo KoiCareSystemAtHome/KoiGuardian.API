@@ -1,5 +1,7 @@
-﻿using KoiGuardian.Api.Services;
+﻿using KoiGuardian.Api.Constants;
+using KoiGuardian.Api.Services;
 using KoiGuardian.Models.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,12 +20,14 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateArticle([FromBody] ArticleRequest request, CancellationToken cancellationToken)
         {
             return StatusCode(201, await _articleService.CreateArticleAsync(request, cancellationToken));
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateArticle(Guid id, [FromBody] ArticleUpdateRequest request, CancellationToken cancellationToken)
         {
             request.Id = id;
@@ -37,6 +41,7 @@ namespace KoiGuardian.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = ConstantValue.AdminRole)]
         public async Task<IActionResult> GetAllArticles(CancellationToken cancellationToken)
         {
             return Ok(await _articleService.GetAllArticlesAsync(cancellationToken));

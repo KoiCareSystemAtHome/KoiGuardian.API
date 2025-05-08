@@ -307,7 +307,7 @@ namespace KoiGuardian.Api.Services
 
         public async Task<IList<Shop>> GetAllShopAsync(CancellationToken cancellationToken)
         {
-            return await _shopRepository.GetQueryable().ToListAsync(cancellationToken);
+            return await _shopRepository.GetQueryable().OrderBy(u => u.ShopName).ToListAsync(cancellationToken);
         }
 
         public async Task<ShopResponse> GetShopByUserId(Guid userId, CancellationToken cancellation)

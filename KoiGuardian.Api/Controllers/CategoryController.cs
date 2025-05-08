@@ -2,6 +2,7 @@
 using KoiGuardian.DataAccess.Db;
 using KoiGuardian.Models.Request;
 using KoiGuardian.Models.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading;
@@ -23,6 +24,7 @@ namespace KoiGuardian.Api.Controllers
 
 
         [HttpPost("create-category")]
+        [Authorize]
         public async Task<CategoryResponse> CreateCategory([FromBody] CategoryRequest createCategory, CancellationToken cancellationToken)
         {
             return await _services.CreateCategoryAsync(createCategory, cancellationToken);
@@ -30,6 +32,7 @@ namespace KoiGuardian.Api.Controllers
 
 
         [HttpPut("update-category")]
+        [Authorize]
         public async Task<CategoryResponse> UpdateCategory([FromBody] CategoryRequest updateCategory, CancellationToken cancellationToken)
         {
             return await _services.UpdateCategoryAsync(updateCategory, cancellationToken);

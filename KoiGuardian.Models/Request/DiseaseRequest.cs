@@ -16,6 +16,10 @@ namespace KoiGuardian.Models.Request
         public float SaltModifyPercent { get; set; }
         public string? Image {  get; set; } 
         public List<Guid>? MedicineIds { get; set; }
+        public List<Guid>? SideEffect { get; set; }
+        public List<Guid>? SickSymtomps { get; set; }
+
+
     }
 
     public class UpdateDiseaseRequest

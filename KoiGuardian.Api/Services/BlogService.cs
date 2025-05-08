@@ -447,6 +447,7 @@ namespace KoiGuardian.Api.Services
                 .Include(b => b.BlogProducts)
                     .ThenInclude(bp => bp.Product)
                 .Include(b => b.Shop)
+               
                 .Select(blog => new BlogDto
                 {
                     BlogId = blog.BlogId,
@@ -472,7 +473,7 @@ namespace KoiGuardian.Api.Services
                         Price = bp.Product != null ? bp.Product.Price : 0,
                         Image = bp.Product != null ? bp.Product.Image : null
                     }).ToList() : new List<ProductBasicDto>()
-                })
+                }).OrderBy(u => u.IsApproved)
                 .ToListAsync(cancellationToken);
 
             return blogs;

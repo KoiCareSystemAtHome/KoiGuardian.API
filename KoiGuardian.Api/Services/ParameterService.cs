@@ -155,12 +155,12 @@ namespace KoiGuardian.Api.Services
                         DangerUpper = u.DangerUpper,
                         MeasurementInstruction = u.MeasurementInstruction,
                         ParameterId = u.ParameterID
-                    }).ToList<object>();
+                    }).OrderBy( u => u.ParameterName).ToList<object>();
             }else
             {
                 return (await _parameterRepository.FindAsync(
                     u => u.IsActive,
-                    cancellationToken: cancellationToken)).ToList<object>();
+                    cancellationToken: cancellationToken)).OrderBy(u => u.Age).ToList<object>();
             }
 
 

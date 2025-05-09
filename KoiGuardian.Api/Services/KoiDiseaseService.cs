@@ -53,7 +53,7 @@ public class KoiDiseaseService
             {
                 KoiDiseaseProfileId = Guid.NewGuid(),
                 DiseaseId = request.DiseaseID,
-                MedicineId = request.MedicineId ?? Guid.Empty,
+                MedicineId = request.MedicineId,
                 FishId = request.FishId,
                 Createddate = DateTime.UtcNow,
                 EndDate = request.EndDate,

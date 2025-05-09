@@ -175,7 +175,7 @@ namespace KoiGuardian.Api.Services
                 return "Param not found";
             }
             param.Name = parameterType.Name;
-            //param.Type = parameterType.Type;
+            param.Type = "Pond";
             param.UnitName = parameterType.UnitName;
             param.WarningUpper = parameterType.WarningUpper;
             param.WarningLowwer = parameterType.WarningLowwer;

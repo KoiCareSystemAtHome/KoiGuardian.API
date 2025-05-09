@@ -69,7 +69,7 @@ public class KoiDiseaseService
             {
                 PondId = fish.PondID,
                 PondReminderId = Guid.NewGuid(),
-                ReminderType = ReminderType.Pond,
+                ReminderType = ReminderType.Maintenance,
                 Title = "Kiểm tra sức khỏe cá ", 
                 Description = " Kiểm tra sức khỏe cá sau khi dùng thuốc",
                 MaintainDate =request.EndDate,

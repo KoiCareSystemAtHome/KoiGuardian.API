@@ -58,6 +58,7 @@ namespace KoiGuardian.Api.Services
         private readonly IRepository<Product> _productRepository;
         private readonly IRepository<Shop> _shopRepository;
         private readonly IRepository<Food> _foodRepository;
+        private readonly IRepository<Symptom> _symtompRepository;
         private readonly IRepository<Medicine> _medicineRepository;
         private readonly IRepository<MedicinePondParameter> _medicinePondParameterRepository;
         private readonly IRepository<PondStandardParam> _pondStandardParamRepository;
@@ -72,7 +73,8 @@ namespace KoiGuardian.Api.Services
             IRepository<MedicinePondParameter> medicinePondParameterRepository,
             IRepository<PondStandardParam> pondStandardParamRepository,
             IUnitOfWork<KoiGuardianDbContext> unitOfWork,
-            IImageUploadService imageUpload
+            IImageUploadService imageUpload,
+            IRepository<Symptom> _symtompReposito
             )
 
         {
@@ -84,6 +86,7 @@ namespace KoiGuardian.Api.Services
             _pondStandardParamRepository = pondStandardParamRepository;
             _unitOfWork = unitOfWork;
             _imageUploadService = imageUpload;
+            _symtompRepository = _symtompReposito;
         }
 
         public async Task<ProductResponse> CreateProductAsync(ProductRequest productRequest, CancellationToken cancellationToken)
@@ -361,9 +364,20 @@ namespace KoiGuardian.Api.Services
                 {
                     spec = spec + $"💊 Liều dùng {medicne.DosageForm} \n";
                 }
+
                 if (!string.IsNullOrEmpty(medicne.Medicinename))
                 {
-                    spec = spec + $"💊 Tác dụng phụ có thể xảy ra {medicne.Symtomps}\n";
+                    try
+                    {
+                        var symtompsEffect = (await _symtompRepository
+                            .FindAsync( u => u.SymtompId.ToString() == medicne.Symtomps)).FirstOrDefault();
+                        spec = spec + $"💊 Tác dụng phụ có thể xảy ra {symtompsEffect.Name}\n";
+
+                    } catch (Exception e)
+                    {
+                        spec = spec + $"💊 Tác dụng phụ có thể xảy ra {medicne.Symtomps}\n";
+                    }
+
                 }
             }
             else

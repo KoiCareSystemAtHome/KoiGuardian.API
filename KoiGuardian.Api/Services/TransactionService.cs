@@ -61,7 +61,7 @@ namespace KoiGuardian.Api.Services
             var wallet = (await walletRepository.FindAsync(w => w.UserId == shop.UserId, cancellationToken)).FirstOrDefault();
             var shopBalance = wallet != null ? (decimal)wallet.Amount : 0m;
 
-            // Map transactions to TransactionDto
+            // Map transactions to TransactionDto and sort by TransactionDate
             var transactionList = transactions.Select(t =>
             {
                 var order = orders.FirstOrDefault(o => o.OrderId == t.DocNo);
@@ -79,7 +79,9 @@ namespace KoiGuardian.Api.Services
                         ? JsonSerializer.Deserialize<RefundInfo>(t.Refund)
                         : null
                 };
-            }).ToList();
+            })
+            .OrderByDescending(t => t.TransactionDate) // Sort by TransactionDate in descending order
+            .ToList();
 
             // Return response DTO
             return new ShopTransactionResponseDto

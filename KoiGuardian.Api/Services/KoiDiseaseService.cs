@@ -73,7 +73,7 @@ public class KoiDiseaseService
                 Title = "Kiểm tra sức khỏe cá ", 
                 Description = " Kiểm tra sức khỏe cá sau khi dùng thuốc",
                 MaintainDate =request.EndDate,
-                SeenDate = request.EndDate,
+                SeenDate = DateTime.MinValue.ToUniversalTime(),
             });
 
             await unitOfWork.SaveChangesAsync();

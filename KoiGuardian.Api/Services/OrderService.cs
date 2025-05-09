@@ -449,6 +449,12 @@ public class OrderService(
                 return OrderResponse.Error("Order not found");
             }
 
+            if (order.Status.ToLower() == OrderStatus.Cancel.ToString().ToLower() ||
+                order.Status.ToLower() == OrderStatus.Fail.ToString().ToLower())
+            {
+                return OrderResponse.Success("Order is already in Cancel or Fail status");
+            }
+
             var transaction = await transactionRepository.GetAsync(o => o.DocNo.ToString().Contains(order.OrderId.ToString()), CancellationToken.None);
             string status = request.Status.ToLower();
 
